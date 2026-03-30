@@ -1,0 +1,125 @@
+import React from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+} from 'react-native';
+import {NativeStackNavigationProp} from '@react-navigation/native-stack';
+import {RootStackParamList} from '../App';
+
+type HomeScreenNavigationProp = NativeStackNavigationProp<
+  RootStackParamList,
+  'Home'
+>;
+
+interface Props {
+  navigation: HomeScreenNavigationProp;
+}
+
+const HomeScreen: React.FC<Props> = ({navigation}) => {
+  const modules = [
+    {
+      name: 'Emissor',
+      description: 'Emitir credenciais acadêmicas verificáveis',
+      route: 'Emissor' as const,
+      icon: '📝',
+    },
+    {
+      name: 'Titular',
+      description: 'Gerenciar e apresentar credenciais',
+      route: 'Titular' as const,
+      icon: '👤',
+    },
+    {
+      name: 'Verificador',
+      description: 'Validar apresentações verificáveis',
+      route: 'Verificador' as const,
+      icon: '✓',
+    },
+    {
+      name: 'Logs',
+      description: 'Monitorar eventos criptográficos',
+      route: 'Logs' as const,
+      icon: '📊',
+    },
+  ];
+
+  return (
+    <ScrollView style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.title}>Carteira Digital SSI</Text>
+        <Text style={styles.subtitle}>
+          Sistema de Identidade Auto-Soberana Acadêmica
+        </Text>
+      </View>
+
+      <View style={styles.modulesContainer}>
+        {modules.map(module => (
+          <TouchableOpacity
+            key={module.route}
+            style={styles.moduleCard}
+            onPress={() => navigation.navigate(module.route)}>
+            <Text style={styles.moduleIcon}>{module.icon}</Text>
+            <Text style={styles.moduleName}>{module.name}</Text>
+            <Text style={styles.moduleDescription}>{module.description}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+    </ScrollView>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+  },
+  header: {
+    backgroundColor: '#003366',
+    padding: 20,
+    alignItems: 'center',
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontSize: 14,
+    color: '#ccc',
+    textAlign: 'center',
+  },
+  modulesContainer: {
+    padding: 16,
+  },
+  moduleCard: {
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    padding: 20,
+    marginBottom: 16,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  moduleIcon: {
+    fontSize: 40,
+    marginBottom: 12,
+  },
+  moduleName: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#003366',
+    marginBottom: 8,
+  },
+  moduleDescription: {
+    fontSize: 14,
+    color: '#666',
+  },
+});
+
+export default HomeScreen;

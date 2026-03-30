@@ -1,0 +1,17 @@
+{
+  "name": "specialized-dependencies",
+  "description": "Dependências especializadas que serão adicionadas conforme necessário",
+  "dependencies": {
+    "@hyperledger/anoncreds-react-native": "^0.2.2",
+    "mopro-react-native-package": "^0.1.0",
+    "@sd-jwt/sd-jwt-vc": "^0.7.0",
+    "eudi-wallet-kit-react-native": "^0.3.0"
+  },
+  "notes": {
+    "@hyperledger/anoncreds-react-native": "Necessário para ZKP e AnonCreds. Pode precisar de build nativo.",
+    "mopro-react-native-package": "Otimização de circuitos ZKP. Pode não estar disponível publicamente.",
+    "@sd-jwt/sd-jwt-vc": "Selective Disclosure JWT. Verificar disponibilidade no npm.",
+    "eudi-wallet-kit-react-native": "Kit EUDI para parsing PEX. Pode precisar de implementação manual."
+  },
+  "installation": "Estas dependências serão instaladas conforme necessário nas tarefas específicas que as utilizam."
+}
