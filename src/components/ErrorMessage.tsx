@@ -8,8 +8,13 @@ interface ErrorMessageProps {
 
 const ErrorMessage: React.FC<ErrorMessageProps> = ({message, details}) => {
   return (
-    <View style={styles.container}>
-      <Text style={styles.icon}>⚠️</Text>
+    <View 
+      style={styles.container}
+      accessible={true}
+      accessibilityLabel={`Erro: ${message}${details ? '. ' + details : ''}`}
+      accessibilityRole="alert"
+      accessibilityLiveRegion="assertive">
+      <Text style={styles.icon} accessible={false}>⚠️</Text>
       <Text style={styles.message}>{message}</Text>
       {details && <Text style={styles.details}>{details}</Text>}
     </View>

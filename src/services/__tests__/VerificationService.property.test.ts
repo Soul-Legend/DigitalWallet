@@ -327,11 +327,18 @@ describe('VerificationService Property Tests', () => {
             // Create PEX request
             const pexRequest = await VerificationService.generateChallenge('ru');
 
+            // Ensure selected attributes include all required attributes from PEX
+            // For RU scenario, status_matricula and isencao_ru are required
+            const requiredAttributes = ['status_matricula', 'isencao_ru'];
+            const finalSelectedAttributes = [
+              ...new Set([...requiredAttributes, ...selectedAttributes]),
+            ];
+
             // Create presentation with selected attributes
             const presentation = await PresentationService.createPresentation(
               credential,
               pexRequest,
-              selectedAttributes,
+              finalSelectedAttributes,
             );
 
             // Verify structural integrity
@@ -346,7 +353,7 @@ describe('VerificationService Property Tests', () => {
 
             // Verify disclosed attributes are present
             expect(presentation.disclosed_attributes).toBeDefined();
-            for (const attr of selectedAttributes) {
+            for (const attr of finalSelectedAttributes) {
               expect(presentation.disclosed_attributes).toHaveProperty(attr);
             }
 

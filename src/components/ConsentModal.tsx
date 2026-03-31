@@ -61,9 +61,14 @@ const ConsentModal: React.FC<ConsentModalProps> = ({
       '!=': 'diferente de',
     };
 
-    return `${formatAttributeName(predicate.attribute)} ${
-      operatorMap[predicate.operator] || predicate.operator
-    } ${predicate.value}`;
+    const operatorText = operatorMap[predicate.p_type] || predicate.p_type;
+    
+    // Special formatting for age verification
+    if (predicate.attribute === 'data_nascimento' && predicate.p_type === '>=' && predicate.value === 18) {
+      return 'Idade maior ou igual a 18 anos (sem revelar data de nascimento)';
+    }
+
+    return `${formatAttributeName(predicate.attribute)} ${operatorText} ${predicate.value}`;
   };
 
   return (

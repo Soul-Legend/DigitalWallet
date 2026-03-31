@@ -50,6 +50,12 @@ const HomeScreen: React.FC<Props> = ({navigation}) => {
       route: 'Logs' as const,
       icon: '📊',
     },
+    {
+      name: 'Glossário',
+      description: 'Termos e definições SSI',
+      route: 'Glossario' as const,
+      icon: '📖',
+    },
   ];
 
   return (
@@ -75,8 +81,12 @@ const HomeScreen: React.FC<Props> = ({navigation}) => {
                   | 'logs',
               );
               navigation.navigate(module.route);
-            }}>
-            <Text style={styles.moduleIcon}>{module.icon}</Text>
+            }}
+            accessible={true}
+            accessibilityLabel={`Módulo ${module.name}`}
+            accessibilityHint={module.description}
+            accessibilityRole="button">
+            <Text style={styles.moduleIcon} accessible={false}>{module.icon}</Text>
             <Text style={styles.moduleName}>{module.name}</Text>
             <Text style={styles.moduleDescription}>{module.description}</Text>
           </TouchableOpacity>
@@ -120,6 +130,7 @@ const styles = StyleSheet.create({
     shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.1,
     shadowRadius: 4,
+    minHeight: 44, // Minimum touch target
   },
   moduleIcon: {
     fontSize: 40,

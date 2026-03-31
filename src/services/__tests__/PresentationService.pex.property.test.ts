@@ -148,7 +148,12 @@ describe('PresentationService - PEX Request Processing Properties', () => {
       }),
       proof: fc.record({
         type: fc.constant('JsonWebSignature2020'),
-        created: fc.date().map(d => d.toISOString()),
+        created: fc
+          .integer({
+            min: new Date('2020-01-01').getTime(),
+            max: new Date('2025-12-31').getTime(),
+          })
+          .map(timestamp => new Date(timestamp).toISOString()),
         verificationMethod: fc.constant('did:web:ufsc.br#key-1'),
         proofPurpose: fc.constant('assertionMethod'),
         jws: fc.string({minLength: 20, maxLength: 40}),

@@ -63,6 +63,16 @@ export interface VerifiablePresentation {
   verifiableCredential: VerifiableCredential | string;
   proof: Proof;
   disclosed_attributes?: Record<string, any>;
+  zkp_proof?: {
+    proof_data: any;
+    revealed_attrs: string[];
+    predicates: Array<{
+      attr_name: string;
+      p_type: string;
+      value: number;
+      satisfied?: boolean;
+    }>;
+  };
   zkp_proofs?: any[];
   nullifier?: string;
 }
@@ -112,6 +122,9 @@ export interface PresentationExchangeRequest {
             type: string;
             const?: any;
             pattern?: string;
+            contains?: {
+              const?: any;
+            };
           };
           predicate?: 'required' | 'preferred';
         }>;

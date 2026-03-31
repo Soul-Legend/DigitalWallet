@@ -11,7 +11,12 @@ const LoadingIndicator: React.FC<LoadingIndicatorProps> = ({
   size = 'large',
 }) => {
   return (
-    <View style={styles.container}>
+    <View 
+      style={styles.container}
+      accessible={true}
+      accessibilityLabel={`Carregando: ${message}`}
+      accessibilityRole="progressbar"
+      accessibilityLiveRegion="polite">
       <ActivityIndicator size={size} color="#003366" />
       {message && <Text style={styles.message}>{message}</Text>}
     </View>

@@ -170,6 +170,11 @@ const VerifierScreen: React.FC = () => {
       return;
     }
 
+    if (!generatedRequest) {
+      setError('Gere uma requisição primeiro');
+      return;
+    }
+
     setIsValidating(true);
     setError(null);
     setSuccess(null);
@@ -177,19 +182,34 @@ const VerifierScreen: React.FC = () => {
 
     try {
       // Parse the presentation to validate JSON format
-      JSON.parse(presentationInput.trim());
+      const presentation = JSON.parse(presentationInput.trim());
 
-      // Simulate validation (will be implemented in next task)
-      // For now, just show a placeholder result
-      const result: ValidationResult = {
-        valid: true,
-        verified_attributes: {},
-        predicates_satisfied: true,
-      };
+      // Parse the generated request
+      const pexRequest = JSON.parse(generatedRequest);
+
+      // Import VerificationService dynamically
+      const VerificationService = (await import('../services/VerificationService')).default;
+
+      // Validate the presentation
+      const result = await VerificationService.validatePresentation(
+        presentation,
+        pexRequest,
+      );
 
       setValidationResult(result);
-      setSuccess('Validação será implementada na próxima tarefa');
-      setTimeout(() => setSuccess(null), 3000);
+
+      if (result.valid) {
+        setSuccess('Apresentação validada com sucesso!');
+      } else {
+        setError(
+          result.errors?.join(', ') || 'Apresentação inválida',
+        );
+      }
+
+      setTimeout(() => {
+        setSuccess(null);
+        setError(null);
+      }, 5000);
     } catch (err: any) {
       setError(err.message || 'Erro ao validar apresentação. Verifique o formato.');
     } finally {
@@ -279,7 +299,13 @@ const VerifierScreen: React.FC = () => {
                 />
                 <TouchableOpacity
                   style={[styles.button, !labInput.trim() && styles.buttonDisabled]}
-                  onPress={() => handleSelectScenario(selectedScenario)}
+                  onPress={() => {
+                    if (!labInput.trim()) {
+                      setError('Por favor, especifique o laboratório ou prédio');
+                      return;
+                    }
+                    handleSelectScenario(selectedScenario);
+                  }}
                   disabled={!labInput.trim()}>
                   <Text style={styles.buttonText}>Gerar Requisição</Text>
                 </TouchableOpacity>

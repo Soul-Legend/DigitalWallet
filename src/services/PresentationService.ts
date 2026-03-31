@@ -535,7 +535,31 @@ class PresentationService {
         holderPrivateKey,
       );
 
+      // Generate nullifier if this is an election scenario
+      let nullifier: string | undefined;
+      if (pexRequest.election_id) {
+        nullifier = await this.generateNullifier(
+          holderPrivateKey,
+          pexRequest.election_id,
+        );
+
+        // Log nullifier generation
+        LogService.captureEvent(
+          'hash_computation',
+          'titular',
+          {
+            parameters: {
+              action: 'nullifier_generated',
+              election_id: pexRequest.election_id,
+              nullifier_truncated: nullifier.substring(0, 16) + '...',
+            },
+          },
+          true,
+        );
+      }
+
       // Create basic presentation structure
+      // For ZKP, we don't include the full credential to preserve privacy
       const presentation: VerifiablePresentation = {
         '@context': [
           'https://www.w3.org/2018/credentials/v1',
@@ -543,7 +567,16 @@ class PresentationService {
         ],
         type: ['VerifiablePresentation', 'PresentationSubmission'],
         holder: credential.credentialSubject.id,
-        verifiableCredential: credential,
+        verifiableCredential: {
+          '@context': credential['@context'],
+          type: credential.type,
+          issuer: credential.issuer,
+          issuanceDate: credential.issuanceDate,
+          credentialSubject: {
+            id: credential.credentialSubject.id,
+          },
+          proof: credential.proof,
+        } as any,
         proof: {
           type: 'AnonCredsProof',
           created: new Date().toISOString(),
@@ -551,7 +584,18 @@ class PresentationService {
           proofPurpose: 'authentication',
           verificationMethod: `${credential.credentialSubject.id}#key-1`,
         },
+        zkp_proof: {
+          proof_data: {},
+          revealed_attrs: [],
+          predicates: zkpProofs.map(p => ({
+            attr_name: p.predicate.attr_name,
+            p_type: p.predicate.p_type,
+            value: p.predicate.value,
+            satisfied: p.predicate_satisfied,
+          })),
+        },
         zkp_proofs: zkpProofs,
+        nullifier,
       };
 
       // Sign the presentation
@@ -763,6 +807,47 @@ class PresentationService {
           'operator',
           operator,
         );
+    }
+  }
+
+  /**
+   * Generates a deterministic nullifier for election scenarios
+   * Nullifier = hash(holder_private_key + election_id)
+   * This ensures the same credential produces the same nullifier for the same election
+   * but different nullifiers for different elections
+   * 
+   * @param holderPrivateKey - The holder's private key
+   * @param electionId - The unique election identifier
+   * @returns Deterministic nullifier hash
+   */
+  private async generateNullifier(
+    holderPrivateKey: string,
+    electionId: string,
+  ): Promise<string> {
+    try {
+      // Compute deterministic hash: hash(private_key + election_id)
+      // This ensures same credential + same election = same nullifier
+      // but different elections or different credentials = different nullifiers
+      const nullifier = await CryptoService.computeCompositeHash(
+        [holderPrivateKey, electionId],
+        'titular',
+      );
+
+      return nullifier;
+    } catch (error) {
+      LogService.captureEvent(
+        'hash_computation',
+        'titular',
+        {
+          parameters: {
+            action: 'nullifier_generation_failed',
+          },
+        },
+        false,
+        error instanceof Error ? error : new Error(String(error)),
+      );
+
+      throw error;
     }
   }
 

@@ -4,3 +4,4 @@ export {default as SuccessMessage} from './SuccessMessage';
 export {default as CredentialCard} from './CredentialCard';
 export {default as ConsentModal} from './ConsentModal';
 export {default as AttributeSelector} from './AttributeSelector';
+export {default as LogEntry} from './LogEntry';

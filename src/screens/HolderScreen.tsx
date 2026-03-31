@@ -290,12 +290,25 @@ const HolderScreen: React.FC = () => {
     try {
       const credential = credentials[currentIndex];
 
-      // Create the presentation
-      const presentation = await PresentationService.createPresentation(
-        credential,
-        currentRequest,
-        selectedAttributes,
-      );
+      // Determine if this is a ZKP request (has predicates)
+      const hasPredicates = consentData.predicates && consentData.predicates.length > 0;
+
+      let presentation;
+      if (hasPredicates) {
+        // Create ZKP presentation for predicates (e.g., age verification, elections)
+        presentation = await PresentationService.createZKPPresentation(
+          credential,
+          currentRequest,
+          consentData.predicates!,
+        );
+      } else {
+        // Create SD-JWT presentation for selective disclosure
+        presentation = await PresentationService.createPresentation(
+          credential,
+          currentRequest,
+          selectedAttributes,
+        );
+      }
 
       // Convert to JSON string
       const presentationJson = JSON.stringify(presentation, null, 2);

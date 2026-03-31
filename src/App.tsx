@@ -3,19 +3,23 @@ import {NavigationContainer} from '@react-navigation/native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import {SafeAreaProvider} from 'react-native-safe-area-context';
 
-// Import screens (will be created in subsequent tasks)
+// Import screens
+import InitializationScreen from './screens/InitializationScreen';
 import HomeScreen from './screens/HomeScreen';
 import IssuerScreen from './screens/IssuerScreen';
 import HolderScreen from './screens/HolderScreen';
 import VerifierScreen from './screens/VerifierScreen';
 import LogsScreen from './screens/LogsScreen';
+import GlossaryScreen from './screens/GlossaryScreen';
 
 export type RootStackParamList = {
+  Initialization: undefined;
   Home: undefined;
   Emissor: undefined;
   Titular: undefined;
   Verificador: undefined;
   Logs: undefined;
+  Glossario: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -25,7 +29,7 @@ function App(): React.JSX.Element {
     <SafeAreaProvider>
       <NavigationContainer>
         <Stack.Navigator
-          initialRouteName="Home"
+          initialRouteName="Initialization"
           screenOptions={{
             headerStyle: {
               backgroundColor: '#003366',
@@ -35,6 +39,11 @@ function App(): React.JSX.Element {
               fontWeight: 'bold',
             },
           }}>
+          <Stack.Screen
+            name="Initialization"
+            component={InitializationScreen}
+            options={{headerShown: false}}
+          />
           <Stack.Screen
             name="Home"
             component={HomeScreen}
@@ -59,6 +68,11 @@ function App(): React.JSX.Element {
             name="Logs"
             component={LogsScreen}
             options={{title: 'Painel de Logs'}}
+          />
+          <Stack.Screen
+            name="Glossario"
+            component={GlossaryScreen}
+            options={{title: 'Glossário SSI'}}
           />
         </Stack.Navigator>
       </NavigationContainer>

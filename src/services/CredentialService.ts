@@ -376,14 +376,35 @@ class CredentialService {
    */
   async validateAndParseCredential(token: string): Promise<VerifiableCredential> {
     try {
-      // Try to parse as SD-JWT first
-      if (token.includes('.')) {
-        return await this.parseSDJWT(token);
-      } else {
-        // Try to parse as AnonCreds
+      // Try to parse as JSON first (could be AnonCreds)
+      let parsedToken: any;
+      try {
+        parsedToken = JSON.parse(token);
+      } catch {
+        // Not JSON, might be JWT
+        parsedToken = null;
+      }
+
+      // Check if it's AnonCreds format (has schema_id and values)
+      if (parsedToken && parsedToken.schema_id && parsedToken.values) {
         return await this.parseAnonCreds(token);
       }
+
+      // Try to parse as SD-JWT (has dots)
+      if (token.includes('.')) {
+        return await this.parseSDJWT(token);
+      }
+
+      // If we got here, format is unknown
+      throw new ValidationError(
+        'Formato de credencial inválido',
+        'token',
+        token.substring(0, 50),
+      );
     } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
       throw new ValidationError(
         'Formato de credencial inválido',
         'token',
