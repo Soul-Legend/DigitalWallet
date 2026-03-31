@@ -7,10 +7,12 @@
     "ios": "react-native run-ios",
     "lint": "eslint .",
     "start": "react-native start",
-    "test": "jest"
+    "test": "jest --silent",
+    "test:verbose": "jest"
   },
   "dependencies": {
     "@credo-ts/core": "^0.5.3",
+    "@noble/ed25519": "^3.0.1",
     "@react-navigation/native": "^6.1.9",
     "@react-navigation/native-stack": "^6.9.17",
     "crypto-js": "^4.2.0",

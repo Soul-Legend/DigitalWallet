@@ -63,6 +63,8 @@ ios/Pods/
 # Testing
 coverage/
 .nyc_output/
+test-results/
+junit.xml
 
 # Misc
 *.log

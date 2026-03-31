@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useEffect} from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {RootStackParamList} from '../App';
+import {useAppStore} from '../stores/useAppStore';
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -19,6 +20,11 @@ interface Props {
 }
 
 const HomeScreen: React.FC<Props> = ({navigation}) => {
+  const setCurrentModule = useAppStore(state => state.setCurrentModule);
+
+  useEffect(() => {
+    setCurrentModule('home');
+  }, [setCurrentModule]);
   const modules = [
     {
       name: 'Emissor',
@@ -60,7 +66,16 @@ const HomeScreen: React.FC<Props> = ({navigation}) => {
           <TouchableOpacity
             key={module.route}
             style={styles.moduleCard}
-            onPress={() => navigation.navigate(module.route)}>
+            onPress={() => {
+              setCurrentModule(
+                module.route.toLowerCase() as
+                  | 'emissor'
+                  | 'titular'
+                  | 'verificador'
+                  | 'logs',
+              );
+              navigation.navigate(module.route);
+            }}>
             <Text style={styles.moduleIcon}>{module.icon}</Text>
             <Text style={styles.moduleName}>{module.name}</Text>
             <Text style={styles.moduleDescription}>{module.description}</Text>

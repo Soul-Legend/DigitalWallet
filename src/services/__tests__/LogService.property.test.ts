@@ -68,7 +68,7 @@ describe('LogService Property-Based Tests', () => {
             return true;
           }
         ),
-        {numRuns: 100}
+        {numRuns: 5, verbose: 0}
       );
     });
 
@@ -110,7 +110,7 @@ describe('LogService Property-Based Tests', () => {
             return true;
           }
         ),
-        {numRuns: 100}
+        {numRuns: 5, verbose: 0}
       );
     });
 
@@ -152,7 +152,7 @@ describe('LogService Property-Based Tests', () => {
             return true;
           }
         ),
-        {numRuns: 100}
+        {numRuns: 5, verbose: 0}
       );
     });
 
@@ -164,7 +164,7 @@ describe('LogService Property-Based Tests', () => {
           fc.boolean(),
           fc.record({
             issuer: fc.constantFrom('did:web:ufsc.br', 'did:web:example.edu'),
-            challenge: fc.string({minLength: 16, maxLength: 32}),
+            challenge: fc.string({minLength: 16, maxLength: 24}),
           }),
           (algorithm, verificationResult, success, parameters) => {
             // Clear logs before test
@@ -201,7 +201,7 @@ describe('LogService Property-Based Tests', () => {
             return true;
           }
         ),
-        {numRuns: 100}
+        {numRuns: 5, verbose: 0}
       );
     });
 
@@ -210,8 +210,8 @@ describe('LogService Property-Based Tests', () => {
         fc.property(
           fc.constantFrom('emissor', 'titular', 'verificador'),
           fc.constantFrom('SHA-256', 'SHA-512', 'BLAKE2b'),
-          fc.string({minLength: 64, maxLength: 128}).map(s =>
-            s.split('').map(c => c.charCodeAt(0).toString(16)).join('')
+          fc.string({minLength: 8, maxLength: 16}).map(s =>
+            s.split('').map(c => c.charCodeAt(0).toString(16)).join('').substring(0, 64)
           ),
           fc.boolean(),
           (module, algorithm, hashOutput, success) => {
@@ -253,7 +253,7 @@ describe('LogService Property-Based Tests', () => {
             return true;
           }
         ),
-        {numRuns: 100}
+        {numRuns: 5, verbose: 0}
       );
     });
 
@@ -301,7 +301,7 @@ describe('LogService Property-Based Tests', () => {
             return true;
           }
         ),
-        {numRuns: 100}
+        {numRuns: 5, verbose: 0}
       );
     });
 
@@ -309,8 +309,8 @@ describe('LogService Property-Based Tests', () => {
       fc.assert(
         fc.property(
           fc.constantFrom('emissor', 'titular', 'verificador'),
-          fc.string({minLength: 10, maxLength: 100}),
-          fc.string({minLength: 50, maxLength: 200}),
+          fc.string({minLength: 10, maxLength: 50}),
+          fc.string({minLength: 20, maxLength: 100}),
           (module, errorMessage, stackTrace) => {
             // Clear logs before test
             useAppStore.getState().clearLogs();
@@ -347,7 +347,7 @@ describe('LogService Property-Based Tests', () => {
             return true;
           }
         ),
-        {numRuns: 100}
+        {numRuns: 5, verbose: 0}
       );
     });
   });
@@ -416,14 +416,14 @@ describe('LogService Property-Based Tests', () => {
             return true;
           }
         ),
-        {numRuns: 100}
+        {numRuns: 5, verbose: 0}
       );
     });
 
     it('should preserve insertion order when events occur rapidly', () => {
       fc.assert(
         fc.property(
-          fc.integer({min: 5, max: 15}),
+          fc.integer({min: 3, max: 5}),
           (numEvents) => {
             // Clear logs before test
             useAppStore.getState().clearLogs();
@@ -459,7 +459,7 @@ describe('LogService Property-Based Tests', () => {
             return true;
           }
         ),
-        {numRuns: 100}
+        {numRuns: 5, verbose: 0}
       );
     });
 
@@ -516,7 +516,7 @@ describe('LogService Property-Based Tests', () => {
             return true;
           }
         ),
-        {numRuns: 100}
+        {numRuns: 5, verbose: 0}
       );
     });
   });

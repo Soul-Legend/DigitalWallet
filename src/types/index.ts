@@ -39,6 +39,7 @@ export interface Proof {
   proofPurpose: string;
   jws?: string;
   signature?: string;
+  challenge?: string;
 }
 
 export interface PresentationRequest {
@@ -51,7 +52,7 @@ export interface PresentationRequest {
 
 export interface Predicate {
   attribute: string;
-  operator: '>=' | '<=' | '==' | '!=';
+  p_type: '>=' | '<=' | '==' | '!=';
   value: any;
 }
 

@@ -1,24 +1,37 @@
-import React from 'react';
-import {View, Text, StyleSheet} from 'react-native';
+import React, {useEffect} from 'react';
+import {View, Text, StyleSheet, ScrollView} from 'react-native';
+import {useAppStore} from '../stores/useAppStore';
 
 const LogsScreen: React.FC = () => {
+  const setCurrentModule = useAppStore(state => state.setCurrentModule);
+
+  useEffect(() => {
+    setCurrentModule('logs');
+  }, [setCurrentModule]);
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.text}>Painel de Logs</Text>
-      <Text style={styles.subtext}>
-        Funcionalidade será implementada nas próximas tarefas
-      </Text>
-    </View>
+    <ScrollView style={styles.container}>
+      <View style={styles.content}>
+        <Text style={styles.text}>Painel de Logs</Text>
+        <Text style={styles.subtext}>
+          Funcionalidade será implementada nas próximas tarefas
+        </Text>
+      </View>
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#f5f5f5',
+  },
+  content: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
     padding: 20,
+    minHeight: 400,
   },
   text: {
     fontSize: 24,
