@@ -169,7 +169,7 @@ describe('Range Proof Property-Based Tests', () => {
             // Verify presentation structure
             expect(presentation).toBeDefined();
             expect(presentation.type).toContain('VerifiablePresentation');
-            expect(presentation.proof.type).toBe('AnonCredsProof');
+            expect(presentation.proof.type).toBe('Groth16Proof');
 
             // Verify ZKP proofs exist for age verification
             expect(presentation.zkp_proofs).toBeDefined();
@@ -243,20 +243,20 @@ describe('Range Proof Property-Based Tests', () => {
             const zkpProofs = presentation.zkp_proofs || [];
             const ageProof = zkpProofs[0];
 
-            // Verify proof_data contains commitment
+            // Verify proof_data contains circom proof from mopro
             expect(ageProof.proof_data).toBeDefined();
-            expect(ageProof.proof_data.commitment).toBeDefined();
-            expect(typeof ageProof.proof_data.commitment).toBe('string');
-            expect(ageProof.proof_data.commitment.length).toBeGreaterThan(0);
+            expect(ageProof.proof_data.circom_proof).toBeDefined();
+            expect(typeof ageProof.proof_data.circom_proof).toBe('object');
 
-            // Verify commitment is a hash (hex string)
-            expect(ageProof.proof_data.commitment).toMatch(/^[0-9a-f]+$/);
+            // Verify circom_proof has Groth16 structure
+            expect(ageProof.proof_data.circom_proof.a).toBeDefined();
+            expect(ageProof.proof_data.circom_proof.b).toBeDefined();
+            expect(ageProof.proof_data.circom_proof.c).toBeDefined();
+            expect(ageProof.proof_data.circom_proof.protocol).toBe('groth16');
 
-            // Verify nonce_hash exists
-            expect(ageProof.proof_data.nonce_hash).toBeDefined();
-
-            // Verify signature exists
-            expect(ageProof.proof_data.signature).toBeDefined();
+            // Verify public_inputs exist
+            expect(ageProof.proof_data.public_inputs).toBeDefined();
+            expect(Array.isArray(ageProof.proof_data.public_inputs)).toBe(true);
 
             return true;
           },

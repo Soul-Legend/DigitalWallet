@@ -169,7 +169,7 @@ describe('PresentationService - ZKP Property-Based Tests', () => {
             // Verify presentation structure
             expect(presentation).toBeDefined();
             expect(presentation.type).toContain('VerifiablePresentation');
-            expect(presentation.proof.type).toBe('AnonCredsProof');
+            expect(presentation.proof.type).toBe('Groth16Proof');
 
             // Verify ZKP proofs exist
             expect(presentation.zkp_proofs).toBeDefined();
@@ -299,22 +299,20 @@ describe('PresentationService - ZKP Property-Based Tests', () => {
             const zkpProofs = presentation.zkp_proofs || [];
 
             for (const proof of zkpProofs) {
-              // Verify proof_data contains commitment
+              // Verify proof_data contains circom proof from mopro
               expect(proof.proof_data).toBeDefined();
-              expect(proof.proof_data.commitment).toBeDefined();
-              expect(typeof proof.proof_data.commitment).toBe('string');
-              expect(proof.proof_data.commitment.length).toBeGreaterThan(0);
+              expect(proof.proof_data.circom_proof).toBeDefined();
+              expect(typeof proof.proof_data.circom_proof).toBe('object');
 
-              // Verify commitment is a hash (hex string)
-              expect(proof.proof_data.commitment).toMatch(/^[0-9a-f]+$/);
+              // Verify circom_proof has Groth16 structure (a, b, c curve points)
+              expect(proof.proof_data.circom_proof.a).toBeDefined();
+              expect(proof.proof_data.circom_proof.b).toBeDefined();
+              expect(proof.proof_data.circom_proof.c).toBeDefined();
+              expect(proof.proof_data.circom_proof.protocol).toBe('groth16');
 
-              // Verify nonce_hash exists
-              expect(proof.proof_data.nonce_hash).toBeDefined();
-              expect(typeof proof.proof_data.nonce_hash).toBe('string');
-
-              // Verify signature exists
-              expect(proof.proof_data.signature).toBeDefined();
-              expect(typeof proof.proof_data.signature).toBe('string');
+              // Verify public_inputs exist
+              expect(proof.proof_data.public_inputs).toBeDefined();
+              expect(Array.isArray(proof.proof_data.public_inputs)).toBe(true);
             }
 
             return true;

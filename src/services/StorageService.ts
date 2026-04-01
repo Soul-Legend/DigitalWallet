@@ -62,6 +62,63 @@ class StorageService {
       );
     }
   }
+
+  /**
+   * Stores holder's DID in encrypted storage
+   */
+  async storeHolderDID(did: string): Promise<void> {
+    try {
+      await EncryptedStorage.setItem(`${this.HOLDER_KEY_PREFIX}did`, did);
+    } catch (error) {
+      throw new StorageError('Failed to store holder DID', 'write', {error});
+    }
+  }
+
+  /**
+   * Stores issuer's DID (did:web) in encrypted storage
+   */
+  async storeIssuerDID(did: string): Promise<void> {
+    try {
+      await EncryptedStorage.setItem(`${this.ISSUER_KEY_PREFIX}did`, did);
+    } catch (error) {
+      throw new StorageError('Failed to store issuer DID', 'write', {error});
+    }
+  }
+
+  /**
+   * Stores issuer's signing DID (did:key used for cryptographic operations)
+   */
+  async storeIssuerSigningDid(signingDid: string): Promise<void> {
+    try {
+      await EncryptedStorage.setItem(
+        `${this.ISSUER_KEY_PREFIX}signing_did`,
+        signingDid,
+      );
+    } catch (error) {
+      throw new StorageError(
+        'Failed to store issuer signing DID',
+        'write',
+        {error},
+      );
+    }
+  }
+
+  /**
+   * Retrieves issuer's signing DID from encrypted storage
+   */
+  async getIssuerSigningDid(): Promise<string | null> {
+    try {
+      return await EncryptedStorage.getItem(
+        `${this.ISSUER_KEY_PREFIX}signing_did`,
+      );
+    } catch (error) {
+      throw new StorageError(
+        'Failed to retrieve issuer signing DID',
+        'read',
+        {error},
+      );
+    }
+  }
   
   /**
    * Stores issuer's private key in encrypted storage

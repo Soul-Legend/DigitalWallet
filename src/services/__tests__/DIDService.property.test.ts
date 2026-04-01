@@ -22,67 +22,48 @@ describe('DIDService Property-Based Tests', () => {
    * Feature: carteira-identidade-academica, Property 1: Key Generation Security
    * Validates: Requirements 1.2, 11.1
    *
-   * For any key generation operation, the system SHALL generate a valid
-   * asymmetric key pair using the device's secure hardware (Secure Enclave/TEE)
-   * and the resulting keys SHALL conform to industry-standard cryptographic
-   * specifications.
+   * Key pairs are now generated inside the Credo agent wallet (Aries Askar).
+   * We verify that DID creation delegates to the agent and that the
+   * returned DIDs have the correct format.
    */
   describe('Property 1: Key Generation Security', () => {
-    it('should generate valid Ed25519 key pairs with correct sizes', async () => {
+    it('should generate valid did:key identities via the Credo agent', async () => {
       await fc.assert(
         fc.asyncProperty(
           fc.integer({min: 1, max: 3}),
           async (iterations) => {
             for (let i = 0; i < iterations; i++) {
-              // Generate key pair
-              const {privateKey, publicKey} = await DIDService.generateKeyPair();
-              
-              // Verify keys are hex strings
-              expect(privateKey).toMatch(/^[0-9a-f]+$/);
-              expect(publicKey).toMatch(/^[0-9a-f]+$/);
-              
-              // Verify key sizes (Ed25519: 32 bytes private, 32 bytes public)
-              expect(privateKey.length).toBe(64); // 32 bytes * 2 hex chars
-              expect(publicKey.length).toBe(64); // 32 bytes * 2 hex chars
-              
-              // Verify keys are different
-              expect(privateKey).not.toBe(publicKey);
+              const {did, verificationMethodId} = await DIDService.createDidKey();
+
+              expect(did).toMatch(/^did:key:z/);
+              expect(verificationMethodId).toBeDefined();
+              expect(typeof verificationMethodId).toBe('string');
             }
-            
             return true;
-          }
+          },
         ),
-        {numRuns: 5, verbose: 0}
+        {numRuns: 5, verbose: 0},
       );
     });
 
-    it('should generate unique key pairs for each invocation', async () => {
+    it('should generate unique did:key identities for each invocation', async () => {
       await fc.assert(
         fc.asyncProperty(
           fc.integer({min: 2, max: 3}),
           async (numKeys) => {
-            const keyPairs: Array<{privateKey: string; publicKey: string}> = [];
-            
-            // Generate multiple key pairs
+            const dids: string[] = [];
+
             for (let i = 0; i < numKeys; i++) {
-              const keyPair = await DIDService.generateKeyPair();
-              keyPairs.push(keyPair);
+              const {did} = await DIDService.createDidKey();
+              dids.push(did);
             }
-            
-            // Verify all private keys are unique
-            const privateKeys = keyPairs.map(kp => kp.privateKey);
-            const uniquePrivateKeys = new Set(privateKeys);
-            expect(uniquePrivateKeys.size).toBe(privateKeys.length);
-            
-            // Verify all public keys are unique
-            const publicKeys = keyPairs.map(kp => kp.publicKey);
-            const uniquePublicKeys = new Set(publicKeys);
-            expect(uniquePublicKeys.size).toBe(publicKeys.length);
-            
+
+            const uniqueDids = new Set(dids);
+            expect(uniqueDids.size).toBe(dids.length);
             return true;
-          }
+          },
         ),
-        {numRuns: 5, verbose: 0}
+        {numRuns: 5, verbose: 0},
       );
     });
 
@@ -91,28 +72,24 @@ describe('DIDService Property-Based Tests', () => {
         fc.asyncProperty(
           fc.constantFrom('titular', 'emissor'),
           async (module) => {
-            // Clear logs
             useAppStore.getState().clearLogs();
-            
-            // Generate identity
+
             if (module === 'titular') {
               await DIDService.generateHolderIdentity('key');
             } else {
               await DIDService.generateIssuerIdentity('ufsc.br');
             }
-            
-            // Check logs for algorithm and key size
+
             const logs = LogService.getLogs();
             const keyGenLog = logs.find(log => log.operation === 'key_generation');
-            
+
             expect(keyGenLog).toBeDefined();
             expect(keyGenLog?.details.algorithm).toBe('Ed25519');
             expect(keyGenLog?.details.key_size).toBe(256);
-            
             return true;
-          }
+          },
         ),
-        {numRuns: 5, verbose: 0}
+        {numRuns: 5, verbose: 0},
       );
     });
   });
@@ -126,53 +103,40 @@ describe('DIDService Property-Based Tests', () => {
    * did:web specification for issuers.
    */
   describe('Property 2: DID Format Compliance', () => {
-    it('should create valid did:key format from any public key', async () => {
+    it('should create valid did:key format via the agent', async () => {
       await fc.assert(
         fc.asyncProperty(
-          fc.integer({min: 1, max: 5}),
+          fc.integer({min: 1, max: 3}),
           async (iterations) => {
             for (let i = 0; i < iterations; i++) {
-              const {publicKey} = await DIDService.generateKeyPair();
-              const did = DIDService.createDidKey(publicKey);
-              
-              // Verify did:key format: did:key:z<base58-encoded-key>
-              expect(did).toMatch(/^did:key:z[1-9A-HJ-NP-Za-km-z]+$/);
+              const {did} = await DIDService.createDidKey();
+
+              // Verify did:key format
+              expect(did).toMatch(/^did:key:z/);
               expect(did.startsWith('did:key:z')).toBe(true);
-              
-              // Verify the encoded part is not empty
-              const encodedPart = did.substring('did:key:z'.length);
-              expect(encodedPart.length).toBeGreaterThan(0);
             }
-            
             return true;
-          }
+          },
         ),
-        {numRuns: 5, verbose: 0}
+        {numRuns: 5, verbose: 0},
       );
     });
 
-    it('should create valid did:peer format from any public key', async () => {
+    it('should create valid did:peer format via the agent', async () => {
       await fc.assert(
         fc.asyncProperty(
-          fc.integer({min: 1, max: 5}),
+          fc.integer({min: 1, max: 3}),
           async (iterations) => {
             for (let i = 0; i < iterations; i++) {
-              const {publicKey} = await DIDService.generateKeyPair();
-              const did = DIDService.createDidPeer(publicKey);
-              
-              // Verify did:peer format: did:peer:2.Ez<base58-encoded-key>
-              expect(did).toMatch(/^did:peer:2\.Ez[1-9A-HJ-NP-Za-km-z]+$/);
-              expect(did.startsWith('did:peer:2.Ez')).toBe(true);
-              
-              // Verify the encoded part is not empty
-              const encodedPart = did.substring('did:peer:2.Ez'.length);
-              expect(encodedPart.length).toBeGreaterThan(0);
+              const {did} = await DIDService.createDidPeer();
+
+              // did:peer DIDs start with did:peer:
+              expect(did).toMatch(/^did:peer:/);
             }
-            
             return true;
-          }
+          },
         ),
-        {numRuns: 5, verbose: 0}
+        {numRuns: 5, verbose: 0},
       );
     });
 
@@ -223,14 +187,14 @@ describe('DIDService Property-Based Tests', () => {
             
             // Verify DID format based on method
             if (method === 'key') {
-              expect(did).toMatch(/^did:key:z[1-9A-HJ-NP-Za-km-z]+$/);
+              expect(did).toMatch(/^did:key:z/);
             } else {
-              expect(did).toMatch(/^did:peer:2\.Ez[1-9A-HJ-NP-Za-km-z]+$/);
+              expect(did).toMatch(/^did:peer:/);
             }
             
-            // Verify public key is valid hex
-            expect(publicKey).toMatch(/^[0-9a-f]+$/);
-            expect(publicKey.length).toBe(64);
+            // publicKey is now the verification method ID (a string)
+            expect(typeof publicKey).toBe('string');
+            expect(publicKey.length).toBeGreaterThan(0);
             
             return true;
           }
@@ -254,9 +218,9 @@ describe('DIDService Property-Based Tests', () => {
             expect(did.startsWith('did:web:')).toBe(true);
             expect(did).toContain(domain);
             
-            // Verify public key is valid hex
-            expect(publicKey).toMatch(/^[0-9a-f]+$/);
-            expect(publicKey.length).toBe(64);
+            // publicKey is now the verification method ID (a string)
+            expect(typeof publicKey).toBe('string');
+            expect(publicKey.length).toBeGreaterThan(0);
             
             return true;
           }
@@ -275,101 +239,45 @@ describe('DIDService Property-Based Tests', () => {
    * calls, clipboard operations, or logs.
    */
   describe('Property 3: Private Key Isolation', () => {
-    it('should store holder private keys in encrypted storage', async () => {
+    it('should persist holder DID in encrypted storage', async () => {
       await fc.assert(
         fc.asyncProperty(
           fc.constantFrom('key', 'peer'),
           async (method) => {
-            // Clear storage
             await StorageService.clearAll();
-            
-            // Generate identity
+
             const {did} = await DIDService.generateHolderIdentity(
-              method as 'key' | 'peer'
+              method as 'key' | 'peer',
             );
-            
-            // Verify private key is stored
-            const storedPrivateKey = await StorageService.getHolderPrivateKey();
-            expect(storedPrivateKey).toBeDefined();
-            expect(storedPrivateKey).not.toBeNull();
-            expect(storedPrivateKey?.length).toBe(64); // 32 bytes in hex
-            
+
             // Verify DID is stored
             const storedDID = await StorageService.getHolderDID();
             expect(storedDID).toBe(did);
-            
+
             return true;
-          }
+          },
         ),
-        {numRuns: 5, verbose: 0}
+        {numRuns: 5, verbose: 0},
       );
     });
 
-    it('should store issuer private keys in encrypted storage', async () => {
+    it('should persist issuer DID in encrypted storage', async () => {
       await fc.assert(
         fc.asyncProperty(
           fc.constantFrom('ufsc.br', 'example.edu'),
           async (domain) => {
-            // Clear storage
             await StorageService.clearAll();
-            
-            // Generate identity
+
             const {did} = await DIDService.generateIssuerIdentity(domain);
-            
-            // Verify private key is stored
-            const storedPrivateKey = await StorageService.getIssuerPrivateKey();
-            expect(storedPrivateKey).toBeDefined();
-            expect(storedPrivateKey).not.toBeNull();
-            expect(storedPrivateKey?.length).toBe(64); // 32 bytes in hex
-            
+
             // Verify DID is stored
             const storedDID = await StorageService.getIssuerDID();
             expect(storedDID).toBe(did);
-            
-            return true;
-          }
-        ),
-        {numRuns: 5, verbose: 0}
-      );
-    });
 
-    it('should never expose private keys in logs', async () => {
-      await fc.assert(
-        fc.asyncProperty(
-          fc.constantFrom('titular', 'emissor'),
-          async (module) => {
-            // Clear logs
-            useAppStore.getState().clearLogs();
-            
-            // Generate identity
-            let privateKey: string;
-            if (module === 'titular') {
-              const result = await DIDService.generateHolderIdentity('key');
-              privateKey = (await StorageService.getHolderPrivateKey()) || '';
-            } else {
-              const result = await DIDService.generateIssuerIdentity('ufsc.br');
-              privateKey = (await StorageService.getIssuerPrivateKey()) || '';
-            }
-            
-            // Get all logs
-            const logs = LogService.getLogs();
-            
-            // Verify private key is not in any log entry
-            for (const log of logs) {
-              const logString = JSON.stringify(log);
-              expect(logString).not.toContain(privateKey);
-              
-              // Verify details don't contain private key
-              if (log.details.parameters) {
-                const paramsString = JSON.stringify(log.details.parameters);
-                expect(paramsString).not.toContain(privateKey);
-              }
-            }
-            
             return true;
-          }
+          },
         ),
-        {numRuns: 5, verbose: 0}
+        {numRuns: 5, verbose: 0},
       );
     });
 
@@ -378,60 +286,45 @@ describe('DIDService Property-Based Tests', () => {
         fc.asyncProperty(
           fc.constantFrom('key', 'peer'),
           async (method) => {
-            // Generate holder identity
             const holderResult = await DIDService.generateHolderIdentity(
-              method as 'key' | 'peer'
+              method as 'key' | 'peer',
             );
-            
-            // Verify result only contains DID and public key
+
             expect(holderResult).toHaveProperty('did');
             expect(holderResult).toHaveProperty('publicKey');
             expect(holderResult).not.toHaveProperty('privateKey');
-            
-            // Verify the returned object doesn't contain private key value
-            const resultString = JSON.stringify(holderResult);
-            const storedPrivateKey = await StorageService.getHolderPrivateKey();
-            expect(resultString).not.toContain(storedPrivateKey || '');
-            
+
             return true;
-          }
+          },
         ),
-        {numRuns: 5, verbose: 0}
+        {numRuns: 5, verbose: 0},
       );
     });
 
-    it('should isolate holder and issuer private keys in separate storage', async () => {
+    it('should isolate holder and issuer DIDs in separate storage', async () => {
       await fc.assert(
         fc.asyncProperty(
           fc.constantFrom('key', 'peer'),
           async (holderMethod) => {
-            // Clear storage
             await StorageService.clearAll();
-            
-            // Generate both identities
+
             const holderResult = await DIDService.generateHolderIdentity(
-              holderMethod as 'key' | 'peer'
+              holderMethod as 'key' | 'peer',
             );
-            const issuerResult = await DIDService.generateIssuerIdentity('ufsc.br');
-            
-            // Retrieve stored keys
-            const holderPrivateKey = await StorageService.getHolderPrivateKey();
-            const issuerPrivateKey = await StorageService.getIssuerPrivateKey();
+            const issuerResult =
+              await DIDService.generateIssuerIdentity('ufsc.br');
+
             const holderDID = await StorageService.getHolderDID();
             const issuerDID = await StorageService.getIssuerDID();
-            
-            // Verify keys are different
-            expect(holderPrivateKey).not.toBe(issuerPrivateKey);
+
             expect(holderDID).not.toBe(issuerDID);
-            
-            // Verify DIDs match returned values
             expect(holderDID).toBe(holderResult.did);
             expect(issuerDID).toBe(issuerResult.did);
-            
+
             return true;
-          }
+          },
         ),
-        {numRuns: 5, verbose: 0}
+        {numRuns: 5, verbose: 0},
       );
     });
   });

@@ -1,249 +1,206 @@
-import {Agent, KeyType, DidKey, DidPeer} from '@credo-ts/core';
-import {generateKeyPairSync} from 'crypto';
+import {KeyType} from '@credo-ts/core';
 import {CryptoError} from './ErrorHandler';
 import LogService from './LogService';
 import StorageService from './StorageService';
+import AgentService from './AgentService';
 
 /**
- * DIDService - Manages DID creation and key generation
- * 
- * This service handles the generation of decentralized identifiers (DIDs)
- * using different methods: did:key, did:peer, and did:web
+ * DIDService - Manages DID creation and key generation using Credo agent
+ *
+ * Uses the Credo agent's DID module (agent.dids) to create DIDs via
+ * did:key and did:peer methods, and the agent's wallet for key management.
+ * did:web is constructed locally since Credo has no did:web registrar.
  */
 class DIDService {
   /**
-   * Generates a key pair using Ed25519 algorithm
-   * Returns the private key and public key as hex strings
+   * Creates a did:key using the Credo agent.
+   * The agent generates an Ed25519 key pair and derives the DID from the public key.
    */
-  async generateKeyPair(): Promise<{privateKey: string; publicKey: string}> {
+  async createDidKey(): Promise<{did: string; verificationMethodId: string}> {
     try {
-      // Generate Ed25519 key pair using Node.js crypto
-      const {privateKey, publicKey} = generateKeyPairSync('ed25519', {
-        privateKeyEncoding: {
-          type: 'pkcs8',
-          format: 'der',
-        },
-        publicKeyEncoding: {
-          type: 'spki',
-          format: 'der',
+      const agent = await AgentService.getAgent();
+
+      const didResult = await agent.dids.create({
+        method: 'key',
+        options: {
+          keyType: KeyType.Ed25519,
         },
       });
-      
-      // Extract raw key bytes (last 32 bytes for private, last 32 for public)
-      const privateKeyRaw = privateKey.slice(-32);
-      const publicKeyRaw = publicKey.slice(-32);
-      
-      // Convert to hex strings
-      const privateKeyHex = privateKeyRaw.toString('hex');
-      const publicKeyHex = publicKeyRaw.toString('hex');
-      
-      return {
-        privateKey: privateKeyHex,
-        publicKey: publicKeyHex,
-      };
+
+      if (didResult.didState.state !== 'finished' || !didResult.didState.did) {
+        throw new CryptoError(
+          `DID creation failed: ${didResult.didState.state}`,
+          'key_generation',
+          {didState: didResult.didState},
+        );
+      }
+
+      const did = didResult.didState.did;
+      const verificationMethodId =
+        didResult.didState.didDocument?.verificationMethod?.[0]?.id ?? `${did}#key-1`;
+
+      return {did, verificationMethodId};
     } catch (error) {
-      throw new CryptoError(
-        'Failed to generate key pair',
-        'key_generation',
-        {error}
-      );
+      if (error instanceof CryptoError) {
+        throw error;
+      }
+      throw new CryptoError('Failed to create did:key', 'key_generation', {
+        error,
+      });
     }
   }
-  
+
   /**
-   * Creates a did:key from a public key
-   * did:key is a method that derives the DID directly from the public key
+   * Creates a did:peer using the Credo agent.
+   * did:peer is a peerwise DID method that doesn't require a ledger.
    */
-  createDidKey(publicKeyHex: string): string {
+  async createDidPeer(): Promise<{did: string; verificationMethodId: string}> {
     try {
-      // Convert hex to buffer
-      const publicKeyBytes = Buffer.from(publicKeyHex, 'hex');
-      
-      // Create multibase encoding (base58btc with 'z' prefix)
-      // For Ed25519 public keys, we use multicodec prefix 0xed01
-      const multicodecPrefix = Buffer.from([0xed, 0x01]);
-      const multicodecKey = Buffer.concat([multicodecPrefix, publicKeyBytes]);
-      
-      // Encode to base58btc
-      const base58Key = this.encodeBase58(multicodecKey);
-      
-      return `did:key:z${base58Key}`;
+      const agent = await AgentService.getAgent();
+
+      const didResult = await agent.dids.create({
+        method: 'peer',
+        options: {
+          keyType: KeyType.Ed25519,
+          numAlgo: 0,
+        },
+      });
+
+      if (didResult.didState.state !== 'finished' || !didResult.didState.did) {
+        throw new CryptoError(
+          `DID creation failed: ${didResult.didState.state}`,
+          'key_generation',
+          {didState: didResult.didState},
+        );
+      }
+
+      const did = didResult.didState.did;
+      const verificationMethodId =
+        didResult.didState.didDocument?.verificationMethod?.[0]?.id ?? `${did}#key-1`;
+
+      return {did, verificationMethodId};
     } catch (error) {
-      throw new CryptoError(
-        'Failed to create did:key',
-        'key_generation',
-        {error}
-      );
+      if (error instanceof CryptoError) {
+        throw error;
+      }
+      throw new CryptoError('Failed to create did:peer', 'key_generation', {
+        error,
+      });
     }
   }
-  
+
   /**
-   * Creates a did:peer for peer-to-peer communication
-   * did:peer is a method for DIDs that don't require a blockchain
-   */
-  createDidPeer(publicKeyHex: string): string {
-    try {
-      // Convert hex to buffer
-      const publicKeyBytes = Buffer.from(publicKeyHex, 'hex');
-      
-      // Create multibase encoding for the key
-      const multicodecPrefix = Buffer.from([0xed, 0x01]);
-      const multicodecKey = Buffer.concat([multicodecPrefix, publicKeyBytes]);
-      const base58Key = this.encodeBase58(multicodecKey);
-      
-      // did:peer:2 uses multibase encoded keys
-      // Format: did:peer:2.Ez<base58-encoded-key>
-      return `did:peer:2.Ez${base58Key}`;
-    } catch (error) {
-      throw new CryptoError(
-        'Failed to create did:peer',
-        'key_generation',
-        {error}
-      );
-    }
-  }
-  
-  /**
-   * Creates a did:web for web-based DID resolution
-   * did:web uses domain names for DID resolution
+   * Creates a did:web for web-based DID resolution.
+   * Credo has no did:web registrar, so we construct it locally per spec.
    */
   createDidWeb(domain: string, path?: string): string {
     try {
-      // Remove protocol if present
       const cleanDomain = domain.replace(/^https?:\/\//, '');
-      
+
       if (path) {
-        // Remove leading slash if present
         const cleanPath = path.replace(/^\//, '');
         return `did:web:${cleanDomain}:${cleanPath.replace(/\//g, ':')}`;
       }
-      
+
       return `did:web:${cleanDomain}`;
     } catch (error) {
-      throw new CryptoError(
-        'Failed to create did:web',
-        'key_generation',
-        {error}
-      );
+      throw new CryptoError('Failed to create did:web', 'key_generation', {
+        error,
+      });
     }
   }
-  
+
   /**
-   * Generates a complete holder identity (did:key or did:peer)
-   * Stores the private key securely and returns the DID
+   * Generates a complete holder identity via the Credo agent.
+   * Creates a did:key or did:peer and persists the DID string in app storage.
+   * The private key is managed inside the Credo wallet (Aries Askar).
    */
   async generateHolderIdentity(
-    method: 'key' | 'peer' = 'key'
+    method: 'key' | 'peer' = 'key',
   ): Promise<{did: string; publicKey: string}> {
     try {
-      // Generate key pair
-      const {privateKey, publicKey} = await this.generateKeyPair();
-      
-      // Create DID based on method
-      const did = method === 'key' 
-        ? this.createDidKey(publicKey)
-        : this.createDidPeer(publicKey);
-      
-      // Store private key and public key securely
-      await StorageService.storeHolderPrivateKey(privateKey, did);
-      await StorageService.storeHolderPublicKey(publicKey);
-      
-      // Log the key generation event
+      const {did, verificationMethodId} =
+        method === 'key'
+          ? await this.createDidKey()
+          : await this.createDidPeer();
+
+      // Persist the DID so the app can find it on next launch
+      await StorageService.storeHolderDID(did);
+
       LogService.logKeyGeneration(
         'titular',
         'Ed25519',
         256,
         method === 'key' ? 'did:key' : 'did:peer',
-        true
+        true,
       );
-      
-      return {did, publicKey};
+
+      // Public key is embedded in the DID itself for did:key
+      return {did, publicKey: verificationMethodId};
     } catch (error) {
-      // Log the error
       LogService.logKeyGeneration(
         'titular',
         'Ed25519',
         256,
         method === 'key' ? 'did:key' : 'did:peer',
         false,
-        error instanceof Error ? error : new Error(String(error))
+        error instanceof Error ? error : new Error(String(error)),
       );
-      
+
       throw error;
     }
   }
-  
+
   /**
-   * Generates a complete issuer identity (did:web)
-   * Stores the private key securely and returns the DID
+   * Generates a complete issuer identity.
+   * Creates a did:key for cryptographic operations and also produces a did:web
+   * identifier for the institution. The issuer's key pair lives in the Credo wallet.
    */
   async generateIssuerIdentity(
     domain: string = 'ufsc.br',
-    path?: string
+    path?: string,
   ): Promise<{did: string; publicKey: string}> {
     try {
-      // Generate key pair
-      const {privateKey, publicKey} = await this.generateKeyPair();
-      
-      // Create did:web
-      const did = this.createDidWeb(domain, path);
-      
-      // Store private key and public key securely
-      await StorageService.storeIssuerPrivateKey(privateKey, did);
-      await StorageService.storeIssuerPublicKey(publicKey);
-      
-      // Log the key generation event
+      // Create a did:key so the issuer has a signing key inside the Credo wallet
+      const {did: signingDid, verificationMethodId} =
+        await this.createDidKey();
+
+      // Build the public did:web identifier
+      const didWeb = this.createDidWeb(domain, path);
+
+      // Store the mapping: did:web -> signing did:key
+      await StorageService.storeIssuerDID(didWeb);
+      await StorageService.storeIssuerSigningDid(signingDid);
+
       LogService.logKeyGeneration(
         'emissor',
         'Ed25519',
         256,
         'did:web',
-        true
+        true,
       );
-      
-      return {did, publicKey};
+
+      return {did: didWeb, publicKey: verificationMethodId};
     } catch (error) {
-      // Log the error
       LogService.logKeyGeneration(
         'emissor',
         'Ed25519',
         256,
         'did:web',
         false,
-        error instanceof Error ? error : new Error(String(error))
+        error instanceof Error ? error : new Error(String(error)),
       );
-      
+
       throw error;
     }
   }
-  
+
   /**
-   * Base58 encoding helper
+   * Resolves a DID to its DID Document using the Credo agent.
    */
-  private encodeBase58(buffer: Buffer): string {
-    const ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
-    const BASE = BigInt(58);
-    
-    // Convert buffer to BigInt
-    let num = BigInt('0x' + buffer.toString('hex'));
-    
-    if (num === BigInt(0)) {
-      return ALPHABET[0];
-    }
-    
-    let encoded = '';
-    while (num > BigInt(0)) {
-      const remainder = num % BASE;
-      num = num / BASE;
-      encoded = ALPHABET[Number(remainder)] + encoded;
-    }
-    
-    // Add leading '1's for leading zero bytes
-    for (let i = 0; i < buffer.length && buffer[i] === 0; i++) {
-      encoded = ALPHABET[0] + encoded;
-    }
-    
-    return encoded;
+  async resolveDid(did: string) {
+    const agent = await AgentService.getAgent();
+    return agent.dids.resolve(did);
   }
 }
 

@@ -121,7 +121,7 @@ describe('Range Proof Integration Tests', () => {
 
       expect(presentation).toBeDefined();
       expect(presentation.type).toContain('VerifiablePresentation');
-      expect(presentation.proof.type).toBe('AnonCredsProof');
+      expect(presentation.proof.type).toBe('Groth16Proof');
       expect(presentation.zkp_proofs).toBeDefined();
       expect(presentation.zkp_proofs!.length).toBe(1);
 

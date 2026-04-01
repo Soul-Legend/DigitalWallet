@@ -1,8 +1,8 @@
 import {StudentData, VerifiableCredential} from '../types';
 import DIDService from './DIDService';
-import CryptoService from './CryptoService';
 import StorageService from './StorageService';
 import LogService from './LogService';
+import AgentService from './AgentService';
 import {CryptoError, ValidationError} from './ErrorHandler';
 
 /**
@@ -165,68 +165,68 @@ class CredentialService {
 
   /**
    * Signs a credential and formats it as SD-JWT
-   * SD-JWT allows selective disclosure of attributes
+   * Uses the Credo agent's wallet for Ed25519 signing
    */
   private async signCredentialAsSDJWT(
     credential: VerifiableCredential,
     issuerDID: string,
   ): Promise<string> {
     try {
-      // Get issuer's private key
-      const privateKey = await StorageService.getIssuerPrivateKey();
+      const agent = await AgentService.getAgent();
 
-      if (!privateKey) {
+      // Resolve the issuer's signing DID (did:key) to get the key reference
+      const signingDid = await StorageService.getIssuerSigningDid();
+      if (!signingDid) {
         throw new CryptoError(
-          'Issuer private key not found',
+          'Issuer signing DID not found',
           'signature',
           {},
         );
       }
 
-      // For SD-JWT, we create a JWT with the credential as payload
-      // In a full implementation, we would use @sd-jwt/sd-jwt-vc library
-      // For the MVP, we'll create a simplified JWT structure
+      const didResult = await agent.dids.resolve(signingDid);
+      const verificationMethod =
+        didResult.didDocument?.verificationMethod?.[0];
+      if (!verificationMethod) {
+        throw new CryptoError(
+          'No verification method found for issuer DID',
+          'signature',
+          {},
+        );
+      }
 
-      // Create JWT payload
+      // Build JWT payload
       const payload = {
         vc: credential,
         iss: issuerDID,
         sub: credential.credentialSubject.id,
         iat: Math.floor(Date.now() / 1000),
-        exp: Math.floor(Date.now() / 1000) + 365 * 24 * 60 * 60, // 1 year
+        exp: Math.floor(Date.now() / 1000) + 365 * 24 * 60 * 60,
       };
 
-      // Convert payload to JSON string
-      const payloadString = JSON.stringify(payload);
-
-      // Create a simplified SD-JWT structure
-      // Format: header.payload.signature
       const header = {
         alg: 'EdDSA',
         typ: 'JWT',
-        kid: `${issuerDID}#key-1`,
+        kid: verificationMethod.id,
       };
 
       const headerBase64 = Buffer.from(JSON.stringify(header)).toString(
         'base64url',
       );
-      const payloadBase64 = Buffer.from(payloadString).toString('base64url');
-
-      // Sign the header.payload (not just the payload)
-      const dataToSign = `${headerBase64}.${payloadBase64}`;
-      const signature = await CryptoService.signData(
-        dataToSign,
-        privateKey,
-        'emissor',
-      );
-
-      const signatureBase64 = Buffer.from(signature, 'hex').toString(
+      const payloadBase64 = Buffer.from(JSON.stringify(payload)).toString(
         'base64url',
       );
 
-      const jwt = `${headerBase64}.${payloadBase64}.${signatureBase64}`;
+      const dataToSign = Buffer.from(`${headerBase64}.${payloadBase64}`);
 
-      return jwt;
+      // Sign using the Credo agent wallet
+      const {signature} = await agent.wallet.sign({
+        data: dataToSign,
+        key: verificationMethod.publicKey,
+      });
+
+      const signatureBase64 = Buffer.from(signature).toString('base64url');
+      return `${headerBase64}.${payloadBase64}.${signatureBase64}`;
     } catch (error) {
       throw new CryptoError(
         'Failed to sign credential as SD-JWT',
@@ -237,30 +237,44 @@ class CredentialService {
   }
 
   /**
-   * Signs a credential and formats it as AnonCreds
-   * AnonCreds supports zero-knowledge proofs
+   * Signs a credential and formats it as AnonCreds.
+   *
+   * Uses the Credo agent's wallet to sign the credential envelope.
+   * The full AnonCreds flow (schema registration, credential definition on a
+   * ledger) requires an AnonCreds registry connected to a verifiable data
+   * registry (e.g. Indy VDR). Because this app operates locally without a
+   * ledger, we build an AnonCreds-shaped envelope and sign it with the
+   * agent's Ed25519 key via Aries Askar.
    */
   private async signCredentialAsAnonCreds(
     credential: VerifiableCredential,
     _issuerDID: string,
   ): Promise<string> {
     try {
-      // Get issuer's private key
-      const privateKey = await StorageService.getIssuerPrivateKey();
+      const agent = await AgentService.getAgent();
 
-      if (!privateKey) {
+      const signingDid = await StorageService.getIssuerSigningDid();
+      if (!signingDid) {
         throw new CryptoError(
-          'Issuer private key not found',
+          'Issuer signing DID not found',
           'signature',
           {},
         );
       }
 
-      // For AnonCreds, we would use @hyperledger/anoncreds-react-native
-      // For the MVP, we'll create a simplified structure that mimics AnonCreds
+      const didResult = await agent.dids.resolve(signingDid);
+      const verificationMethod =
+        didResult.didDocument?.verificationMethod?.[0];
+      if (!verificationMethod) {
+        throw new CryptoError(
+          'No verification method found for issuer DID',
+          'signature',
+          {},
+        );
+      }
 
-      // Create AnonCreds-style credential
-      const anonCredsCredential = {
+      // Build AnonCreds-style credential envelope
+      const anonCredsCredential: Record<string, any> = {
         schema_id: 'did:web:ufsc.br:schemas:academic-id:1.0',
         cred_def_id: 'did:web:ufsc.br:cred-defs:academic-id:1.0',
         values: this.encodeAttributesForAnonCreds(
@@ -275,21 +289,20 @@ class CredentialService {
         witness: null,
       };
 
-      // Sign the credential structure
-      const credentialString = JSON.stringify(anonCredsCredential);
-      const signature = await CryptoService.signData(
-        credentialString,
-        privateKey,
-        'emissor',
+      // Sign the credential payload using the Credo agent wallet
+      const credentialBytes = Buffer.from(
+        JSON.stringify(anonCredsCredential),
       );
+      const {signature} = await agent.wallet.sign({
+        data: credentialBytes,
+        key: verificationMethod.publicKey,
+      });
 
-      // Add signature to the credential
       anonCredsCredential.signature = {
-        p_credential: {signature},
+        p_credential: {signature: Buffer.from(signature).toString('hex')},
         r_credential: {},
       };
 
-      // Return as JSON string
       return JSON.stringify(anonCredsCredential);
     } catch (error) {
       throw new CryptoError(

@@ -8,6 +8,8 @@ import {ValidationError} from './ErrorHandler';
 import LogService from './LogService';
 import CryptoService from './CryptoService';
 import StorageService from './StorageService';
+import ZKProofService from './ZKProofService';
+import type {CircomProofResult} from 'mopro-ffi';
 
 /**
  * PresentationService - Handles presentation request processing and generation
@@ -492,7 +494,7 @@ class PresentationService {
   }
 
   /**
-   * Creates a verifiable presentation with ZKP (Zero-Knowledge Proofs) using AnonCreds
+   * Creates a verifiable presentation with ZKP (Zero-Knowledge Proofs) using mopro/Circom
    * @param credential - The credential to present
    * @param pexRequest - The PEX request
    * @param predicates - Predicates to prove (e.g., age >= 18, status == 'Ativo')
@@ -504,16 +506,6 @@ class PresentationService {
     predicates: Array<{attribute: string; p_type: string; value: any}>,
   ): Promise<VerifiablePresentation> {
     try {
-      // Get holder's private key
-      const holderPrivateKey = await StorageService.getHolderPrivateKey();
-      if (!holderPrivateKey) {
-        throw new ValidationError(
-          'Chave privada do titular não encontrada',
-          'holder_private_key',
-          undefined,
-        );
-      }
-
       // Log start of ZKP generation
       LogService.captureEvent(
         'zkp_generation',
@@ -528,34 +520,36 @@ class PresentationService {
         true,
       );
 
-      // Generate ZKP proofs for each predicate
+      // Generate mopro ZKP proofs for each predicate
       const zkpProofs = await this.generateZKPProofs(
         credential,
         predicates,
-        holderPrivateKey,
       );
 
       // Generate nullifier if this is an election scenario
       let nullifier: string | undefined;
       if (pexRequest.election_id) {
-        nullifier = await this.generateNullifier(
-          holderPrivateKey,
-          pexRequest.election_id,
-        );
+        const holderPrivateKey = await StorageService.getHolderPrivateKey();
+        if (holderPrivateKey) {
+          nullifier = await this.generateNullifier(
+            holderPrivateKey,
+            pexRequest.election_id,
+          );
 
-        // Log nullifier generation
-        LogService.captureEvent(
-          'hash_computation',
-          'titular',
-          {
-            parameters: {
-              action: 'nullifier_generated',
-              election_id: pexRequest.election_id,
-              nullifier_truncated: nullifier.substring(0, 16) + '...',
+          // Log nullifier generation
+          LogService.captureEvent(
+            'hash_computation',
+            'titular',
+            {
+              parameters: {
+                action: 'nullifier_generated',
+                election_id: pexRequest.election_id,
+                nullifier_truncated: nullifier.substring(0, 16) + '...',
+              },
             },
-          },
-          true,
-        );
+            true,
+          );
+        }
       }
 
       // Create basic presentation structure
@@ -578,7 +572,7 @@ class PresentationService {
           proof: credential.proof,
         } as any,
         proof: {
-          type: 'AnonCredsProof',
+          type: 'Groth16Proof',
           created: new Date().toISOString(),
           challenge: pexRequest.challenge,
           proofPurpose: 'authentication',
@@ -597,23 +591,6 @@ class PresentationService {
         zkp_proofs: zkpProofs,
         nullifier,
       };
-
-      // Sign the presentation
-      const presentationString = JSON.stringify({
-        '@context': presentation['@context'],
-        type: presentation.type,
-        holder: presentation.holder,
-        verifiableCredential: presentation.verifiableCredential,
-        zkp_proofs: zkpProofs,
-      });
-
-      const signature = await CryptoService.signData(
-        presentationString,
-        holderPrivateKey,
-        'titular',
-      );
-
-      presentation.proof.signature = signature;
 
       // Log ZKP generation success
       LogService.captureEvent(
@@ -649,19 +626,19 @@ class PresentationService {
   }
 
   /**
-   * Generates ZKP proofs for predicates using AnonCreds-style proofs
-   * This is a simplified implementation that demonstrates the concept
-   * In production, this would use @hyperledger/anoncreds-react-native
+   * Generates ZKP proofs for predicates using mopro/Circom Groth16 proofs
+   * 
+   * Each predicate is mapped to a corresponding Circom circuit:
+   * - Age/date predicates → age_range circuit
+   * - Status/equality predicates → status_check circuit
    * 
    * @param credential - The credential containing attributes
    * @param predicates - Predicates to prove
-   * @param privateKey - Holder's private key for signing
-   * @returns Array of ZKP proofs
+   * @returns Array of ZKP proofs with mopro CircomProofResult data
    */
   private async generateZKPProofs(
     credential: VerifiableCredential,
     predicates: Array<{attribute: string; p_type: string; value: any}>,
-    privateKey: string,
   ): Promise<any[]> {
     const proofs: any[] = [];
 
@@ -678,21 +655,37 @@ class PresentationService {
           );
         }
 
-        // Evaluate the predicate
+        // Evaluate the predicate locally (for the satisfied flag)
         const predicateSatisfied = this.evaluatePredicate(
           attributeValue,
           predicate.p_type,
           predicate.value,
         );
 
-        // Generate proof commitment (hash of attribute + random nonce)
-        const nonce = CryptoService.generateNonce();
-        const commitment = await CryptoService.computeHash(
-          `${predicate.attribute}:${attributeValue}:${nonce}`,
-          'titular',
-        );
+        // Generate the actual ZK proof using mopro based on predicate type
+        let circomProofResult: CircomProofResult;
 
-        // Create proof structure (simplified AnonCreds-style)
+        if (this.isDateAttribute(attributeValue) && typeof predicate.value === 'number') {
+          // Age range proof - proves age >= threshold without revealing birthdate
+          circomProofResult = await ZKProofService.generateAgeRangeProof(
+            attributeValue,
+            predicate.value,
+          );
+        } else if (predicate.p_type === '==' || predicate.p_type === '!=') {
+          // Status/equality check proof
+          circomProofResult = await ZKProofService.generateStatusCheckProof(
+            String(attributeValue),
+            String(predicate.value),
+          );
+        } else {
+          // For other predicate types, use age_range circuit with numeric values
+          circomProofResult = await ZKProofService.generateAgeRangeProof(
+            attributeValue,
+            predicate.value,
+          );
+        }
+
+        // Create proof structure with mopro proof data
         const proof = {
           predicate: {
             attr_name: predicate.attribute,
@@ -700,19 +693,8 @@ class PresentationService {
             value: predicate.value,
           },
           proof_data: {
-            commitment,
-            nonce_hash: await CryptoService.computeHash(nonce, 'titular'),
-            // In real AnonCreds, this would contain cryptographic proof elements
-            // For MVP, we use a signature-based approach
-            signature: await CryptoService.signData(
-              JSON.stringify({
-                predicate,
-                commitment,
-                satisfied: predicateSatisfied,
-              }),
-              privateKey,
-              'titular',
-            ),
+            circom_proof: circomProofResult.proof,
+            public_inputs: circomProofResult.inputs,
           },
           revealed_attrs: [], // ZKP doesn't reveal actual values
           predicate_satisfied: predicateSatisfied,
@@ -730,6 +712,7 @@ class PresentationService {
               attribute: predicate.attribute,
               p_type: predicate.p_type,
               satisfied: predicateSatisfied,
+              proof_system: 'groth16',
             },
           },
           true,
@@ -754,6 +737,13 @@ class PresentationService {
     }
 
     return proofs;
+  }
+
+  /**
+   * Checks if an attribute value is a date string (YYYY-MM-DD format)
+   */
+  private isDateAttribute(value: any): boolean {
+    return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value);
   }
 
   /**
@@ -811,23 +801,38 @@ class PresentationService {
   }
 
   /**
-   * Generates a deterministic nullifier for election scenarios
-   * Nullifier = hash(holder_private_key + election_id)
-   * This ensures the same credential produces the same nullifier for the same election
-   * but different nullifiers for different elections
+   * Generates a deterministic nullifier for election scenarios using mopro ZK proof
    * 
-   * @param holderPrivateKey - The holder's private key
+   * Uses a Circom circuit to compute: nullifier = hash(holder_secret, election_id)
+   * inside the ZK circuit, ensuring the nullifier is deterministic but unlinkable.
+   * 
+   * Falls back to SHA-256 hash if the nullifier circuit is not available.
+   * 
+   * @param holderPrivateKey - The holder's private key (used as secret input)
    * @param electionId - The unique election identifier
-   * @returns Deterministic nullifier hash
+   * @returns Deterministic nullifier string
    */
   private async generateNullifier(
     holderPrivateKey: string,
     electionId: string,
   ): Promise<string> {
     try {
-      // Compute deterministic hash: hash(private_key + election_id)
-      // This ensures same credential + same election = same nullifier
-      // but different elections or different credentials = different nullifiers
+      // Try to use mopro ZK nullifier circuit
+      const isAvailable = await ZKProofService.isCircuitAvailable('nullifier');
+
+      if (isAvailable) {
+        const proofResult = await ZKProofService.generateNullifierProof(
+          holderPrivateKey,
+          electionId,
+        );
+
+        const nullifier = ZKProofService.extractNullifier(proofResult);
+        if (nullifier) {
+          return nullifier;
+        }
+      }
+
+      // Fallback: compute deterministic hash if circuit not available
       const nullifier = await CryptoService.computeCompositeHash(
         [holderPrivateKey, electionId],
         'titular',

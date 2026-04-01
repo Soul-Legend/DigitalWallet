@@ -1,4 +1,6 @@
 .kiro/
+docs/libs_Docs
+.github/
 
 # OSX
 .DS_Store
