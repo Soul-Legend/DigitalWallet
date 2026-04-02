@@ -48,19 +48,14 @@ npm cache clean --force
 # Remova node_modules e package-lock.json
 rm -rf node_modules package-lock.json
 
-# Reinstale
-npm install
-
-# Se ainda falhar, tente com --legacy-peer-deps
+# Reinstale com --legacy-peer-deps (necessário porque @credo-ts e @hyperledger têm peer dependencies conflitantes)
 npm install --legacy-peer-deps
 ```
 
-**Dependências problemáticas conhecidas**:
-- `mopro-react-native-package`: Pode precisar de repositório específico
-- `eudi-wallet-kit-react-native`: Pode estar em desenvolvimento
-- `react-native-secure-sign`: Pode precisar de configuração adicional
-
-**Workaround temporário**: Comente essas dependências no `package.json` e use mocks.
+**Dependências que podem causar problemas**:
+- `mopro-ffi` (github:zkmopro/mopro-react-native-package): Requer acesso ao repositório GitHub
+- `@openwallet-foundation/eudi-wallet-kit-react-native`: Pode não estar publicada no npm; o módulo é carregado dinamicamente e o app funciona sem ele
+- `@hyperledger/anoncreds-react-native` e `@hyperledger/aries-askar-react-native`: Dependem de bindings nativos compilados para Android
 
 ---
 
@@ -209,8 +204,8 @@ npm start
 ```
 
 **Erros comuns**:
-- Chave privada não encontrada: Delete dados do app e reinicie
-- Erro de permissão: Verifique permissões no AndroidManifest.xml
+- Agente Credo falha ao inicializar: verifique se os bindings nativos do Askar estão compilados corretamente. Rebuild com `cd android && ./gradlew clean && cd .. && npm run android`
+- Wallet não abre: pode ocorrer se a key derivation falhar. Delete dados do app e reinicie
 - Biblioteca nativa não carregada: Rebuild completo
 
 ---
@@ -311,12 +306,24 @@ console.log('Request:', JSON.stringify(request, null, 2));
 
 **Para testar novamente**:
 ```typescript
-// Limpe os nullifiers no AppStore
-useAppStore.getState().clearNullifiers();
-
-// Ou limpe os dados do app:
+// Limpe os dados do app:
 // Configurações > Apps > Carteira > Limpar dados
+// Ou via ADB:
+// adb shell pm clear com.carteiraidentidadeacademica
 ```
+
+---
+
+### AnonCreds: credencial não é processada
+
+**Sintoma**: Credencial AnonCreds não é aceita pelo titular
+
+**Causa**: Artefatos AnonCreds (schema, credential definition, link secret) ausentes do storage
+
+**Solução**:
+- Os artefatos são persistidos automaticamente pelo `AnonCredsService.issueCredentialFull()` no StorageService com prefixo `anoncreds_`
+- Se o storage foi limpo entre emissão e apresentação, a credencial não pode ser usada porque o link secret é perdido
+- Emita novamente a credencial no mesmo dispositivo
 
 ---
 
@@ -350,39 +357,35 @@ console.log('Idade calculada:', age);
 **Solução**:
 ```typescript
 // Verifique se LogService está sendo chamado:
-import { LogService } from './services/LogService';
+import LogService from './services/LogService';
 
 // Após operação:
-LogService.captureEvent({
-  operation: 'test',
-  module: 'titular',
-  details: {},
-  success: true
-});
+LogService.captureEvent(
+  'test',        // operation
+  'titular',     // module
+  {},            // details
+  true           // success
+);
 
-// Verifique o store:
-console.log('Logs:', useAppStore.getState().logs);
+// Verifique os logs:
+console.log('Logs:', LogService.getLogs());
 ```
 
 ---
 
 ## Problemas de Performance
 
-### Operações ZKP muito lentas
+### Operações ZKP lentas
 
-**Sintoma**: Geração de provas ZKP leva mais de 5 segundos
+**Sintoma**: Geração de provas Groth16 leva vários segundos
 
-**Causa**: Operações criptográficas intensivas
+**Causa**: Groth16 proving é computacionalmente intensivo, especialmente em dispositivos móveis. O ZKProofService usa `mopro-ffi` que executa circuitos Circom nativamente.
 
-**Solução**:
-1. **Esperado**: ZKP são computacionalmente intensivas
-2. **Otimização**: Use mopro-react-native-package quando disponível
-3. **Workaround**: Mostre indicador de loading claro
-
-**Melhorias futuras**:
-- Otimização de circuitos
-- Uso de hardware acelerado
-- Pré-computação quando possível
+**Notas**:
+1. Isso é comportamento esperado para provas Groth16
+2. Os circuitos requerem arquivos `.zkey` (age_range_final.zkey, status_check_final.zkey, nullifier_final.zkey) presentes na build
+3. Se `isCircuitAvailable()` retorna `false`, o arquivo `.zkey` não foi encontrado
+4. O indicador de loading na UI deve estar visível durante a geração
 
 ---
 

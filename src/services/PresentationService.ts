@@ -9,6 +9,7 @@ import LogService from './LogService';
 import CryptoService from './CryptoService';
 import StorageService from './StorageService';
 import ZKProofService from './ZKProofService';
+import AnonCredsService from './AnonCredsService';
 import type {CircomProofResult} from 'mopro-ffi';
 
 /**
@@ -852,6 +853,185 @@ class PresentationService {
         error instanceof Error ? error : new Error(String(error)),
       );
 
+      throw error;
+    }
+  }
+
+  /**
+   * Creates an AnonCreds presentation with CL-signature based ZKP.
+   *
+   * This provides native AnonCreds selective disclosure and predicate proofs
+   * using the @hyperledger/anoncreds-react-native library.  Every presentation
+   * created this way is cryptographically unlinkable (desvinculabilidade).
+   *
+   * @param credentialToken - The raw AnonCreds credential token (JSON envelope)
+   * @param pexRequest      - PEX request describing what to reveal / prove
+   * @param revealedAttrs   - Attribute names the holder consents to disclose
+   * @param predicates      - Predicates to prove (e.g., age >= 18)
+   */
+  async createAnonCredsPresentation(
+    credentialToken: string,
+    pexRequest: PresentationExchangeRequest,
+    revealedAttrs: string[],
+    predicates: Array<{attribute: string; p_type: '>=' | '<=' | '>' | '<'; value: number}>,
+  ): Promise<VerifiablePresentation> {
+    try {
+      const envelope = JSON.parse(credentialToken);
+      if (envelope.format !== 'anoncreds' || !envelope.credential) {
+        throw new ValidationError(
+          'Token is not an AnonCreds envelope',
+          'format',
+          envelope.format,
+        );
+      }
+
+      // Recover artifact references from storage
+      const schemaArtifact = await StorageService.getRawItem(
+        `anoncreds_schema_${envelope.schema_id}`,
+      );
+      const credDefArtifact = await StorageService.getRawItem(
+        `anoncreds_creddef_${envelope.cred_def_id}`,
+      );
+
+      if (!schemaArtifact || !credDefArtifact) {
+        throw new ValidationError(
+          'AnonCreds schema or cred def not found in storage',
+          'artifacts',
+          undefined,
+        );
+      }
+
+      const schema = JSON.parse(schemaArtifact);
+      const credDef = JSON.parse(credDefArtifact);
+
+      // Holder's link secret
+      const {linkSecret} = await AnonCredsService.getOrCreateLinkSecret();
+
+      // Build AnonCreds presentation request
+      const nonce = String(Date.now());
+      const requestedAttributes: Record<string, {name: string}> = {};
+      revealedAttrs.forEach((attr, i) => {
+        requestedAttributes[`attr_${i}`] = {name: attr};
+      });
+
+      const requestedPredicates: Record<
+        string,
+        {name: string; p_type: '>=' | '<=' | '>' | '<'; p_value: number}
+      > = {};
+      predicates.forEach((pred, i) => {
+        requestedPredicates[`pred_${i}`] = {
+          name: pred.attribute,
+          p_type: pred.p_type,
+          p_value: pred.value,
+        };
+      });
+
+      const presRequest = AnonCredsService.buildPredicateRequest(
+        pexRequest.presentation_definition?.id || 'presentation',
+        nonce,
+        requestedAttributes,
+        requestedPredicates,
+      );
+
+      // Build credentialsProve entries: reveal all requested attributes + predicates
+      const credentialsProve: Array<{
+        entryIndex: number;
+        referent: string;
+        isPredicate: boolean;
+        reveal: boolean;
+      }> = [];
+
+      revealedAttrs.forEach((_attr, i) => {
+        credentialsProve.push({
+          entryIndex: 0,
+          referent: `attr_${i}`,
+          isPredicate: false,
+          reveal: true,
+        });
+      });
+      predicates.forEach((_pred, i) => {
+        credentialsProve.push({
+          entryIndex: 0,
+          referent: `pred_${i}`,
+          isPredicate: true,
+          reveal: false,
+        });
+      });
+
+      // Create the AnonCreds presentation (CL-signature ZKP)
+      const anonCredsPresentation = AnonCredsService.createPresentation(
+        presRequest,
+        [{credential: envelope.credential}],
+        credentialsProve,
+        linkSecret,
+        {[envelope.schema_id]: schema.schema},
+        {[envelope.cred_def_id]: credDef.credDef},
+      );
+
+      // Wrap in VerifiablePresentation envelope
+      const presentation: VerifiablePresentation = {
+        '@context': [
+          'https://www.w3.org/2018/credentials/v1',
+          'https://identity.foundation/presentation-exchange/submission/v1',
+        ],
+        type: ['VerifiablePresentation', 'AnonCredsPresentationSubmission'],
+        holder: envelope.credential?.values?.id?.raw || '',
+        verifiableCredential: credentialToken,
+        proof: {
+          type: 'CLSignature2023',
+          created: new Date().toISOString(),
+          challenge: pexRequest.challenge,
+          proofPurpose: 'authentication',
+          verificationMethod: envelope.cred_def_id,
+        },
+        disclosed_attributes: {},
+        zkp_proof: {
+          proof_data: anonCredsPresentation,
+          revealed_attrs: revealedAttrs,
+          predicates: predicates.map(p => ({
+            attr_name: p.attribute,
+            p_type: p.p_type,
+            value: p.value,
+            satisfied: true,
+          })),
+        },
+      };
+
+      // Extract revealed values from the AnonCreds presentation
+      const revealedValues =
+        (anonCredsPresentation as any)?.requested_proof?.revealed_attrs || {};
+      for (const [_referent, data] of Object.entries(revealedValues)) {
+        const attrData = data as {raw: string};
+        if (attrData?.raw) {
+          presentation.disclosed_attributes =
+            presentation.disclosed_attributes || {};
+          presentation.disclosed_attributes[_referent] = attrData.raw;
+        }
+      }
+
+      LogService.captureEvent(
+        'presentation_creation',
+        'titular',
+        {
+          algorithm: 'CL',
+          parameters: {
+            action: 'anoncreds_presentation_created',
+            revealed_count: revealedAttrs.length,
+            predicates_count: predicates.length,
+          },
+        },
+        true,
+      );
+
+      return presentation;
+    } catch (error) {
+      LogService.captureEvent(
+        'presentation_creation',
+        'titular',
+        {parameters: {action: 'anoncreds_presentation_failed'}},
+        false,
+        error instanceof Error ? error : new Error(String(error)),
+      );
       throw error;
     }
   }

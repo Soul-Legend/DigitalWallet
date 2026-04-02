@@ -1,37 +1,54 @@
-import {createHash, sign, verify} from 'crypto';
+// @ts-ignore crypto-js has no type declarations
+import CryptoJS from 'crypto-js';
+import * as ed from '@noble/ed25519';
+import {sha512} from '@noble/hashes/sha512';
 import {CryptoError} from './ErrorHandler';
 import LogService from './LogService';
+
+// @noble/ed25519 v3+ requires configuring SHA-512 for sync operations
+ed.hashes.sha512 = (...m: Uint8Array[]) => sha512(ed.etc.concatBytes(...m)) as ed.Bytes;
 
 /**
  * CryptoService - Handles cryptographic operations
  *
- * This service provides functions for:
- * - Hash computation (SHA-256)
- * - Digital signatures (EdDSA/Ed25519)
- * - Signature verification
+ * Uses crypto-js for SHA-256 hashing and @noble/ed25519 for signatures.
+ * Both are pure JavaScript libraries that work on React Native (Hermes).
  */
+
+function toHex(bytes: Uint8Array): string {
+  return Array.from(bytes)
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
+}
+
+function fromHex(hex: string): Uint8Array {
+  const bytes = new Uint8Array(hex.length / 2);
+  for (let i = 0; i < hex.length; i += 2) {
+    bytes[i / 2] = parseInt(hex.substr(i, 2), 16);
+  }
+  return bytes;
+}
+
 class CryptoService {
   /**
    * Computes SHA-256 hash of input data
-   * @param data - Data to hash (string or Buffer)
-   * @param module - Module calling this function (for logging)
-   * @returns Hex-encoded hash string
    */
   async computeHash(
-    data: string | Buffer,
+    data: string | Uint8Array,
     module: 'emissor' | 'titular' | 'verificador' = 'titular',
   ): Promise<string> {
     try {
-      const hash = createHash('sha256');
-      hash.update(data);
-      const hashOutput = hash.digest('hex');
+      const input = typeof data === 'string' ? data : toHex(data);
+      const hashOutput =
+        typeof data === 'string'
+          ? CryptoJS.SHA256(data).toString(CryptoJS.enc.Hex)
+          : CryptoJS.SHA256(CryptoJS.enc.Hex.parse(input)).toString(
+              CryptoJS.enc.Hex,
+            );
 
-      // Log the hash computation
       LogService.logHashComputation(module, 'SHA-256', hashOutput, true);
-
       return hashOutput;
     } catch (error) {
-      // Log the error
       LogService.logHashComputation(
         module,
         'SHA-256',
@@ -39,60 +56,33 @@ class CryptoService {
         false,
         error instanceof Error ? error : new Error(String(error)),
       );
-
       throw new CryptoError('Failed to compute hash', 'hash', {error});
     }
   }
 
   /**
-   * Signs data using Ed25519 private key
-   * @param data - Data to sign
-   * @param privateKeyHex - Private key in hex format
-   * @param module - Module calling this function (for logging)
-   * @returns Signature as hex string
+   * Signs data using Ed25519 private key via @noble/ed25519
    */
   async signData(
-    data: string | Buffer,
+    data: string | Uint8Array,
     privateKeyHex: string,
     module: 'emissor' | 'titular' | 'verificador' = 'emissor',
   ): Promise<string> {
     try {
-      // Convert hex private key to buffer
-      const privateKeyBytes = Buffer.from(privateKeyHex, 'hex');
+      const privateKeyBytes = fromHex(privateKeyHex);
+      const dataBytes =
+        typeof data === 'string' ? new TextEncoder().encode(data) : data;
 
-      // Create PKCS8 DER format for Ed25519 private key
-      // This is the format expected by Node.js crypto.sign
-      const pkcs8Header = Buffer.from([
-        0x30, 0x2e, // SEQUENCE, length 46
-        0x02, 0x01, 0x00, // INTEGER version 0
-        0x30, 0x05, // SEQUENCE, length 5
-        0x06, 0x03, 0x2b, 0x65, 0x70, // OID 1.3.101.112 (Ed25519)
-        0x04, 0x22, // OCTET STRING, length 34
-        0x04, 0x20, // OCTET STRING, length 32
-      ]);
+      const signature = await ed.signAsync(dataBytes, privateKeyBytes);
+      const signatureHex = toHex(signature);
 
-      const privateKeyDER = Buffer.concat([pkcs8Header, privateKeyBytes]);
-
-      // Create private key object
-      const privateKeyObject = {
-        key: privateKeyDER,
-        format: 'der' as const,
-        type: 'pkcs8' as const,
-      };
-
-      // Sign the data
-      const dataBuffer = typeof data === 'string' ? Buffer.from(data) : data;
-      const signature = sign(null, dataBuffer, privateKeyObject);
-      const signatureHex = signature.toString('hex');
-
-      // Log the signature operation (without revealing the signature itself)
       LogService.captureEvent(
         'credential_issuance',
         module,
         {
           algorithm: 'Ed25519',
           parameters: {
-            data_length: dataBuffer.length,
+            data_length: dataBytes.length,
             signature_length: signature.length,
           },
         },
@@ -101,70 +91,45 @@ class CryptoService {
 
       return signatureHex;
     } catch (error) {
-      // Log the error
       LogService.captureEvent(
         'credential_issuance',
         module,
-        {
-          algorithm: 'Ed25519',
-        },
+        {algorithm: 'Ed25519'},
         false,
         error instanceof Error ? error : new Error(String(error)),
       );
-
       throw new CryptoError('Failed to sign data', 'signature', {error});
     }
   }
 
   /**
-   * Verifies a signature using Ed25519 public key
-   * @param data - Original data that was signed
-   * @param signatureHex - Signature in hex format
-   * @param publicKeyHex - Public key in hex format
-   * @param _module - Module calling this function (for logging)
-   * @returns True if signature is valid, false otherwise
+   * Verifies a signature using Ed25519 public key via @noble/ed25519
    */
   async verifySignature(
-    data: string | Buffer,
+    data: string | Uint8Array,
     signatureHex: string,
     publicKeyHex: string,
     _module: 'emissor' | 'titular' | 'verificador' = 'verificador',
   ): Promise<boolean> {
     try {
-      // Convert hex strings to buffers
-      const publicKeyBytes = Buffer.from(publicKeyHex, 'hex');
-      const signatureBytes = Buffer.from(signatureHex, 'hex');
+      const publicKeyBytes = fromHex(publicKeyHex);
+      const signatureBytes = fromHex(signatureHex);
+      const dataBytes =
+        typeof data === 'string' ? new TextEncoder().encode(data) : data;
 
-      // Create SPKI DER format for Ed25519 public key
-      const spkiHeader = Buffer.from([
-        0x30, 0x2a, // SEQUENCE, length 42
-        0x30, 0x05, // SEQUENCE, length 5
-        0x06, 0x03, 0x2b, 0x65, 0x70, // OID 1.3.101.112 (Ed25519)
-        0x03, 0x21, 0x00, // BIT STRING, length 33, no unused bits
-      ]);
+      const isValid = await ed.verifyAsync(
+        signatureBytes,
+        dataBytes,
+        publicKeyBytes,
+      );
 
-      const publicKeyDER = Buffer.concat([spkiHeader, publicKeyBytes]);
-
-      // Create public key object
-      const publicKeyObject = {
-        key: publicKeyDER,
-        format: 'der' as const,
-        type: 'spki' as const,
-      };
-
-      // Verify the signature
-      const dataBuffer = typeof data === 'string' ? Buffer.from(data) : data;
-      const isValid = verify(null, dataBuffer, publicKeyObject, signatureBytes);
-
-      // Log the verification
       LogService.logVerification('Ed25519', isValid, true, {
-        data_length: dataBuffer.length,
+        data_length: dataBytes.length,
         signature_length: signatureBytes.length,
       });
 
       return isValid;
     } catch (error) {
-      // Log the error
       LogService.logVerification(
         'Ed25519',
         false,
@@ -172,7 +137,6 @@ class CryptoService {
         undefined,
         error instanceof Error ? error : new Error(String(error)),
       );
-
       throw new CryptoError('Failed to verify signature', 'verification', {
         error,
       });
@@ -181,27 +145,22 @@ class CryptoService {
 
   /**
    * Computes SHA-256 hash of multiple values concatenated
-   * Useful for computing nullifiers and other composite hashes
    */
   async computeCompositeHash(
-    values: (string | Buffer)[],
+    values: (string | Uint8Array)[],
     module: 'emissor' | 'titular' | 'verificador' = 'titular',
   ): Promise<string> {
     try {
-      const hash = createHash('sha256');
-
+      let combined = '';
       for (const value of values) {
-        hash.update(value);
+        combined +=
+          typeof value === 'string' ? value : String.fromCharCode(...value);
       }
+      const hashOutput = CryptoJS.SHA256(combined).toString(CryptoJS.enc.Hex);
 
-      const hashOutput = hash.digest('hex');
-
-      // Log the hash computation
       LogService.logHashComputation(module, 'SHA-256', hashOutput, true);
-
       return hashOutput;
     } catch (error) {
-      // Log the error
       LogService.logHashComputation(
         module,
         'SHA-256',
@@ -209,7 +168,6 @@ class CryptoService {
         false,
         error instanceof Error ? error : new Error(String(error)),
       );
-
       throw new CryptoError('Failed to compute composite hash', 'hash', {
         error,
       });
@@ -218,16 +176,20 @@ class CryptoService {
 
   /**
    * Generates a cryptographic nonce (random challenge)
-   * Used for presentation requests
    */
   generateNonce(): string {
-    const randomBytes = Buffer.allocUnsafe(32);
-    for (let i = 0; i < 32; i++) {
-      randomBytes[i] = Math.floor(Math.random() * 256);
+    const array = new Uint8Array(32);
+    // Use crypto.getRandomValues polyfilled by react-native-get-random-values
+    if (typeof globalThis.crypto?.getRandomValues === 'function') {
+      globalThis.crypto.getRandomValues(array);
+    } else {
+      // Fallback for environments without Web Crypto
+      for (let i = 0; i < 32; i++) {
+        array[i] = Math.floor(Math.random() * 256);
+      }
     }
-    return randomBytes.toString('hex');
+    return toHex(array);
   }
 }
 
-// Export singleton instance
 export default new CryptoService();

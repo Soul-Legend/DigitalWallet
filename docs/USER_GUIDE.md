@@ -6,12 +6,14 @@ Este guia explica como usar o aplicativo de Carteira de Identidade Acadêmica pa
 
 ## Glossário de Termos
 
-- **DID (Identificador Descentralizado)**: Seu identificador único digital que você controla
-- **Credencial Verificável**: Documento digital assinado contendo seus dados acadêmicos
-- **Apresentação Verificável**: Resposta contendo apenas os dados solicitados
-- **SD-JWT**: Formato que permite revelar apenas alguns atributos
-- **ZKP (Prova de Conhecimento Zero)**: Prova matemática que valida informação sem revelá-la
-- **Nullifier**: Hash único usado para prevenir duplicação de votos
+- **DID (Identificador Descentralizado)**: Identificador digital controlado pelo usuário, sem autoridade central
+- **Credencial Verificável**: Documento digital assinado contendo dados acadêmicos
+- **Apresentação Verificável**: Resposta contendo apenas os dados solicitados pelo verificador
+- **SD-JWT**: Formato de credencial onde atributos individuais podem ser revelados ou omitidos
+- **AnonCreds**: Formato de credencial baseado em CL-signatures que permite divulgação seletiva com unlinkability e predicados numéricos
+- **ZKP (Prova de Conhecimento Zero)**: Prova que valida uma afirmação sem revelar os dados subjacentes
+- **Groth16**: Sistema de provas ZKP usado via mopro para circuitos customizados (faixa etária, status, nullifiers)
+- **Nullifier**: Hash determinístico usado para prevenir voto duplicado sem identificar o votante
 
 Para mais termos, acesse o Glossário dentro do aplicativo.
 
@@ -22,11 +24,11 @@ Para mais termos, acesse o Glossário dentro do aplicativo.
 Na primeira vez que você abre o aplicativo:
 
 1. O sistema exibe uma tela de inicialização
-2. Automaticamente gera seu par de chaves criptográficas no hardware seguro do dispositivo
-3. Cria seu DID (Identificador Descentralizado)
+2. Inicializa o agente Credo com wallet criptografado (Aries Askar)
+3. Gera um par de chaves Ed25519 e cria seu DID via `did:key`
 4. Exibe seu DID gerado (formato: `did:key:z...`)
 
-**Importante**: Suas chaves privadas nunca saem do dispositivo e ficam armazenadas de forma criptografada.
+As chaves privadas ficam no wallet criptografado do Askar, protegidas pelo Keystore do Android.
 
 ## Navegação
 
@@ -57,11 +59,14 @@ Simula a instituição (UFSC) emitindo uma credencial acadêmica.
    - Isenções (checkboxes)
    - Acessos a laboratórios e prédios (separados por vírgula)
 
-3. **Clique em "Emitir Credencial"**
+3. **Escolha o formato** (SD-JWT ou AnonCreds)
+   - **SD-JWT**: Monta JSON com header/payload e assina com Ed25519. Resultado: token `header.payload.signature`.
+   - **AnonCreds**: Executa protocolo CL-signature completo via @hyperledger/anoncreds-react-native. Resultado: JSON com `{format: 'anoncreds', credential, schema_id, cred_def_id}`.
+
+4. **Clique em "Emitir Credencial"**
    - O sistema valida os campos obrigatórios
-   - Gera a credencial em formato SD-JWT ou AnonCreds
-   - Assina digitalmente com a chave da instituição
-   - Copia automaticamente para a área de transferência
+   - Gera a credencial no formato escolhido
+   - Copia para a área de transferência
 
 4. **Confirmação**: Mensagem de sucesso aparece quando a credencial é copiada
 
@@ -86,6 +91,37 @@ Data de Nascimento: 2000-05-15
 Acesso Laboratórios: LCN, LINSE, LabSEC
 Acesso Prédios: INE, CTC
 ```
+
+### Cadeia de Confiança (PKI)
+
+O módulo emissor inclui uma seção colapsável "🔗 Cadeia de Confiança" que permite gerenciar emissores confiáveis hierárquicos.
+
+#### Configurar Âncora Raiz
+
+1. Expanda a seção **Cadeia de Confiança** tocando no cabeçalho
+2. Toque em **"Inicializar Âncora Raiz"**
+3. O sistema cria o emissor raiz (usa o DID do emissor atual ou `did:web:ufsc.br`)
+4. A âncora raiz aparece na lista com ícone 🏛️
+
+#### Registrar Emissor Filho
+
+1. Selecione o **emissor pai** nos chips horizontais (🏛️ para raiz, 🏢 para intermediários)
+2. Se nenhum pai for selecionado, o sistema usa a âncora raiz automaticamente
+3. Preencha o **DID** do novo emissor (ex: `did:web:ctc.ufsc.br`)
+4. Preencha o **nome** descritivo (ex: `CTC - Centro Tecnológico`)
+5. Toque em **"Registrar Emissor"**
+6. O novo emissor aparece na lista com indicação do pai
+
+#### Exemplo de Hierarquia
+
+```
+🏛️ UFSC - Âncora Raiz (did:web:ufsc.br)
+  🏢 CTC - Centro Tecnológico (did:web:ctc.ufsc.br)
+    🏢 INE - Departamento de Informática (did:web:ine.ufsc.br)
+  🏢 CAGR - Coordenadoria Acadêmica (did:web:cagr.ufsc.br)
+```
+
+> **Nota**: Quando uma cadeia de confiança está configurada, o módulo verificador só aceita credenciais de emissores que pertencem à cadeia.
 
 ## Módulo Titular
 
@@ -122,13 +158,21 @@ Gerenciar suas credenciais e responder a requisições de apresentação.
 ### Tipos de Apresentação
 
 **SD-JWT (Divulgação Seletiva)**
-- Revela apenas os atributos solicitados
-- Outros atributos são substituídos por hashes
-- Usado no cenário de Restaurante Universitário
+- Revela apenas os atributos selecionados; demais são omitidos
+- Assinatura Ed25519 (proof type: `JsonWebSignature2020`)
+- Usado no cenário de Restaurante Universitário e Laboratórios
 
-**ZKP (Prova de Conhecimento Zero)**
-- Prova predicados sem revelar valores exatos
-- Usado em Eleições e Verificação de Maioridade
+**Groth16 (ZKP via mopro)**
+- Executa circuitos Circom para gerar provas Groth16
+- Prova predicados (e.g., idade >= 18, status == Ativo) sem revelar valores
+- Proof type: `Groth16Proof`
+- Usado em Eleições (nullifier + elegibilidade) e Verificação de Maioridade
+
+**AnonCreds (CL-Signature)**
+- Divulgação seletiva com unlinkability (apresentação não correlacionável à credencial)
+- Suporta predicados numéricos nativos (e.g., age >= 18)
+- Proof type: `CLSignature2023`
+- Disponível quando a credencial foi emitida em formato AnonCreds
 
 ## Módulo Verificador
 
@@ -206,14 +250,22 @@ Validar apresentações verificáveis em diferentes cenários.
 **Fluxo**:
 1. Selecione "Maioridade"
 2. Sistema gera requisição com predicado idade >= 18
-3. Titular gera Range Proof:
-   - Calcula idade a partir de data_nascimento
-   - Gera prova matemática de idade >= 18
-   - NÃO revela a data exata
-4. Verificador valida:
-   - Prova matemática
-   - Predicado satisfeito
-5. Resultado: Maior ou menor de idade (sem revelar data)
+4. Titular gera prova:
+   - Com credencial SD-JWT: executa circuito `age_range` via mopro/Groth16; gera prova de que idade >= 18 sem revelar a data
+   - Com credencial AnonCreds: usa predicado nativo CL-signature (age >= 18)
+5. Verificador valida:
+   - Groth16: verifica prova de circuito via `verifyCircomProof()`
+   - AnonCreds: verifica apresentação via `Presentation.verify()`
+6. Resultado: Maior ou menor de idade (data de nascimento não é revelada)
+
+### Validação da Cadeia de Confiança
+
+Quando uma cadeia de confiança está configurada (via Módulo Emissor), o verificador adiciona automaticamente uma etapa extra na validação:
+
+- **🔗 Cadeia de confiança verificada**: O emissor da credencial foi encontrado na cadeia e todos os certificados da cadeia são válidos até a âncora raiz.
+- **⛓️‍💥 Emissor fora da cadeia de confiança**: O emissor não pertence à cadeia configurada. A apresentação será rejeitada.
+
+> Se nenhuma cadeia de confiança estiver configurada, este passo é ignorado e a verificação funciona normalmente apenas com a assinatura do emissor.
 
 ## Painel de Logs
 
@@ -314,12 +366,12 @@ Status: Sucesso
 ### Troubleshooting
 
 **Credencial não é aceita**
-- Verifique se copiou o token completo
-- Verifique se o formato está correto (deve começar com `eyJ...`)
+- Verifique se copiou o token completo (SD-JWT começa com `eyJ...`, AnonCreds começa com `{"format":"anoncreds"`)
+- Se o parsing falhar, verifique os logs para a mensagem de erro
 
 **Apresentação rejeitada**
-- Verifique se revelou todos os atributos obrigatórios
-- Verifique se a credencial não expirou
+- Verifique se revelou todos os atributos obrigatórios da requisição
+- Verifique se a credencial ainda é válida
 - Veja os logs para detalhes do erro
 
 **Nullifier duplicado**
@@ -342,7 +394,4 @@ Para problemas técnicos:
 2. Verifique os logs no Painel de Logs
 3. Abra uma issue no repositório
 
----
 
-**Versão**: 1.0.0  
-**Última atualização**: Março 2026

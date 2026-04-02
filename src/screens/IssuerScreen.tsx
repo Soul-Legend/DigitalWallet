@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useState, useCallback} from 'react';
 import {
   View,
   Text,
@@ -7,12 +7,25 @@ import {
   TextInput,
   TouchableOpacity,
   Switch,
+  Clipboard,
 } from 'react-native';
 import {useAppStore} from '../stores/useAppStore';
 import {StudentData} from '../types';
+import CredentialService from '../services/CredentialService';
+import StorageService from '../services/StorageService';
+import TrustChainService from '../services/TrustChainService';
 import LoadingIndicator from '../components/LoadingIndicator';
 import SuccessMessage from '../components/SuccessMessage';
 import ErrorMessage from '../components/ErrorMessage';
+
+interface TrustedIssuer {
+  did: string;
+  publicKey: string;
+  name: string;
+  parentDid: string | null;
+  certificate: string;
+  createdAt: string;
+}
 
 interface FormErrors {
   nome_completo?: string;
@@ -26,6 +39,8 @@ interface FormErrors {
 const IssuerScreen: React.FC = () => {
   const setCurrentModule = useAppStore(state => state.setCurrentModule);
   const addLog = useAppStore(state => state.addLog);
+  const holderDID = useAppStore(state => state.holderDID);
+  const setIssuerDID = useAppStore(state => state.setIssuerDID);
 
   useEffect(() => {
     setCurrentModule('emissor');
@@ -57,6 +72,101 @@ const IssuerScreen: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [generalError, setGeneralError] = useState<string | null>(null);
+  const [credentialFormat, setCredentialFormat] = useState<'sd-jwt' | 'anoncreds'>('sd-jwt');
+  const [issuedCredential, setIssuedCredential] = useState<string | null>(null);
+
+  // Trust chain state
+  const [trustedIssuers, setTrustedIssuers] = useState<TrustedIssuer[]>([]);
+  const [childDid, setChildDid] = useState('');
+  const [childName, setChildName] = useState('');
+  const [selectedParentDid, setSelectedParentDid] = useState<string | null>(null);
+  const [isChainLoading, setIsChainLoading] = useState(false);
+  const [chainExpanded, setChainExpanded] = useState(false);
+
+  const loadTrustChain = useCallback(async () => {
+    try {
+      const issuers = await TrustChainService.getAllIssuers();
+      setTrustedIssuers(issuers);
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    loadTrustChain();
+  }, [loadTrustChain]);
+
+  const handleInitializeRoot = async () => {
+    setIsChainLoading(true);
+    setGeneralError(null);
+    try {
+      const issuerDid = await StorageService.getRawItem('issuer_did');
+      const rootDid = issuerDid || 'did:web:ufsc.br';
+      await TrustChainService.initializeRootIssuer(rootDid, 'UFSC - Âncora Raiz');
+      await loadTrustChain();
+      setSuccessMessage('Âncora raiz da cadeia de confiança inicializada!');
+      addLog({
+        operation: 'trust_chain_init',
+        module: 'emissor',
+        details: {root_did: rootDid},
+        success: true,
+      });
+    } catch (err) {
+      setGeneralError(
+        `Erro ao inicializar âncora: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    } finally {
+      setIsChainLoading(false);
+    }
+  };
+
+  const handleRegisterChild = async () => {
+    if (!childDid.trim() || !childName.trim()) {
+      setGeneralError('DID e nome do emissor filho são obrigatórios');
+      return;
+    }
+    setIsChainLoading(true);
+    setGeneralError(null);
+    try {
+      // Use selected parent or fall back to root
+      const parentDid = selectedParentDid
+        || (await TrustChainService.getRootIssuer())?.did;
+      if (!parentDid) {
+        setGeneralError('Emissor pai não selecionado e âncora raiz não inicializada');
+        return;
+      }
+      const parentKey = await TrustChainService.getIssuerPrivateKey(parentDid);
+      if (!parentKey) {
+        setGeneralError(`Chave privada do emissor pai não encontrada: ${parentDid}`);
+        return;
+      }
+      await TrustChainService.registerChildIssuer(
+        parentDid,
+        parentKey,
+        childDid.trim(),
+        childName.trim(),
+      );
+      await loadTrustChain();
+      setChildDid('');
+      setChildName('');
+      setSelectedParentDid(null);
+      setSuccessMessage(`Emissor "${childName.trim()}" registrado sob ${parentDid}!`);
+      addLog({
+        operation: 'trust_chain_register',
+        module: 'emissor',
+        details: {
+          parent_did: parentDid,
+          child_did: childDid.trim(),
+          child_name: childName.trim(),
+        },
+        success: true,
+      });
+    } catch (err) {
+      setGeneralError(
+        `Erro ao registrar emissor: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    } finally {
+      setIsChainLoading(false);
+    }
+  };
 
   // Validation function
   const validateForm = (): boolean => {
@@ -99,29 +209,52 @@ const IssuerScreen: React.FC = () => {
   const handleIssueCredential = async () => {
     setSuccessMessage(null);
     setGeneralError(null);
+    setIssuedCredential(null);
 
     if (!validateForm()) {
       setGeneralError('Por favor, corrija os erros no formulário');
       return;
     }
 
+    if (!holderDID) {
+      setGeneralError('DID do titular não encontrado. Inicialize o sistema primeiro.');
+      return;
+    }
+
     setIsLoading(true);
 
     try {
-      // Simulate credential issuance (will be implemented in future tasks)
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      const credential = await CredentialService.issueCredential(
+        formData as StudentData,
+        holderDID,
+        credentialFormat,
+      );
+
+      // Store the issuer DID in global state
+      const issuerDID = await StorageService.getRawItem('issuer_did');
+      if (issuerDID) {
+        setIssuerDID(issuerDID);
+      }
+
+      // Copy to clipboard for transfer to Holder module
+      Clipboard.setString(credential);
 
       addLog({
         operation: 'credential_issuance',
         module: 'emissor',
         details: {
-          algorithm: 'EdDSA',
+          algorithm: credentialFormat === 'sd-jwt' ? 'EdDSA' : 'CL-Signature',
           did_method: 'did:web',
+          format: credentialFormat,
+          holder: holderDID,
         },
         success: true,
       });
 
-      setSuccessMessage('Credencial emitida com sucesso!');
+      setIssuedCredential(credential);
+      setSuccessMessage(
+        `Credencial ${credentialFormat.toUpperCase()} emitida com sucesso! Token copiado para a área de transferência.`,
+      );
 
       // Clear form after successful issuance
       setFormData({
@@ -154,6 +287,7 @@ const IssuerScreen: React.FC = () => {
         module: 'emissor',
         details: {
           stack_trace: error instanceof Error ? error.stack : undefined,
+          format: credentialFormat,
         },
         success: false,
         error: error instanceof Error ? error : new Error(String(error)),
@@ -173,6 +307,203 @@ const IssuerScreen: React.FC = () => {
 
         {generalError && <ErrorMessage message={generalError} />}
         {successMessage && <SuccessMessage message={successMessage} />}
+
+        {/* Trust Chain Management */}
+        <View style={styles.section}>
+          <TouchableOpacity
+            style={styles.chainHeader}
+            onPress={() => setChainExpanded(!chainExpanded)}>
+            <Text style={styles.sectionTitle}>
+              🔗 Cadeia de Confiança {chainExpanded ? '▼' : '▶'}
+            </Text>
+            <Text style={styles.chainBadge}>
+              {trustedIssuers.length} emissor(es)
+            </Text>
+          </TouchableOpacity>
+
+          {chainExpanded && (
+            <View>
+              {/* Root Initialization */}
+              {trustedIssuers.length === 0 ? (
+                <View style={styles.chainEmptyState}>
+                  <Text style={styles.chainEmptyText}>
+                    Nenhuma cadeia de confiança configurada. Inicialize a âncora raiz para começar.
+                  </Text>
+                  <TouchableOpacity
+                    style={styles.chainButton}
+                    onPress={handleInitializeRoot}
+                    disabled={isChainLoading}>
+                    <Text style={styles.chainButtonText}>
+                      {isChainLoading ? 'Inicializando...' : 'Inicializar Âncora Raiz'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <>
+                  {/* Chain Visualization */}
+                  <View style={styles.chainList}>
+                    {trustedIssuers.map((issuer, idx) => (
+                      <View
+                        key={issuer.did}
+                        style={[
+                          styles.chainIssuerCard,
+                          issuer.parentDid === null && styles.chainRootCard,
+                        ]}>
+                        <View style={styles.chainIssuerHeader}>
+                          <Text style={styles.chainIssuerIcon}>
+                            {issuer.parentDid === null ? '🏛️' : '🏢'}
+                          </Text>
+                          <View style={styles.chainIssuerInfo}>
+                            <Text style={styles.chainIssuerName}>
+                              {issuer.name}
+                            </Text>
+                            <Text style={styles.chainIssuerDid} numberOfLines={1}>
+                              {issuer.did}
+                            </Text>
+                          </View>
+                        </View>
+                        {issuer.parentDid && (
+                          <Text style={styles.chainParentLabel}>
+                            ↑ assinado por: {issuer.parentDid}
+                          </Text>
+                        )}
+                        {idx < trustedIssuers.length - 1 && issuer.parentDid === null && (
+                          <View style={styles.chainConnector}>
+                            <Text style={styles.chainConnectorText}>│</Text>
+                          </View>
+                        )}
+                      </View>
+                    ))}
+                  </View>
+
+                  {/* Register Child Issuer */}
+                  <View style={styles.chainRegisterSection}>
+                    <Text style={styles.chainRegisterTitle}>
+                      Registrar Emissor Filho
+                    </Text>
+
+                    {/* Parent Selector */}
+                    <Text style={styles.parentSelectorLabel}>Emissor Pai:</Text>
+                    <ScrollView
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      style={styles.parentSelectorRow}>
+                      {trustedIssuers.map(issuer => (
+                        <TouchableOpacity
+                          key={issuer.did}
+                          style={[
+                            styles.parentChip,
+                            selectedParentDid === issuer.did && styles.parentChipSelected,
+                          ]}
+                          onPress={() => setSelectedParentDid(
+                            selectedParentDid === issuer.did ? null : issuer.did,
+                          )}>
+                          <Text
+                            style={[
+                              styles.parentChipText,
+                              selectedParentDid === issuer.did && styles.parentChipTextSelected,
+                            ]}
+                            numberOfLines={1}>
+                            {issuer.parentDid === null ? '🏛️ ' : '🏢 '}
+                            {issuer.name}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </ScrollView>
+                    {selectedParentDid && (
+                      <Text style={styles.parentSelectedHint}>
+                        Pai selecionado: {selectedParentDid}
+                      </Text>
+                    )}
+                    {!selectedParentDid && (
+                      <Text style={styles.parentSelectedHint}>
+                        Nenhum pai selecionado — usará a âncora raiz
+                      </Text>
+                    )}
+
+                    <TextInput
+                      style={[styles.input, {marginTop: 12}]}
+                      value={childDid}
+                      onChangeText={setChildDid}
+                      placeholder="DID do emissor (ex: did:web:dept.ufsc.br)"
+                      editable={!isChainLoading}
+                    />
+                    <TextInput
+                      style={[styles.input, {marginTop: 8}]}
+                      value={childName}
+                      onChangeText={setChildName}
+                      placeholder="Nome do emissor (ex: CAGR)"
+                      editable={!isChainLoading}
+                    />
+                    <TouchableOpacity
+                      style={[styles.chainButton, {marginTop: 12}]}
+                      onPress={handleRegisterChild}
+                      disabled={isChainLoading || !childDid.trim() || !childName.trim()}>
+                      <Text style={styles.chainButtonText}>
+                        {isChainLoading ? 'Registrando...' : 'Registrar Emissor'}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </>
+              )}
+            </View>
+          )}
+        </View>
+
+        {/* Credential Format Selector */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Formato da Credencial</Text>
+          <View style={styles.statusContainer}>
+            <TouchableOpacity
+              style={[
+                styles.statusButton,
+                credentialFormat === 'sd-jwt' && styles.statusButtonActive,
+              ]}
+              onPress={() => setCredentialFormat('sd-jwt')}
+              disabled={isLoading}>
+              <Text
+                style={[
+                  styles.statusButtonText,
+                  credentialFormat === 'sd-jwt' && styles.statusButtonTextActive,
+                ]}>
+                SD-JWT
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.statusButton,
+                credentialFormat === 'anoncreds' && styles.statusButtonActive,
+              ]}
+              onPress={() => setCredentialFormat('anoncreds')}
+              disabled={isLoading}>
+              <Text
+                style={[
+                  styles.statusButtonText,
+                  credentialFormat === 'anoncreds' && styles.statusButtonTextActive,
+                ]}>
+                AnonCreds
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Issued Credential Display */}
+        {issuedCredential && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Credencial Emitida</Text>
+            <Text style={styles.credentialToken} numberOfLines={6}>
+              {issuedCredential}
+            </Text>
+            <TouchableOpacity
+              style={styles.copyButton}
+              onPress={() => {
+                Clipboard.setString(issuedCredential);
+                setSuccessMessage('Token copiado para a área de transferência!');
+              }}>
+              <Text style={styles.copyButtonText}>Copiar Token</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
         {/* Required Fields Section */}
         <View style={styles.section}>
@@ -466,6 +797,139 @@ const styles = StyleSheet.create({
     color: '#003366',
     marginBottom: 16,
   },
+  chainHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  chainBadge: {
+    fontSize: 12,
+    color: '#666',
+    backgroundColor: '#e8f0fe',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  chainEmptyState: {
+    alignItems: 'center',
+    paddingVertical: 16,
+  },
+  chainEmptyText: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  chainButton: {
+    backgroundColor: '#1565C0',
+    padding: 12,
+    borderRadius: 6,
+    alignItems: 'center',
+  },
+  chainButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  chainList: {
+    marginBottom: 16,
+  },
+  chainIssuerCard: {
+    backgroundColor: '#f8f9fa',
+    borderRadius: 6,
+    padding: 12,
+    marginBottom: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: '#90CAF9',
+  },
+  chainRootCard: {
+    borderLeftColor: '#1565C0',
+    backgroundColor: '#e8f0fe',
+  },
+  chainIssuerHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  chainIssuerIcon: {
+    fontSize: 20,
+    marginRight: 10,
+  },
+  chainIssuerInfo: {
+    flex: 1,
+  },
+  chainIssuerName: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+  },
+  chainIssuerDid: {
+    fontSize: 11,
+    color: '#666',
+    fontFamily: 'monospace',
+    marginTop: 2,
+  },
+  chainParentLabel: {
+    fontSize: 11,
+    color: '#888',
+    marginTop: 4,
+    marginLeft: 30,
+  },
+  chainConnector: {
+    alignItems: 'center',
+    marginVertical: 2,
+  },
+  chainConnectorText: {
+    fontSize: 16,
+    color: '#90CAF9',
+  },
+  chainRegisterSection: {
+    borderTopWidth: 1,
+    borderTopColor: '#e0e0e0',
+    paddingTop: 16,
+  },
+  chainRegisterTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 12,
+  },
+  parentSelectorLabel: {
+    fontSize: 13,
+    color: '#555',
+    marginBottom: 6,
+  },
+  parentSelectorRow: {
+    flexDirection: 'row',
+    marginBottom: 4,
+    maxHeight: 40,
+  },
+  parentChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    backgroundColor: '#f0f0f0',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    marginRight: 8,
+  },
+  parentChipSelected: {
+    backgroundColor: '#1565C0',
+    borderColor: '#1565C0',
+  },
+  parentChipText: {
+    fontSize: 12,
+    color: '#333',
+  },
+  parentChipTextSelected: {
+    color: '#fff',
+    fontWeight: '600',
+  },
+  parentSelectedHint: {
+    fontSize: 11,
+    color: '#888',
+    marginTop: 4,
+    fontStyle: 'italic',
+  },
   fieldContainer: {
     marginBottom: 16,
   },
@@ -541,6 +1005,26 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 18,
     fontWeight: 'bold',
+  },
+  credentialToken: {
+    fontSize: 12,
+    fontFamily: 'monospace',
+    color: '#333',
+    backgroundColor: '#f0f0f0',
+    padding: 12,
+    borderRadius: 4,
+    marginBottom: 12,
+  },
+  copyButton: {
+    backgroundColor: '#4CAF50',
+    padding: 12,
+    borderRadius: 6,
+    alignItems: 'center',
+  },
+  copyButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
   },
 });
 

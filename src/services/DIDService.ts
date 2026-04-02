@@ -1,8 +1,15 @@
 import {KeyType} from '@credo-ts/core';
+import * as ed from '@noble/ed25519';
 import {CryptoError} from './ErrorHandler';
 import LogService from './LogService';
 import StorageService from './StorageService';
 import AgentService from './AgentService';
+
+function toHex(bytes: Uint8Array): string {
+  return Array.from(bytes)
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
+}
 
 /**
  * DIDService - Manages DID creation and key generation using Credo agent
@@ -119,13 +126,22 @@ class DIDService {
     method: 'key' | 'peer' = 'key',
   ): Promise<{did: string; publicKey: string}> {
     try {
-      const {did, verificationMethodId} =
+      const {did} =
         method === 'key'
           ? await this.createDidKey()
           : await this.createDidPeer();
 
-      // Persist the DID so the app can find it on next launch
+      // Generate an Ed25519 key pair for SD-JWT signing via CryptoService
+      // (Credo wallet keys are used internally by AnonCreds; SD-JWT needs explicit keys)
+      const privateKeyBytes = ed.utils.randomSecretKey();
+      const publicKeyBytes = await ed.getPublicKeyAsync(privateKeyBytes);
+      const privateKeyHex = toHex(privateKeyBytes);
+      const publicKeyHex = toHex(publicKeyBytes);
+
+      // Persist the DID and keys so the app can find them on next launch
       await StorageService.storeHolderDID(did);
+      await StorageService.storeHolderPrivateKey(privateKeyHex, did);
+      await StorageService.storeHolderPublicKey(publicKeyHex);
 
       LogService.logKeyGeneration(
         'titular',
@@ -135,8 +151,7 @@ class DIDService {
         true,
       );
 
-      // Public key is embedded in the DID itself for did:key
-      return {did, publicKey: verificationMethodId};
+      return {did, publicKey: publicKeyHex};
     } catch (error) {
       LogService.logKeyGeneration(
         'titular',
@@ -162,15 +177,23 @@ class DIDService {
   ): Promise<{did: string; publicKey: string}> {
     try {
       // Create a did:key so the issuer has a signing key inside the Credo wallet
-      const {did: signingDid, verificationMethodId} =
+      const {did: signingDid} =
         await this.createDidKey();
 
       // Build the public did:web identifier
       const didWeb = this.createDidWeb(domain, path);
 
-      // Store the mapping: did:web -> signing did:key
+      // Generate an Ed25519 key pair for SD-JWT credential signing
+      const privateKeyBytes = ed.utils.randomSecretKey();
+      const publicKeyBytes = await ed.getPublicKeyAsync(privateKeyBytes);
+      const privateKeyHex = toHex(privateKeyBytes);
+      const publicKeyHex = toHex(publicKeyBytes);
+
+      // Store the mapping: did:web -> signing did:key, and the issuer keys
       await StorageService.storeIssuerDID(didWeb);
       await StorageService.storeIssuerSigningDid(signingDid);
+      await StorageService.storeIssuerPrivateKey(privateKeyHex, didWeb);
+      await StorageService.storeIssuerPublicKey(publicKeyHex);
 
       LogService.logKeyGeneration(
         'emissor',
@@ -180,7 +203,7 @@ class DIDService {
         true,
       );
 
-      return {did: didWeb, publicKey: verificationMethodId};
+      return {did: didWeb, publicKey: publicKeyHex};
     } catch (error) {
       LogService.logKeyGeneration(
         'emissor',

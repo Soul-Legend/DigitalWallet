@@ -1,526 +1,291 @@
-# Decisões de Design e Trade-offs
+# Decisões de Design
 
-## Introdução
-
-Este documento registra as principais decisões de design tomadas durante o desenvolvimento da Carteira de Identidade Acadêmica, incluindo as razões, alternativas consideradas e trade-offs aceitos.
+Registro das decisões técnicas tomadas durante o desenvolvimento, com razões, alternativas avaliadas e trade-offs.
 
 ## Índice
 
-1. [Arquitetura e Tecnologias](#arquitetura-e-tecnologias)
-2. [Criptografia e Segurança](#criptografia-e-segurança)
-3. [Protocolos e Padrões](#protocolos-e-padrões)
-4. [Interface e Experiência do Usuário](#interface-e-experiência-do-usuário)
-5. [Testes e Qualidade](#testes-e-qualidade)
-6. [Performance e Otimização](#performance-e-otimização)
+1. [Plataforma e Frameworks](#plataforma-e-frameworks)
+2. [Identidade e Criptografia](#identidade-e-criptografia)
+3. [Credenciais e Provas](#credenciais-e-provas)
+4. [Transporte e Armazenamento](#transporte-e-armazenamento)
+5. [Interface](#interface)
+6. [Testes](#testes)
+7. [Decisões Futuras (Pós-MVP)](#decisões-futuras-pós-mvp)
 
 ---
 
-## Arquitetura e Tecnologias
+## Plataforma e Frameworks
 
-### Decisão 1: React Native como Framework
+### React Native como Framework
 
-**Escolha**: React Native 0.76.5 com TypeScript
+**Escolha**: React Native 0.76.5 com TypeScript 5.0.4
 
 **Razões**:
-- Cross-platform (Android/iOS) com código compartilhado
-- Acesso a APIs nativas de segurança (Keychain, Secure Enclave)
-- Ecossistema maduro de bibliotecas criptográficas
-- Performance adequada para operações criptográficas
+- Cross-platform com acesso a APIs nativas de segurança (Keystore)
+- Ecossistema SSI disponível: @credo-ts, @hyperledger/anoncreds-react-native, mopro-ffi
 - Suporte à Nova Arquitetura (TurboModules)
 
-**Alternativas Consideradas**:
-- **Flutter**: Boa performance, mas ecossistema SSI menos maduro
-- **Native Android (Kotlin)**: Melhor performance, mas sem cross-platform
-- **Progressive Web App**: Limitações de acesso a hardware seguro
+**Alternativas avaliadas**:
+- Flutter: ecossistema SSI menos maduro no momento da decisão
+- Native Android (Kotlin): sem cross-platform, escopo do protótipo é validação de conceito
+- PWA: sem acesso ao Keystore do OS
 
-**Trade-offs Aceitos**:
-- ✅ Desenvolvimento mais rápido
-- ✅ Código compartilhado entre plataformas
-- ❌ Performance ligeiramente inferior ao nativo puro
-- ❌ Tamanho do bundle maior
+**Trade-offs**:
+- Performance inferior ao nativo puro para operações criptográficas
+- Bundle maior devido às dependências nativas (Askar, AnonCreds, mopro)
 
 ---
 
-### Decisão 2: Zustand para State Management
+### Zustand para State Management
 
-**Escolha**: Zustand ao invés de Redux ou Context API
+**Escolha**: Zustand 4.5.0
 
 **Razões**:
-- API simples e minimalista
-- TypeScript first-class support
-- Sem boilerplate
-- Performance superior (menos re-renders)
-- Tamanho pequeno (~1KB)
+- API sem boilerplate (comparado a Redux)
+- TypeScript first-class
+- Tamanho reduzido (~1KB)
 
-**Alternativas Consideradas**:
-- **Redux**: Muito boilerplate, complexidade desnecessária para MVP
-- **Context API**: Performance inferior, prop drilling
-- **MobX**: Curva de aprendizado, magic demais
-
-**Trade-offs Aceitos**:
-- ✅ Código mais limpo e legível
-- ✅ Menos código para manter
-- ❌ Menos recursos avançados (middleware, time-travel debugging)
-- ❌ Comunidade menor que Redux
+**Alternativas avaliadas**: Redux (overhead desnecessário para MVP), Context API (performance inferior com re-renders).
 
 ---
 
-### Decisão 3: Transferência via Área de Transferência
+### Três módulos em um único app
 
-**Escolha**: Usar clipboard ao invés de rede (HTTP/BLE)
+**Escolha**: Emissor, Titular e Verificador coexistem no mesmo aplicativo, acessíveis por tabs.
 
 **Razões**:
-- Foco em validação criptográfica, não em transporte
-- Simplifica testes e debugging
-- Reduz complexidade de rede
-- MVP mais rápido
-- Abstrai protocolos de transporte
+- Demonstração completa do ecossistema em um protótipo
+- Testes E2E executam sem rede
+- Setup de avaliação simplificado
 
-**Alternativas Consideradas**:
-- **HTTP/HTTPS**: Requer servidor, certificados, complexidade de rede
-- **Bluetooth Low Energy**: Complexo, problemas de pareamento
-- **QR Codes**: Limitação de tamanho, múltiplos scans
-
-**Trade-offs Aceitos**:
-- ✅ Desenvolvimento mais rápido
-- ✅ Testes mais simples
-- ✅ Foco em criptografia
-- ❌ Experiência do usuário menos fluida
-- ❌ Não demonstra protocolos de transporte reais
-
-**Nota**: Em produção, seria substituído por DIDComm ou OpenID4VP sobre HTTP/BLE.
+**Trade-off**: Não demonstra separação real de entidades. Em produção seriam apps ou servidores distintos.
 
 ---
 
-### Decisão 4: Módulos Simulados em um Único App
+## Identidade e Criptografia
 
-**Escolha**: Emissor, Titular e Verificador no mesmo aplicativo
+### Credo (Aries Framework JavaScript) como agente SSI
+
+**Escolha**: @credo-ts/core com módulos Askar e AnonCreds.
 
 **Razões**:
-- Demonstração completa do ecossistema
-- Facilita testes E2E
-- Reduz complexidade de setup
-- Ideal para MVP e validação de conceito
+- Framework SSI de referência da OpenWallet Foundation
+- Gerencia wallet criptografado (Aries Askar via @hyperledger/aries-askar-react-native)
+- Suporta DID methods (did:key, did:peer) via `agent.dids.create()`
+- Integra AnonCreds module para registro de schemas e credential definitions
 
-**Alternativas Consideradas**:
-- **Apps separados**: Mais realista, mas complexo para demonstração
-- **Backend separado**: Requer infraestrutura, deploy
+**Alternativas avaliadas**:
+- Gerenciamento manual de chaves (Ed25519 via @noble/ed25519 + armazenamento próprio): mais simples, mas reimplementa funcionalidades que Credo já resolve
+- Veramo: menos suporte a AnonCreds
 
-**Trade-offs Aceitos**:
-- ✅ Setup simples
-- ✅ Testes mais fáceis
-- ✅ Demonstração autocontida
-- ❌ Menos realista
-- ❌ Não demonstra separação de entidades
+**Configuração**:
+- Wallet: `academic-wallet`, key derivation: Argon2IMod
+- Módulos: `AskarModule({ariesAskar})`, `AnonCredsModule({anoncreds, registries: []})`
+- Sem DIDComm transport (app usa clipboard)
 
 ---
 
-## Criptografia e Segurança
+### DID Methods: did:key, did:peer, did:web
 
-### Decisão 5: Ed25519 como Algoritmo de Assinatura
+**Escolha**: Três métodos sem dependência de blockchain.
 
-**Escolha**: EdDSA com curva Ed25519
+- **did:key**: Para chaves de assinatura do titular e emissor. Simples, auto-resolvível.
+- **did:peer**: Para interações peer-to-peer (disponível, não usado nos cenários atuais).
+- **did:web**: Para identidade institucional do emissor (UFSC). Formatação local — não publica documento DID.
 
-**Razões**:
-- Assinaturas pequenas (64 bytes)
-- Verificação muito rápida
-- Segurança comprovada (equivalente a RSA 3072-bit)
-- Amplamente suportado em SSI
-- Padrão em W3C DIDs e VCs
+**Alternativas avaliadas**: did:ethr (requer Ethereum), did:sov (requer ledger Indy/Sovrin). Ambas adicionam dependência de infraestrutura que foge do escopo do protótipo.
 
-**Alternativas Consideradas**:
-- **ECDSA (secp256k1)**: Usado em Bitcoin, mas mais lento
-- **RSA**: Assinaturas grandes, mais lento
-- **BLS**: Agregação de assinaturas, mas menos suportado
-
-**Trade-offs Aceitos**:
-- ✅ Performance excelente
-- ✅ Assinaturas compactas
-- ✅ Amplamente suportado
-- ❌ Não permite agregação de assinaturas
-- ❌ Curva única (sem flexibilidade)
+**Trade-off**: did:web sem publicação real do documento DID. Em produção, a UFSC publicaria o DID document no domínio.
 
 ---
 
-### Decisão 6: SHA-256 para Hashing
+### Ed25519 para assinaturas (SD-JWT)
 
-**Escolha**: SHA-256 como função de hash padrão
+CryptoService usa `@noble/ed25519` para assinar credenciais SD-JWT e apresentações. Assinaturas de 64 bytes. SHA-256 via `crypto-js` para hashing.
 
-**Razões**:
-- Segurança comprovada
-- Amplamente suportado
-- Performance adequada
-- Padrão da indústria
-
-**Alternativas Consideradas**:
-- **SHA-512**: Mais seguro, mas hashes maiores
-- **SHA-3**: Mais moderno, mas menos suportado
-- **BLAKE2**: Mais rápido, mas menos conhecido
-
-**Trade-offs Aceitos**:
-- ✅ Compatibilidade máxima
-- ✅ Segurança adequada
-- ❌ Não é o mais rápido
-- ❌ Não é o mais moderno
+O agente Credo gerencia suas próprias chaves Ed25519 via Askar internamente.
 
 ---
 
-### Decisão 7: Armazenamento Criptografado Local
+### Armazenamento criptografado
 
-**Escolha**: react-native-encrypted-storage + react-native-keychain
+**Escolha**: `react-native-encrypted-storage` (AES-256, chaves gerenciadas pelo Keystore do Android).
 
-**Razões**:
-- Criptografia AES-256 automática
-- Integração com Keychain/Keystore do OS
-- Chaves privadas isoladas
-- Sem dependência de servidor
+Não usa `react-native-keychain`.
 
-**Alternativas Consideradas**:
-- **AsyncStorage**: Não criptografado
-- **SQLite com SQLCipher**: Mais complexo, overhead desnecessário
-- **Cloud Storage**: Requer rede, privacidade comprometida
+**Alternativas avaliadas**: AsyncStorage (não criptografado), SQLite com SQLCipher (overhead desnecessário).
 
-**Trade-offs Aceitos**:
-- ✅ Segurança máxima
-- ✅ Privacidade preservada
-- ✅ Offline-first
-- ❌ Sem backup automático
-- ❌ Perda de dados se dispositivo perdido
+**Trade-off**: Sem backup ou sincronização. Dados perdidos se o dispositivo for perdido.
 
 ---
 
-## Protocolos e Padrões
+### Cadeia de confiança PKI para emissores
 
-### Decisão 8: Suporte a SD-JWT e AnonCreds
-
-**Escolha**: Implementar ambos os formatos
+**Escolha**: TrustChainService implementa uma hierarquia de emissores confiáveis inspirada em PKI (Public Key Infrastructure), usando certificados Ed25519 em vez de X.509.
 
 **Razões**:
-- SD-JWT: Padrão IETF, divulgação seletiva simples
-- AnonCreds: ZKP avançadas, predicados complexos
-- Demonstra flexibilidade do sistema
-- Casos de uso diferentes
+- Em ambientes reais, credenciais acadêmicas são emitidas por departamentos que operam sob a autoridade de uma instituição raiz (UFSC → CTC → INE).
+- Verificar apenas a assinatura da credencial não garante que o emissor é legítimo — qualquer detentor de chave Ed25519 pode assinar.
+- A cadeia de confiança permite validar que o emissor foi autorizado pela âncora raiz, percorrendo a cadeia até a raiz e verificando cada certificado.
 
-**Alternativas Consideradas**:
-- **Apenas SD-JWT**: Mais simples, mas sem ZKP
-- **Apenas AnonCreds**: ZKP completo, mas complexo
-- **JSON-LD com BBS+**: Muito complexo para MVP
+**Alternativas avaliadas**:
+- **X.509/TLS certificates**: Complexidade desnecessária para um protótipo acadêmico; não se integra com DIDs.
+- **Trust registries on-chain**: Dependência de ledger externa; este protótipo opera totalmente offline.
+- **Lista estática de emissores confiáveis**: Simples mas não escalável e sem hierarquia.
 
-**Trade-offs Aceitos**:
-- ✅ Flexibilidade máxima
-- ✅ Demonstra múltiplos protocolos
-- ❌ Maior complexidade
-- ❌ Mais código para manter
+**Trade-offs**:
+- Modelo hierárquico centralizado (raiz única), diferente do modelo descentralizado de uma web-of-trust.
+- Cadeia de confiança é local — não resolvida via rede. Em produção, os certificados seriam publicados em um registry público.
+- Retrocompatível: se nenhuma cadeia estiver configurada, a verificação ignora este passo.
 
 ---
 
-### Decisão 9: Presentation Exchange (PEX) para Requisições
+## Credenciais e Provas
 
-**Escolha**: Formato PEX do DIF
+### Dois formatos de credencial: SD-JWT e AnonCreds
 
-**Razões**:
-- Padrão da indústria (DIF)
-- Expressivo (JSONPath, filtros, predicados)
-- Suportado por múltiplas implementações
-- Parte do OpenID4VP
+Conforme definido na tese (Seção 6.3, Tabela 7), o protótipo implementa ambos os formatos para demonstrar trade-offs.
 
-**Alternativas Consideradas**:
-- **Formato customizado**: Mais simples, mas não interoperável
-- **GraphQL**: Expressivo, mas não padrão SSI
-- **SPARQL**: Muito complexo
+**SD-JWT**:
+- Header/payload JSON assinado com Ed25519
+- Divulgação seletiva por atributo: apresentação revela apenas os campos selecionados
+- Proof type: `JsonWebSignature2020`
+- Implementação: `CredentialService.signCredentialAsSDJWT()`
 
-**Trade-offs Aceitos**:
-- ✅ Interoperabilidade
-- ✅ Expressividade
-- ❌ Complexidade de parsing
-- ❌ Curva de aprendizado
+**AnonCreds**:
+- CL-signatures via `@hyperledger/anoncreds-react-native`
+- Divulgação seletiva com unlinkability (credencial e apresentação não são correlacionáveis)
+- Suporta predicados numéricos (e.g., age >= 18) sem revelar o valor
+- Proof type: `CLSignature2023`
+- Implementação: `AnonCredsService.issueCredentialFull()`
 
----
-
-### Decisão 10: Métodos DID Suportados
-
-**Escolha**: did:key, did:peer, did:web
-
-**Razões**:
-- **did:key**: Simples, sem registro, ideal para titular
-- **did:peer**: Peer-to-peer, sem blockchain
-- **did:web**: Baseado em DNS, ideal para instituições
-
-**Alternativas Consideradas**:
-- **did:ethr**: Requer Ethereum, complexo
-- **did:ion**: Requer Bitcoin, complexo
-- **did:sov**: Requer Sovrin, permissionado
-
-**Trade-offs Aceitos**:
-- ✅ Simplicidade
-- ✅ Sem blockchain
-- ✅ Sem custos
-- ❌ Sem revogação nativa
-- ❌ did:web depende de DNS
+**Trade-off**: AnonCreds é mais complexo e requer mais artefatos (schema, credential definition, link secret). SD-JWT é mais simples mas não provê unlinkability.
 
 ---
 
-## Interface e Experiência do Usuário
+### AnonCreds direto (sem ledger)
 
-### Decisão 11: Modal de Consentimento Explícito
-
-**Escolha**: Modal com lista de atributos e checkboxes
+**Escolha**: Usar `@hyperledger/anoncreds-react-native` diretamente, sem registro de schemas/credential definitions em ledger.
 
 **Razões**:
-- Transparência total
-- Controle do usuário
-- GDPR/LGPD compliance
-- Educação do usuário
+- Conforme recomendado na tese – sem dependência de infraestrutura Indy/Sovrin
+- Artefatos (schema, credential definition, key correctness proof) persistidos localmente via StorageService com prefixo `anoncreds_`
+- Protocolo completo: Schema.create → CredentialDefinition.create → LinkSecret.create → Offer → Request → Credential → Process → Presentation → Verify
+- Registries vazios (`registries: []`) no AnonCredsModule do Credo
 
-**Alternativas Consideradas**:
-- **Aprovação automática**: Mais rápido, mas sem controle
-- **Aprovação por categoria**: Menos granular
-- **Aprovação com timeout**: Confuso
+**Alternativa avaliada**: Usar módulo AnonCreds do Credo com registry (AnonCredsCredentialFormatService). Requer ledger ou registry mock, adiciona complexidade sem benefício para o protótipo.
 
-**Trade-offs Aceitos**:
-- ✅ Transparência máxima
-- ✅ Controle granular
-- ❌ Mais cliques
-- ❌ Pode ser ignorado pelo usuário
+**Trade-off**: Sem revogação de credenciais via accumulator (requer registry). Sem verificação distribuída de schemas.
 
 ---
 
-### Decisão 12: Painel de Logs Visível
+### Provas ZKP via mopro (Groth16/Circom)
 
-**Escolha**: Logs criptográficos acessíveis ao usuário
+**Escolha**: `mopro-ffi` para execução de circuitos Circom com provas Groth16.
 
 **Razões**:
-- Transparência das operações
-- Educação sobre SSI
-- Debugging facilitado
-- Auditoria
+- Conforme tese (Tabela 7): mopro atribuído ao papel de "ZKP circuit compilation"
+- Três circuitos: `age_range`, `status_check`, `nullifier`
+- Cada circuito requer arquivo `.zkey` incluído na build
+- `generateCircomProof()` e `verifyCircomProof()` da lib mopro-ffi
 
-**Alternativas Consideradas**:
-- **Logs apenas para desenvolvedores**: Menos transparente
-- **Logs remotos**: Privacidade comprometida
-- **Sem logs**: Caixa preta
+**Alternativa avaliada**: Snarkjs puro em JavaScript — performance insuficiente em dispositivos móveis.
 
-**Trade-offs Aceitos**:
-- ✅ Transparência total
-- ✅ Educação do usuário
-- ❌ Pode confundir usuários não técnicos
-- ❌ Ocupa espaço na UI
+**Trade-off**: Circuitos devem ser pré-compilados. Adicionar novo circuito requer compilação off-chain e inclusão do `.zkey` na build.
 
 ---
 
-### Decisão 13: Glossário Integrado
+### Arquitetura dual de provas
 
-**Escolha**: Tela de glossário com termos SSI
+O sistema suporta duas abordagens de ZKP, usadas em contextos diferentes:
 
-**Razões**:
-- Educação do usuário
-- Reduz curva de aprendizado
-- Acessibilidade
-- Referência rápida
+| Abordagem | Biblioteca | Uso |
+|---|---|---|
+| CL-signatures (AnonCreds) | @hyperledger/anoncreds-react-native | Divulgação seletiva com unlinkability, predicados integrados |
+| Groth16 (Circom circuits) | mopro-ffi | Provas customizadas: faixa etária, verificação de status, nullifiers |
 
-**Alternativas Consideradas**:
-- **Tooltips inline**: Menos intrusivo, mas menos completo
-- **Documentação externa**: Requer sair do app
-- **Sem glossário**: Assume conhecimento prévio
-
-**Trade-offs Aceitos**:
-- ✅ Educação integrada
-- ✅ Sempre disponível
-- ❌ Mais uma tela
-- ❌ Manutenção de conteúdo
+Ambas coexistem. AnonCreds é usado quando a credencial é emitida nesse formato. Groth16 é usado em cenários que requerem provas customizadas sobre credenciais SD-JWT.
 
 ---
 
-## Testes e Qualidade
+### Presentation Exchange (PEX)
 
-### Decisão 14: Property-Based Testing
+**Escolha**: Formato PEX (DIF) para requisições de apresentação.
 
-**Escolha**: fast-check com 100+ iterações por propriedade
+**Razões**: Padrão da indústria, expressivo (JSONPath, filtros), parte do OpenID4VP.
 
-**Razões**:
-- Encontra edge cases automaticamente
-- Valida propriedades matemáticas
-- Complementa testes unitários
-- Confiança em operações criptográficas
-
-**Alternativas Consideradas**:
-- **Apenas testes unitários**: Menos cobertura
-- **Apenas testes E2E**: Mais lentos, menos granulares
-- **Formal verification**: Muito complexo para MVP
-
-**Trade-offs Aceitos**:
-- ✅ Cobertura excelente
-- ✅ Encontra bugs sutis
-- ❌ Testes mais lentos
-- ❌ Curva de aprendizado
+**Trade-off**: Complexidade de parsing. A implementação atual não suporta todas as funcionalidades do PEX (e.g., submission_requirements).
 
 ---
 
-### Decisão 15: 39 Propriedades de Correção
+## Transporte e Armazenamento
 
-**Escolha**: Definir e validar 39 propriedades formais
+### Clipboard como transporte padrão
 
-**Razões**:
-- Especificação formal do sistema
-- Validação matemática de correção
-- Documentação executável
-- Confiança em operações críticas
+**Escolha**: Credenciais e apresentações transferidas via clipboard do sistema operacional.
 
-**Alternativas Consideradas**:
-- **Menos propriedades**: Menos cobertura
-- **Mais propriedades**: Diminishing returns
-- **Sem propriedades formais**: Menos rigor
+**Razões**: O foco do protótipo é a camada criptográfica, não o transporte. Clipboard elimina complexidade de rede e permite demonstração em um único dispositivo.
 
-**Trade-offs Aceitos**:
-- ✅ Especificação formal completa
-- ✅ Alta confiança
-- ❌ Mais trabalho inicial
-- ❌ Manutenção de testes
+**Trade-off**: Experiência de uso não realista. Em produção, seria substituído por DIDComm ou OpenID4VP.
 
 ---
 
-## Performance e Otimização
+### EudiTransportService como camada opcional
 
-### Decisão 16: Cache de Documentos DID
+`EudiTransportService` encapsula `@openwallet-foundation/eudi-wallet-kit-react-native` para BLE (ISO 18013-5) e OpenID4VP. O módulo EUDI é carregado via `require()` dinâmico — se indisponível, o serviço opera em modo clipboard.
 
-**Escolha**: Cachear documentos DID resolvidos
-
-**Razões**:
-- Reduz latência em validações
-- Menos operações de rede (futuro)
-- Melhora UX
-
-**Alternativas Consideradas**:
-- **Sem cache**: Mais lento
-- **Cache persistente**: Pode ficar desatualizado
-- **Cache com TTL**: Mais complexo
-
-**Trade-offs Aceitos**:
-- ✅ Performance melhorada
-- ✅ Menos latência
-- ❌ Pode ficar desatualizado
-- ❌ Usa mais memória
+**Status**: Integração parcial. A API está implementada mas não é usada nos cenários atuais da UI. Existe para demonstrar como o protótipo pode evoluir para transporte real.
 
 ---
 
-### Decisão 17: Operações Assíncronas
+## Interface
 
-**Escolha**: Todas as operações criptográficas são async
+### Modal de consentimento
 
-**Razões**:
-- UI permanece responsiva
-- Não bloqueia thread principal
-- Permite indicadores de loading
-- Melhor UX
+O titular vê a lista de atributos solicitados e seleciona quais revelar antes de gerar a apresentação. Conformidade com LGPD.
 
-**Alternativas Consideradas**:
-- **Operações síncronas**: Mais simples, mas bloqueia UI
-- **Web Workers**: Mais complexo, overhead
+### Painel de logs
 
-**Trade-offs Aceitos**:
-- ✅ UI responsiva
-- ✅ Melhor UX
-- ❌ Código mais complexo (async/await)
-- ❌ Mais difícil de debugar
+Todas as operações criptográficas são registradas via `LogService` e visíveis na tela LogsScreen. Armazenamento em memória apenas (não persistido).
+
+### Glossário
+
+Tela com termos SSI definidos. Reduz barreira para avaliadores sem conhecimento prévio em SSI.
 
 ---
 
-### Decisão 18: Lazy Loading de Componentes
+## Testes
 
-**Escolha**: Componentes carregados sob demanda
+### Property-based testing com fast-check
 
-**Razões**:
-- Reduz tempo de inicialização
-- Menor uso de memória
-- Melhor performance
+**Escolha**: fast-check 4.6.0 com Jest 29.x.
 
-**Alternativas Consideradas**:
-- **Carregar tudo no início**: Mais simples, mas mais lento
-- **Code splitting agressivo**: Mais complexo
+**Razões**: Valida propriedades formais das operações criptográficas com inputs gerados aleatoriamente. Encontra edge cases que testes unitários manuais não cobrem.
 
-**Trade-offs Aceitos**:
-- ✅ Inicialização mais rápida
-- ✅ Menos memória
-- ❌ Pequeno delay ao navegar
-- ❌ Mais complexidade
+Propriedades validadas incluem: determinismo de hash, verificação de assinatura, round-trip de credencial (issue → parse → verify), consistência de divulgação seletiva.
+
+### Testes E2E
+
+Seis cenários E2E que executam o fluxo completo (emissão → apresentação → verificação) com dados gerados via fast-check:
+- Fluxo completo SD-JWT
+- Restaurante universitário (divulgação seletiva)
+- Eleições (nullifier)
+- Faixa etária (range proof)
+- Acesso a laboratório
+- Estado de navegação
 
 ---
 
 ## Decisões Futuras (Pós-MVP)
 
-### Revogação de Credenciais
+### Revogação de credenciais
 
-**Opções**:
-1. **Status List 2021**: Padrão W3C, bitmap eficiente
-2. **Accumulator-based**: ZKP, mais privado
-3. **Blockchain-based**: Descentralizado, mas complexo
+Opções: Status List 2021 (W3C, bitmap), Accumulator-based (AnonCreds nativo, requer registry).
 
-**Recomendação**: Status List 2021 (balanço entre simplicidade e privacidade)
+### Backup
 
----
+Opções: Backup criptografado em nuvem, seed phrase, social recovery.
 
-### Backup e Sincronização
+### Transporte em produção
 
-**Opções**:
-1. **Backup criptografado em nuvem**: Conveniente, mas requer confiança
-2. **Seed phrase**: Descentralizado, mas UX ruim
-3. **Social recovery**: Inovador, mas complexo
-
-**Recomendação**: Backup criptografado com senha mestra
-
----
-
-### Transporte de Dados
-
-**Opções**:
-1. **DIDComm**: Padrão DIF, mensagens criptografadas
-2. **OpenID4VP sobre HTTP**: Padrão OIDF, amplamente suportado
-3. **BLE**: Offline, mas complexo
-
-**Recomendação**: OpenID4VP sobre HTTP (interoperabilidade máxima)
-
----
-
-## Lições Aprendidas
-
-### O que funcionou bem
-
-1. **Property-Based Testing**: Encontrou bugs que testes unitários não pegariam
-2. **Zustand**: State management simples e eficaz
-3. **TypeScript**: Preveniu muitos bugs em tempo de compilação
-4. **Área de transferência**: Simplificou MVP significativamente
-5. **Logs visíveis**: Facilitou debugging e educação
-
-### O que poderia ser melhor
-
-1. **Operações ZKP**: Muito lentas, precisam de otimização
-2. **Tamanho do bundle**: Bibliotecas criptográficas são grandes
-3. **Testes E2E**: Flaky em alguns casos
-4. **Documentação inline**: Poderia ter mais comentários no código
-5. **Tratamento de erros**: Algumas mensagens poderiam ser mais claras
-
-### Mudanças que faríamos
-
-1. **Usar mopro desde o início**: Para otimizar ZKP
-2. **Mais testes de integração**: Antes de testes E2E
-3. **Design system**: Para consistência visual
-4. **Internacionalização**: Desde o início
-5. **Analytics**: Para entender uso real
-
----
-
-## Conclusão
-
-As decisões de design foram guiadas por:
-- **Simplicidade**: MVP focado em validação de conceito
-- **Padrões**: Conformidade com W3C, DIF, IETF
-- **Segurança**: Criptografia forte, privacidade preservada
-- **Educação**: Transparência e glossário integrado
-- **Qualidade**: Property-based testing e 39 propriedades formais
-
-O resultado é um MVP funcional que demonstra a viabilidade técnica de SSI para credenciais acadêmicas, com base sólida para evolução futura.
-
----
-
-**Versão**: 1.0.0  
-**Última atualização**: Março 2026
+Opções: DIDComm (DIF), OpenID4VP sobre HTTP (OIDF), BLE via EUDI kit.

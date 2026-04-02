@@ -9,8 +9,10 @@ import {
   Clipboard,
 } from 'react-native';
 import {useAppStore} from '../stores/useAppStore';
-import {LoadingIndicator, ErrorMessage, SuccessMessage} from '../components';
+import {LoadingIndicator, ErrorMessage, SuccessMessage, TransportModeSelector} from '../components';
 import {Scenario, PresentationExchangeRequest, ValidationResult} from '../types';
+import {TransportMode} from '../services/EudiTransportService';
+import QRCode from 'react-native-qrcode-svg';
 
 const VerifierScreen: React.FC = () => {
   const setCurrentModule = useAppStore(state => state.setCurrentModule);
@@ -24,6 +26,7 @@ const VerifierScreen: React.FC = () => {
   const [success, setSuccess] = useState<string | null>(null);
   const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
   const [labInput, setLabInput] = useState('');
+  const [transportMode, setTransportMode] = useState<TransportMode>('clipboard');
 
   useEffect(() => {
     setCurrentModule('verificador');
@@ -238,6 +241,13 @@ const VerifierScreen: React.FC = () => {
           Valide apresentações verificáveis e controle acesso
         </Text>
 
+        {/* Transport Mode Selector */}
+        <TransportModeSelector
+          selectedMode={transportMode}
+          onSelectMode={setTransportMode}
+          disabled={isGenerating || isValidating}
+        />
+
         {/* Scenario Selector */}
         {!selectedScenario && (
           <View style={styles.scenarioSection}>
@@ -321,20 +331,55 @@ const VerifierScreen: React.FC = () => {
             {generatedRequest && (
               <View style={styles.challengeSection}>
                 <Text style={styles.sectionTitle}>Requisição Gerada</Text>
-                <View style={styles.challengeDisplay}>
-                  <ScrollView
-                    style={styles.challengeScroll}
-                    nestedScrollEnabled>
-                    <Text style={styles.challengeText}>{generatedRequest}</Text>
-                  </ScrollView>
-                </View>
-                <TouchableOpacity
-                  style={styles.copyButton}
-                  onPress={handleCopyRequest}>
-                  <Text style={styles.copyButtonText}>
-                    📋 Copiar para Área de Transferência
-                  </Text>
-                </TouchableOpacity>
+
+                {/* QR Code Display */}
+                {transportMode === 'qrcode' && (
+                  <View style={styles.qrContainer}>
+                    <QRCode
+                      value={generatedRequest}
+                      size={220}
+                      backgroundColor="#ffffff"
+                      color="#003366"
+                    />
+                    <Text style={styles.qrHint}>
+                      Escaneie com o módulo Titular
+                    </Text>
+                  </View>
+                )}
+
+                {/* BLE/NFC Proximity Info */}
+                {transportMode === 'proximity' && (
+                  <View style={styles.proximityInfo}>
+                    <Text style={styles.proximityIcon}>📡</Text>
+                    <Text style={styles.proximityText}>
+                      Modo BLE/NFC ativo. Aproxime os dispositivos para transferir a requisição.
+                    </Text>
+                    <Text style={styles.proximityNote}>
+                      Requer EUDI wallet-kit instalado no dispositivo.
+                    </Text>
+                  </View>
+                )}
+
+                {/* Clipboard / Text Display */}
+                {(transportMode === 'clipboard' || transportMode === 'qrcode') && (
+                  <View style={styles.challengeDisplay}>
+                    <ScrollView
+                      style={styles.challengeScroll}
+                      nestedScrollEnabled>
+                      <Text style={styles.challengeText}>{generatedRequest}</Text>
+                    </ScrollView>
+                  </View>
+                )}
+
+                {transportMode === 'clipboard' && (
+                  <TouchableOpacity
+                    style={styles.copyButton}
+                    onPress={handleCopyRequest}>
+                    <Text style={styles.copyButtonText}>
+                      📋 Copiar para Área de Transferência
+                    </Text>
+                  </TouchableOpacity>
+                )}
               </View>
             )}
 
@@ -388,6 +433,27 @@ const VerifierScreen: React.FC = () => {
                     ? 'Apresentação Válida'
                     : 'Apresentação Inválida'}
                 </Text>
+
+                {/* Trust Chain Status */}
+                {validationResult.trust_chain_valid !== undefined && (
+                  <View style={styles.trustChainStatus}>
+                    <Text style={styles.trustChainIcon}>
+                      {validationResult.trust_chain_valid ? '🔗' : '⛓️‍💥'}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.trustChainText,
+                        validationResult.trust_chain_valid
+                          ? styles.trustChainValid
+                          : styles.trustChainInvalid,
+                      ]}>
+                      {validationResult.trust_chain_valid
+                        ? 'Cadeia de confiança verificada'
+                        : 'Emissor fora da cadeia de confiança'}
+                    </Text>
+                  </View>
+                )}
+
                 {validationResult.errors && validationResult.errors.length > 0 && (
                   <View style={styles.validationErrors}>
                     {validationResult.errors.map((err, idx) => (
@@ -630,6 +696,68 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#c62828',
     marginBottom: 4,
+  },
+  trustChainStatus: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0,0,0,0.1)',
+  },
+  trustChainIcon: {
+    fontSize: 16,
+    marginRight: 8,
+  },
+  trustChainText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  trustChainValid: {
+    color: '#2e7d32',
+  },
+  trustChainInvalid: {
+    color: '#c62828',
+  },
+  qrContainer: {
+    alignItems: 'center',
+    padding: 20,
+    backgroundColor: '#ffffff',
+    borderRadius: 8,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  qrHint: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 12,
+    textAlign: 'center',
+  },
+  proximityInfo: {
+    alignItems: 'center',
+    padding: 20,
+    backgroundColor: '#e8f5e9',
+    borderRadius: 8,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#a5d6a7',
+  },
+  proximityIcon: {
+    fontSize: 48,
+    marginBottom: 12,
+  },
+  proximityText: {
+    fontSize: 14,
+    color: '#2e7d32',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  proximityNote: {
+    fontSize: 12,
+    color: '#689f38',
+    textAlign: 'center',
+    fontStyle: 'italic',
   },
 });
 

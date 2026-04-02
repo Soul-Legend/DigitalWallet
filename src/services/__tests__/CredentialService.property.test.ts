@@ -144,10 +144,19 @@ describe('CredentialService Property-Based Tests', () => {
           expect(credential).toBeDefined();
           expect(typeof credential).toBe('string');
 
-          // Parse AnonCreds credential
-          const anonCred = JSON.parse(credential);
+          // Parse AnonCreds credential envelope
+          const envelope = JSON.parse(credential);
 
-          // Verify AnonCreds structure
+          // Verify envelope structure (new real AnonCreds format)
+          expect(envelope.format).toBe('anoncreds');
+          expect(envelope.schema_id).toBeDefined();
+          expect(envelope.cred_def_id).toBeDefined();
+          expect(envelope.credential).toBeDefined();
+
+          // Access the actual AnonCreds credential inside the envelope
+          const anonCred = envelope.credential;
+
+          // Verify AnonCreds credential structure
           expect(anonCred.schema_id).toBeDefined();
           expect(anonCred.cred_def_id).toBeDefined();
           expect(anonCred.values).toBeDefined();
@@ -159,7 +168,7 @@ describe('CredentialService Property-Based Tests', () => {
           expect(anonCred.values.matricula).toBeDefined();
           expect(anonCred.values.curso).toBeDefined();
 
-          // Verify encoding format
+          // Verify encoding format (real AnonCreds stores {raw, encoded})
           expect(anonCred.values.nome_completo.raw).toBe(
             studentData.nome_completo,
           );

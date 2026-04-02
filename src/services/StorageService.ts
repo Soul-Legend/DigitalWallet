@@ -361,6 +361,25 @@ class StorageService {
   }
   
   /**
+   * Generic key-value storage for AnonCreds artifacts and other data.
+   */
+  async setRawItem(key: string, value: string): Promise<void> {
+    try {
+      await EncryptedStorage.setItem(key, value);
+    } catch (error) {
+      throw new StorageError('Failed to store item', 'write', {error});
+    }
+  }
+
+  async getRawItem(key: string): Promise<string | null> {
+    try {
+      return await EncryptedStorage.getItem(key);
+    } catch (error) {
+      throw new StorageError('Failed to retrieve item', 'read', {error});
+    }
+  }
+
+  /**
    * Clears all stored keys (for testing purposes)
    */
   async clearAll(): Promise<void> {

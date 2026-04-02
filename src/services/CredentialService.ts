@@ -1,8 +1,10 @@
 import {StudentData, VerifiableCredential} from '../types';
+import {Clipboard} from 'react-native';
 import DIDService from './DIDService';
 import StorageService from './StorageService';
 import LogService from './LogService';
 import AgentService from './AgentService';
+import AnonCredsService from './AnonCredsService';
 import {CryptoError, ValidationError} from './ErrorHandler';
 
 /**
@@ -26,8 +28,9 @@ class CredentialService {
       const existingDID = await StorageService.getIssuerDID();
 
       if (existingDID) {
-        // DID exists, we need to get the public key
-        // For now, we'll regenerate if needed (in production, store public key separately)
+        // DID exists, retrieve the stored public key
+        const existingPublicKey = await StorageService.getIssuerPublicKey();
+
         LogService.captureEvent(
           'key_generation',
           'emissor',
@@ -42,8 +45,7 @@ class CredentialService {
           true,
         );
 
-        // Return existing DID (public key would be retrieved from storage in production)
-        return {did: existingDID, publicKey: ''};
+        return {did: existingDID, publicKey: existingPublicKey || ''};
       }
 
       // Generate new issuer identity
@@ -220,9 +222,9 @@ class CredentialService {
       const dataToSign = Buffer.from(`${headerBase64}.${payloadBase64}`);
 
       // Sign using the Credo agent wallet
-      const {signature} = await agent.wallet.sign({
+      const {signature} = await (agent.wallet as any).sign({
         data: dataToSign,
-        key: verificationMethod.publicKey,
+        key: (verificationMethod as any).publicKey,
       });
 
       const signatureBase64 = Buffer.from(signature).toString('base64url');
@@ -237,118 +239,69 @@ class CredentialService {
   }
 
   /**
-   * Signs a credential and formats it as AnonCreds.
+   * Issues a credential using the real AnonCreds CL-signature protocol.
    *
-   * Uses the Credo agent's wallet to sign the credential envelope.
-   * The full AnonCreds flow (schema registration, credential definition on a
-   * ledger) requires an AnonCreds registry connected to a verifiable data
-   * registry (e.g. Indy VDR). Because this app operates locally without a
-   * ledger, we build an AnonCreds-shaped envelope and sign it with the
-   * agent's Ed25519 key via Aries Askar.
+   * Runs the full protocol: Schema → CredDef → Offer → Request → Credential.
+   * Stores the processed credential together with artifact references so
+   * the holder can later create AnonCreds presentations (ZKP selective
+   * disclosure and predicate proofs).
    */
   private async signCredentialAsAnonCreds(
     credential: VerifiableCredential,
     _issuerDID: string,
   ): Promise<string> {
     try {
-      const agent = await AgentService.getAgent();
+      const issuerDid =
+        (await StorageService.getIssuerDID()) || 'did:web:ufsc.br';
+      const holderDid = credential.credentialSubject.id;
 
-      const signingDid = await StorageService.getIssuerSigningDid();
-      if (!signingDid) {
-        throw new CryptoError(
-          'Issuer signing DID not found',
-          'signature',
-          {},
-        );
+      // Convert StudentData attributes to flat string map for AnonCreds
+      const attributeNames: string[] = [];
+      const attributeValues: Record<string, string> = {};
+
+      for (const [key, value] of Object.entries(
+        credential.credentialSubject,
+      )) {
+        if (key === 'id') {
+          continue;
+        }
+        attributeNames.push(key);
+        if (Array.isArray(value)) {
+          attributeValues[key] = JSON.stringify(value);
+        } else {
+          attributeValues[key] = String(value);
+        }
       }
 
-      const didResult = await agent.dids.resolve(signingDid);
-      const verificationMethod =
-        didResult.didDocument?.verificationMethod?.[0];
-      if (!verificationMethod) {
-        throw new CryptoError(
-          'No verification method found for issuer DID',
-          'signature',
-          {},
+      // Full AnonCreds issuance protocol
+      const {credential: anonCredsCredential, schemaArtifact, credDefArtifact} =
+        await AnonCredsService.issueCredentialFull(
+          issuerDid,
+          holderDid,
+          'academic-id',
+          '1.0',
+          attributeNames,
+          attributeValues,
         );
-      }
 
-      // Build AnonCreds-style credential envelope
-      const anonCredsCredential: Record<string, any> = {
-        schema_id: 'did:web:ufsc.br:schemas:academic-id:1.0',
-        cred_def_id: 'did:web:ufsc.br:cred-defs:academic-id:1.0',
-        values: this.encodeAttributesForAnonCreds(
-          credential.credentialSubject,
-        ),
-        signature: {
-          p_credential: {},
-          r_credential: {},
-        },
-        signature_correctness_proof: {},
-        rev_reg: null,
-        witness: null,
+      // Wrap in an envelope that includes artifact references for later
+      // presentation creation and verification
+      const envelope = {
+        format: 'anoncreds',
+        credential: anonCredsCredential,
+        schema_id: schemaArtifact.schemaId,
+        cred_def_id: credDefArtifact.credDefId,
+        holder_did: holderDid,
       };
 
-      // Sign the credential payload using the Credo agent wallet
-      const credentialBytes = Buffer.from(
-        JSON.stringify(anonCredsCredential),
-      );
-      const {signature} = await agent.wallet.sign({
-        data: credentialBytes,
-        key: verificationMethod.publicKey,
-      });
-
-      anonCredsCredential.signature = {
-        p_credential: {signature: Buffer.from(signature).toString('hex')},
-        r_credential: {},
-      };
-
-      return JSON.stringify(anonCredsCredential);
+      return JSON.stringify(envelope);
     } catch (error) {
       throw new CryptoError(
-        'Failed to sign credential as AnonCreds',
+        'Failed to issue AnonCreds credential',
         'signature',
         {error},
       );
     }
-  }
-
-  /**
-   * Encodes attributes for AnonCreds format
-   * AnonCreds requires attributes to be encoded as integers
-   */
-  private encodeAttributesForAnonCreds(
-    credentialSubject: StudentData & {id: string},
-  ): Record<string, {raw: string; encoded: string}> {
-    const encoded: Record<string, {raw: string; encoded: string}> = {};
-
-    // Encode each attribute
-    for (const [key, value] of Object.entries(credentialSubject)) {
-      const rawValue = String(value);
-      // Simple encoding: hash the value to get an integer
-      const hash = this.simpleHash(rawValue);
-      encoded[key] = {
-        raw: rawValue,
-        encoded: hash,
-      };
-    }
-
-    return encoded;
-  }
-
-  /**
-   * Simple hash function for attribute encoding
-   */
-  private simpleHash(value: string): string {
-    let hash = 0;
-    for (let i = 0; i < value.length; i++) {
-      const char = value.charCodeAt(i);
-      // eslint-disable-next-line no-bitwise
-      hash = (hash << 5) - hash + char;
-      // eslint-disable-next-line no-bitwise
-      hash = hash & hash; // Convert to 32-bit integer
-    }
-    return Math.abs(hash).toString();
   }
 
   /**
@@ -357,11 +310,8 @@ class CredentialService {
    */
   async copyToClipboard(credential: string): Promise<void> {
     try {
-      // In React Native, we would use @react-native-clipboard/clipboard
-      // For now, we'll simulate the clipboard operation
-      // Clipboard.setString(credential);
+      Clipboard.setString(credential);
 
-      // Log the clipboard operation
       LogService.captureEvent(
         'credential_issuance',
         'emissor',
@@ -398,8 +348,12 @@ class CredentialService {
         parsedToken = null;
       }
 
-      // Check if it's AnonCreds format (has schema_id and values)
-      if (parsedToken && parsedToken.schema_id && parsedToken.values) {
+      // Check if it's AnonCreds format (new envelope or legacy)
+      if (
+        parsedToken &&
+        ((parsedToken.format === 'anoncreds' && parsedToken.credential) ||
+          (parsedToken.schema_id && parsedToken.values))
+      ) {
         return await this.parseAnonCreds(token);
       }
 
@@ -475,58 +429,64 @@ class CredentialService {
   }
 
   /**
-   * Parses an AnonCreds credential into a VerifiableCredential
+   * Parses an AnonCreds credential into a VerifiableCredential.
+   * Supports both the new envelope format (from real AnonCreds) and
+   * legacy shaped JSON for backward compatibility.
    */
   private async parseAnonCreds(anonCredsJson: string): Promise<VerifiableCredential> {
     try {
-      const anonCreds = JSON.parse(anonCredsJson);
+      const parsed = JSON.parse(anonCredsJson);
 
-      // Validate AnonCreds structure
-      if (!anonCreds.values || !anonCreds.schema_id) {
-        throw new ValidationError(
-          'Estrutura AnonCreds inválida',
-          'anoncreds',
-          anonCredsJson.substring(0, 50),
-        );
-      }
+      // New envelope format: { format: 'anoncreds', credential, schema_id, cred_def_id }
+      const isEnvelope = parsed.format === 'anoncreds' && parsed.credential;
+      const anonCreds = isEnvelope ? parsed.credential : parsed;
+      const schemaId = isEnvelope
+        ? parsed.schema_id
+        : parsed.schema_id || 'unknown';
+      const credDefId = isEnvelope
+        ? parsed.cred_def_id
+        : parsed.cred_def_id || 'unknown';
+      const holderDid = isEnvelope ? parsed.holder_did || '' : '';
 
-      // Convert AnonCreds to VerifiableCredential format
-      const credentialSubject: any = {id: ''};
+      // Extract attribute values from the AnonCreds credential
+      const credentialSubject: any = {id: holderDid};
 
-      for (const [key, value] of Object.entries(anonCreds.values)) {
+      // Real AnonCreds credentials store values under `values` with {raw, encoded}
+      const values = anonCreds.values || {};
+      for (const [key, value] of Object.entries(values)) {
         const attrValue = value as {raw: string; encoded: string};
-        
-        // Convert string booleans back to boolean
-        if (attrValue.raw === 'true' || attrValue.raw === 'false') {
-          credentialSubject[key] = attrValue.raw === 'true';
+        const raw = attrValue?.raw ?? String(value);
+
+        if (raw === 'true' || raw === 'false') {
+          credentialSubject[key] = raw === 'true';
         } else if (key === 'acesso_laboratorios' || key === 'acesso_predios') {
-          // Parse arrays
           try {
-            credentialSubject[key] = JSON.parse(attrValue.raw);
+            credentialSubject[key] = JSON.parse(raw);
           } catch {
             credentialSubject[key] = [];
           }
         } else {
-          credentialSubject[key] = attrValue.raw;
+          credentialSubject[key] = raw;
         }
       }
 
-      // Create VerifiableCredential structure
       const credential: VerifiableCredential = {
         '@context': [
           'https://www.w3.org/2018/credentials/v1',
           'https://w3id.org/security/suites/jws-2020/v1',
         ],
         type: ['VerifiableCredential', 'AcademicIDCredential'],
-        issuer: anonCreds.cred_def_id || 'did:web:ufsc.br',
+        issuer: credDefId,
         issuanceDate: new Date().toISOString(),
         credentialSubject,
         proof: {
-          type: 'AnonCredsProof',
+          type: 'CLSignature2023',
           created: new Date().toISOString(),
-          verificationMethod: anonCreds.cred_def_id || 'did:web:ufsc.br#key-1',
+          verificationMethod: `${credDefId}#key-1`,
           proofPurpose: 'assertionMethod',
-          signature: JSON.stringify(anonCreds.signature),
+          signature: isEnvelope
+            ? JSON.stringify({schema_id: schemaId, cred_def_id: credDefId})
+            : JSON.stringify(anonCreds.signature),
         },
       };
 

@@ -1,269 +1,94 @@
-# Carteira Identidade Acadêmica
+# Carteira de Identidade Acadêmica
 
-Sistema de Identidade Auto-Soberana (SSI) para credenciais acadêmicas verificáveis baseado em React Native.
+Protótipo mobile de carteira de identidade digital para o contexto universitário da UFSC, baseado na adaptação da arquitetura europeia (EUDI Wallet/ARF) ao ecossistema brasileiro de confiança digital (ICP-Brasil, Gov.br).
 
-## 📋 Índice
+Desenvolvido como trabalho de conclusão de curso em Ciências da Computação — UFSC, 2026.
 
-- [Visão Geral](#visão-geral)
-- [Características](#características)
-- [Tecnologias](#tecnologias)
-- [Pré-requisitos](#pré-requisitos)
-- [Instalação](#instalação)
-- [Uso](#uso)
-- [Arquitetura](#arquitetura)
-- [Testes](#testes)
-- [Documentação](#documentação)
-- [Troubleshooting](#troubleshooting)
-- [Contribuindo](#contribuindo)
+## Escopo
 
-## 🎯 Visão Geral
+O aplicativo roda em Android (React Native 0.76.5) e implementa os três papéis do modelo SSI (Issuer/Holder/Verifier) em um único app. Credenciais são trocadas via área de transferência — não há protocolos de rede ou ledger distribuído envolvidos. O transporte real (OpenID4VP, BLE) está preparado como camada opcional via `EudiTransportService`.
 
-MVP de uma carteira digital de identidade acadêmica que demonstra a viabilidade técnica de emissão, custódia e verificação de credenciais verificáveis usando protocolos SSI (Self-Sovereign Identity).
+## Stack técnica
 
-O sistema simula o ecossistema completo em um único aplicativo Android:
-- **Emissor**: Instituição (UFSC) que emite credenciais acadêmicas
-- **Titular**: Estudante que armazena e gerencia suas credenciais
-- **Verificador**: Sistemas que validam apresentações verificáveis
-- **Logs**: Painel de monitoramento de eventos criptográficos
+| Camada | Tecnologia |
+|---|---|
+| Framework | React Native 0.76.5, TypeScript 5.0.4 |
+| Agente SSI | @credo-ts/core 0.5.3 (gerencia wallet Aries Askar, DIDs, configuração AnonCreds) |
+| Credenciais CL | @hyperledger/anoncreds-react-native 0.2.2 (Schema, CredDef, Credential, Presentation com CL-signatures) |
+| Provas ZK (Groth16) | mopro-ffi (compilação e execução de circuitos Circom no dispositivo) |
+| Armazenamento | react-native-encrypted-storage (AES-256 via Keystore/Keychain) |
+| Wallet criptográfico | @hyperledger/aries-askar-react-native 0.2.1 (Ed25519, armazenamento de chaves) |
+| Transporte (opcional) | @openwallet-foundation/eudi-wallet-kit-react-native 0.1.3 (BLE, OpenID4VP) |
+| Estado | Zustand 4.5.0 |
+| Testes | Jest 29.x, fast-check 4.6.0 |
 
-### Casos de Uso Implementados
+## Formatos de credencial suportados
 
-1. **Restaurante Universitário**: Divulgação seletiva com SD-JWT
-2. **Eleições Estudantis**: Prevenção de voto duplicado com Nullifiers
-3. **Laboratórios**: Controle de acesso físico
-4. **Verificação de Maioridade**: Range Proofs preservando privacidade
+- **SD-JWT**: Credencial assinada com Ed25519 via Aries Askar. Divulgação seletiva por hash de atributos (SHA-256).
+- **AnonCreds**: Protocolo completo CL-signature: Schema → CredentialDefinition → Offer → Request → Credential → Presentation. Provas de predicado (ex: idade ≥ 18) e desvinculabilidade nativa.
 
-## ✨ Características
+## Provas de conhecimento zero
 
-- ✅ Geração de identidade descentralizada (DID)
-- ✅ Emissão de credenciais verificáveis (SD-JWT e AnonCreds)
-- ✅ Armazenamento criptografado de credenciais
-- ✅ Divulgação seletiva de atributos
-- ✅ Provas de conhecimento zero (ZKP)
-- ✅ Validação de apresentações verificáveis
-- ✅ Prevenção de duplicação com Nullifiers
-- ✅ Range Proofs para predicados matemáticos
-- ✅ Painel de logs criptográficos em tempo real
-- ✅ Suporte a acessibilidade (WCAG AA)
-- ✅ Testes de propriedade (Property-Based Testing)
+- **AnonCreds (CL)**: Divulgação seletiva e provas de predicado com desvinculabilidade entre apresentações. Usado para cenários padrão.
+- **Groth16/Circom (mopro)**: Circuitos customizados para age_range, status_check e nullifiers de eleições. Usado quando a lógica de prova excede o que AnonCreds expressa nativamente.
 
-## 🛠 Tecnologias
-
-### Core
-- **React Native 0.76.5** com TypeScript
-- **Nova Arquitetura** (TurboModules)
-- **React Navigation** para navegação
-- **Zustand** para gerenciamento de estado
-
-### Bibliotecas Criptográficas
-- **@credo-ts/core**: Framework SSI
-- **@noble/ed25519**: Assinaturas digitais EdDSA
-- **jose**: Operações JWT/JWS
-- **crypto-js**: Funções criptográficas
-- **react-native-encrypted-storage**: Armazenamento seguro
-- **react-native-keychain**: Gerenciamento de chaves
-
-### Testes
-- **Jest**: Framework de testes
-- **fast-check**: Property-Based Testing
-- **React Native Testing Library**: Testes de componentes
-
-## 📦 Pré-requisitos
-
-- **Node.js** >= 18
-- **Java Development Kit (JDK)** 17
-- **Android Studio** Arctic Fox ou superior
-- **Android SDK** API 24+ (Android 7.0+)
-- **Android SDK Build Tools** 34.0.0
-
-## 🚀 Instalação
-
-### 1. Clonar o repositório
-
-```bash
-git clone <repository-url>
-cd CarteiraIdentidadeAcademica
-```
-
-### 2. Instalar dependências
-
-```bash
-npm install
-```
-
-### 3. Configurar Android
-
-Crie o arquivo `android/local.properties`:
-
-```properties
-sdk.dir=C:\\Users\\[SEU_USUARIO]\\AppData\\Local\\Android\\Sdk
-```
-
-### 4. Executar o aplicativo
-
-```bash
-# Terminal 1: Iniciar Metro Bundler
-npm start
-
-# Terminal 2: Executar no Android
-npm run android
-```
-
-Para instruções detalhadas, consulte [INSTALLATION.md](./INSTALLATION.md).
-
-## 📱 Uso
-
-### Fluxo Completo
-
-1. **Inicialização**: Na primeira execução, o app gera automaticamente a identidade DID do titular
-2. **Emissão**: Acesse o módulo Emissor, preencha os dados acadêmicos e emita a credencial
-3. **Armazenamento**: No módulo Titular, cole a credencial emitida para armazená-la
-4. **Verificação**: No módulo Verificador, selecione um cenário e gere a requisição
-5. **Apresentação**: No módulo Titular, cole a requisição, aprove o consentimento e gere a apresentação
-6. **Validação**: No módulo Verificador, cole a apresentação para validá-la
-7. **Logs**: Acompanhe todos os eventos criptográficos no painel de Logs
-
-Para guia detalhado de uso, consulte [docs/USER_GUIDE.md](./docs/USER_GUIDE.md).
-
-## 🏗 Arquitetura
-
-### Estrutura de Pastas
+## Estrutura do projeto
 
 ```
 src/
-├── screens/              # Telas da aplicação
-│   ├── HomeScreen.tsx
-│   ├── InitializationScreen.tsx
-│   ├── IssuerScreen.tsx
-│   ├── HolderScreen.tsx
-│   ├── VerifierScreen.tsx
-│   ├── LogsScreen.tsx
-│   └── GlossaryScreen.tsx
-├── services/             # Camada de serviços
-│   ├── CryptoService.ts
-│   ├── DIDService.ts
-│   ├── CredentialService.ts
-│   ├── PresentationService.ts
-│   ├── VerificationService.ts
-│   ├── StorageService.ts
-│   ├── LogService.ts
-│   └── ErrorHandler.ts
-├── components/           # Componentes reutilizáveis
-│   ├── CredentialCard.tsx
-│   ├── ConsentModal.tsx
-│   ├── AttributeSelector.tsx
-│   ├── LoadingIndicator.tsx
-│   ├── ErrorMessage.tsx
-│   └── SuccessMessage.tsx
-├── stores/               # Zustand stores
-│   └── useAppStore.ts
-├── types/                # Definições TypeScript
-│   └── index.ts
-└── utils/                # Funções utilitárias
-    ├── accessibility.ts
-    ├── errorMessages.ts
-    ├── glossary.ts
-    ├── performanceCache.ts
-    └── theme.ts
+├── services/
+│   ├── AgentService.ts          # Singleton do agente Credo (Askar + AnonCreds modules)
+│   ├── AnonCredsService.ts      # Protocolo CL-signature completo
+│   ├── CredentialService.ts     # Emissão SD-JWT e AnonCreds
+│   ├── CryptoService.ts         # SHA-256, Ed25519 (via @noble/ed25519)
+│   ├── DIDService.ts            # did:key, did:peer, did:web (via agente Credo)
+│   ├── EudiTransportService.ts  # Camada de transporte BLE/OpenID4VP (opcional)
+│   ├── PresentationService.ts   # Apresentações SD-JWT, Groth16 e AnonCreds
+│   ├── StorageService.ts        # Encrypted storage wrapper
+│   ├── VerificationService.ts   # Validação de apresentações
+│   ├── ZKProofService.ts        # Wrapper mopro-ffi para Groth16
+│   ├── LogService.ts            # Registro de eventos criptográficos
+│   └── ErrorHandler.ts          # Classes de erro tipadas
+├── screens/                     # UI: Home, Issuer, Holder, Verifier, Logs, Glossary
+├── components/                  # ConsentModal, CredentialCard, etc.
+├── stores/                      # Zustand (useAppStore)
+├── types/                       # TypeScript interfaces
+└── utils/                       # Acessibilidade, tema, glossário
 ```
 
-### Fluxo de Dados
+## Cenários de verificação implementados
 
-```
-UI Layer (React Components)
-    ↓
-Navigation Layer (React Navigation)
-    ↓
-Service Layer (Business Logic)
-    ↓
-Crypto Libraries (Native Modules)
-    ↓
-Secure Storage (OS-level encryption)
-```
+1. **Restaurante Universitário**: Divulgação seletiva SD-JWT de `status_matricula` e `isencao_ru`.
+2. **Eleições estudantis**: ZKP de matrícula ativa + nullifier determinístico (previne voto duplicado).
+3. **Verificação de maioridade**: Range proof de `data_nascimento ≥ 18` sem revelar a data.
+4. **Acesso a laboratórios**: Verificação de presença em arrays `acesso_laboratorios`/`acesso_predios`.
 
-Para detalhes arquiteturais, consulte [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md).
+## Testes
 
-## 🧪 Testes
-
-### Executar todos os testes
+Property-based testing com fast-check. Cada propriedade é testada com dados gerados aleatoriamente.
 
 ```bash
-npm test
+# Requer npm install --legacy-peer-deps primeiro
+npx jest
 ```
 
-### Executar testes com saída detalhada
+Estrutura de testes:
+- `src/services/__tests__/` — Testes unitários e property-based dos serviços
+- `src/screens/__tests__/` — Testes de telas
+- `src/__tests__/` — Testes E2E dos fluxos completos
 
-```bash
-npm run test:verbose
-```
+## Documentação
 
-### Cobertura de Testes
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — Arquitetura e fluxos de dados
+- [docs/API_DOCUMENTATION.md](docs/API_DOCUMENTATION.md) — APIs dos serviços
+- [docs/DESIGN_DECISIONS.md](docs/DESIGN_DECISIONS.md) — Decisões técnicas e trade-offs
+- [docs/USER_GUIDE.md](docs/USER_GUIDE.md) — Guia de uso
+- [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) — Resolução de problemas
 
-- **Testes Unitários**: Serviços, utilitários e componentes
-- **Testes de Propriedade**: 39 propriedades de correção validadas
-- **Testes de Integração**: 6 fluxos E2E completos
+## Limitações
 
-Cada teste de propriedade valida pelo menos 100 iterações com dados gerados aleatoriamente.
-
-## 📚 Documentação
-
-- [Guia de Instalação](./INSTALLATION.md)
-- [Guia de Configuração](./SETUP.md)
-- [Guia do Usuário](./docs/USER_GUIDE.md)
-- [Documentação de Arquitetura](./docs/ARCHITECTURE.md)
-- [Documentação de APIs](./docs/API_DOCUMENTATION.md)
-- [Decisões de Design](./docs/DESIGN_DECISIONS.md)
-- [Guia de Troubleshooting](./docs/TROUBLESHOOTING.md)
-- [Guia de Acessibilidade](./ACCESSIBILITY_MIGRATION_GUIDE.md)
-
-## 🔧 Troubleshooting
-
-### Problemas Comuns
-
-**Erro: "SDK location not found"**
-```bash
-# Crie android/local.properties com o caminho do SDK
-echo "sdk.dir=C:\\Users\\[SEU_USUARIO]\\AppData\\Local\\Android\\Sdk" > android/local.properties
-```
-
-**Erro: "Unable to load script"**
-```bash
-# Limpe o cache do Metro
-npm start -- --reset-cache
-```
-
-**Erro de build do Android**
-```bash
-cd android
-./gradlew clean
-cd ..
-npm run android
-```
-
-Para mais soluções, consulte [docs/TROUBLESHOOTING.md](./docs/TROUBLESHOOTING.md).
-
-## 🤝 Contribuindo
-
-1. Fork o projeto
-2. Crie uma branch para sua feature (`git checkout -b feature/AmazingFeature`)
-3. Commit suas mudanças (`git commit -m 'Add some AmazingFeature'`)
-4. Push para a branch (`git push origin feature/AmazingFeature`)
-5. Abra um Pull Request
-
-## 📄 Licença
-
-Este projeto é um MVP acadêmico para demonstração de conceitos SSI.
-
-## 🙏 Agradecimentos
-
-- W3C Verifiable Credentials Working Group
-- Hyperledger Aries/AnonCreds Community
-- React Native Community
-
-## 📞 Contato
-
-Para questões técnicas ou sugestões, abra uma issue no repositório.
-
----
-
-**Status do Projeto**: MVP Completo - Todas as funcionalidades principais implementadas e testadas.
+- Não há ledger distribuído. Schemas e CredentialDefinitions do AnonCreds são armazenados localmente.
+- O transporte é via clipboard. BLE/OpenID4VP estão disponíveis como camada opcional mas não integrados ao fluxo principal da UI.
+- Emissor, titular e verificador coexistem no mesmo app (adequado para prototipagem, não para produção).
+- Circuitos Circom (.zkey) precisam ser compilados e empacotados no bundle do app.
+- `node_modules` não está incluso — executar `npm install --legacy-peer-deps` antes de usar.

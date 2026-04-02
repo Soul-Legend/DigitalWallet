@@ -1,0 +1,385 @@
+import CryptoService from './CryptoService';
+import StorageService from './StorageService';
+import LogService from './LogService';
+import {CryptoError, ValidationError} from './ErrorHandler';
+import * as ed from '@noble/ed25519';
+
+function toHex(bytes: Uint8Array): string {
+  return Array.from(bytes)
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
+}
+
+/**
+ * A trusted issuer registered in the trust chain.
+ *
+ * The chain emulates a PKI hierarchy: a root anchor signs certificates
+ * for child issuers, which can in turn sign certificates for their own
+ * children.  Verification walks the chain back to the root.
+ */
+export interface TrustedIssuer {
+  /** DID of this issuer (e.g. did:web:ufsc.br) */
+  did: string;
+  /** Ed25519 public key hex */
+  publicKey: string;
+  /** Human-readable name */
+  name: string;
+  /** DID of the parent that signed this issuer's certificate. null = root */
+  parentDid: string | null;
+  /**
+   * Signature from the parent over the canonical certificate payload.
+   * For the root issuer this is a self-signature.
+   */
+  certificate: string;
+  /** ISO-8601 creation timestamp */
+  createdAt: string;
+}
+
+const STORAGE_KEY = 'trust_chain_issuers';
+
+class TrustChainService {
+  private issuers: Map<string, TrustedIssuer> = new Map();
+  private loaded = false;
+
+  // -------------------------------------------------------------------
+  // Persistence
+  // -------------------------------------------------------------------
+
+  private async load(): Promise<void> {
+    if (this.loaded) {
+      return;
+    }
+    const raw = await StorageService.getRawItem(STORAGE_KEY);
+    if (raw) {
+      try {
+        const arr: TrustedIssuer[] = JSON.parse(raw);
+        for (const issuer of arr) {
+          this.issuers.set(issuer.did, issuer);
+        }
+      } catch {
+        // corrupted – start fresh
+      }
+    }
+    this.loaded = true;
+  }
+
+  private async persist(): Promise<void> {
+    const arr = Array.from(this.issuers.values());
+    await StorageService.setRawItem(STORAGE_KEY, JSON.stringify(arr));
+  }
+
+  // -------------------------------------------------------------------
+  // Certificate helpers
+  // -------------------------------------------------------------------
+
+  /**
+   * Canonical string that the parent signs when issuing a certificate
+   * for a child issuer.
+   */
+  private certificatePayload(issuer: {
+    did: string;
+    publicKey: string;
+    name: string;
+    parentDid: string | null;
+  }): string {
+    return JSON.stringify({
+      did: issuer.did,
+      publicKey: issuer.publicKey,
+      name: issuer.name,
+      parentDid: issuer.parentDid,
+    });
+  }
+
+  // -------------------------------------------------------------------
+  // Public API
+  // -------------------------------------------------------------------
+
+  /**
+   * Initialise and register the root anchor issuer.
+   *
+   * Generates a new Ed25519 key pair, self-signs a certificate, and
+   * stores it as the trust root.  Must be called once; subsequent calls
+   * return the existing root.
+   */
+  async initializeRootIssuer(
+    did: string,
+    name: string,
+  ): Promise<TrustedIssuer> {
+    await this.load();
+
+    // Return existing root if present
+    const existing = this.getRootIssuer();
+    if (existing) {
+      return existing;
+    }
+
+    // Generate root key pair
+    const privateKeyBytes = ed.utils.randomSecretKey();
+    const publicKeyBytes = await ed.getPublicKeyAsync(privateKeyBytes);
+    const privateKeyHex = toHex(privateKeyBytes);
+    const publicKeyHex = toHex(publicKeyBytes);
+
+    const payload = this.certificatePayload({
+      did,
+      publicKey: publicKeyHex,
+      name,
+      parentDid: null,
+    });
+
+    // Self-sign
+    const certificate = await CryptoService.signData(payload, privateKeyHex, 'emissor');
+
+    const root: TrustedIssuer = {
+      did,
+      publicKey: publicKeyHex,
+      name,
+      parentDid: null,
+      certificate,
+      createdAt: new Date().toISOString(),
+    };
+
+    this.issuers.set(did, root);
+    await this.persist();
+
+    // Store root private key so it can sign child certificates later
+    await StorageService.setRawItem('trust_root_private_key', privateKeyHex);
+
+    LogService.captureEvent('key_generation', 'emissor', {
+      algorithm: 'Ed25519',
+      key_size: 256,
+      did_method: 'did:web',
+      parameters: {action: 'root_issuer_created', did},
+    }, true);
+
+    return root;
+  }
+
+  /**
+   * Register a new trusted issuer signed by an existing issuer in the
+   * chain (typically the root or one of its children).
+   *
+   * @param parentDid - DID of the signing parent
+   * @param parentPrivateKey - Parent's private key hex (for signing the certificate)
+   * @param childDid - DID for the new issuer
+   * @param childName - Human-readable label
+   * @returns The newly created TrustedIssuer (including generated public key)
+   */
+  async registerChildIssuer(
+    parentDid: string,
+    parentPrivateKey: string,
+    childDid: string,
+    childName: string,
+  ): Promise<TrustedIssuer> {
+    await this.load();
+
+    const parent = this.issuers.get(parentDid);
+    if (!parent) {
+      throw new ValidationError(
+        'Emissor pai não encontrado na cadeia de confiança',
+        'parentDid',
+        parentDid,
+      );
+    }
+
+    if (this.issuers.has(childDid)) {
+      throw new ValidationError(
+        'Emissor já registrado na cadeia de confiança',
+        'childDid',
+        childDid,
+      );
+    }
+
+    // Generate child key pair
+    const privateKeyBytes = ed.utils.randomSecretKey();
+    const publicKeyBytes = await ed.getPublicKeyAsync(privateKeyBytes);
+    const privateKeyHex = toHex(privateKeyBytes);
+    const publicKeyHex = toHex(publicKeyBytes);
+
+    const payload = this.certificatePayload({
+      did: childDid,
+      publicKey: publicKeyHex,
+      name: childName,
+      parentDid,
+    });
+
+    // Parent signs the child's certificate
+    const certificate = await CryptoService.signData(
+      payload,
+      parentPrivateKey,
+      'emissor',
+    );
+
+    const child: TrustedIssuer = {
+      did: childDid,
+      publicKey: publicKeyHex,
+      name: childName,
+      parentDid,
+      certificate,
+      createdAt: new Date().toISOString(),
+    };
+
+    this.issuers.set(childDid, child);
+    await this.persist();
+
+    // Store child private key for potential further delegation
+    await StorageService.setRawItem(
+      `trust_issuer_private_key_${childDid}`,
+      privateKeyHex,
+    );
+
+    LogService.captureEvent('key_generation', 'emissor', {
+      algorithm: 'Ed25519',
+      key_size: 256,
+      did_method: 'did:web',
+      parameters: {
+        action: 'child_issuer_registered',
+        childDid,
+        parentDid,
+      },
+    }, true);
+
+    return child;
+  }
+
+  /**
+   * Verify the complete trust chain from the given issuer DID back to the
+   * root anchor. Each certificate is cryptographically verified against its
+   * parent's public key. Returns true only if every link is valid and the
+   * chain terminates at the root.
+   */
+  async verifyTrustChain(issuerDid: string): Promise<{
+    trusted: boolean;
+    chain: TrustedIssuer[];
+    error?: string;
+  }> {
+    await this.load();
+
+    const chain: TrustedIssuer[] = [];
+    let currentDid: string | null = issuerDid;
+    const visited = new Set<string>();
+
+    while (currentDid) {
+      if (visited.has(currentDid)) {
+        return {trusted: false, chain, error: 'Ciclo detectado na cadeia de confiança'};
+      }
+      visited.add(currentDid);
+
+      const issuer = this.issuers.get(currentDid);
+      if (!issuer) {
+        return {
+          trusted: false,
+          chain,
+          error: `Emissor ${currentDid} não encontrado na cadeia de confiança`,
+        };
+      }
+
+      chain.push(issuer);
+
+      // Verify certificate
+      const payload = this.certificatePayload(issuer);
+      const signerPublicKey = issuer.parentDid
+        ? this.issuers.get(issuer.parentDid)?.publicKey
+        : issuer.publicKey; // Root is self-signed
+
+      if (!signerPublicKey) {
+        return {
+          trusted: false,
+          chain,
+          error: `Chave pública do assinante não encontrada para ${issuer.parentDid}`,
+        };
+      }
+
+      const valid = await CryptoService.verifySignature(
+        payload,
+        issuer.certificate,
+        signerPublicKey,
+        'verificador',
+      );
+
+      if (!valid) {
+        return {
+          trusted: false,
+          chain,
+          error: `Certificado inválido para ${currentDid}`,
+        };
+      }
+
+      // Walk up
+      currentDid = issuer.parentDid;
+    }
+
+    // Chain must terminate at a root (parentDid === null)
+    const last = chain[chain.length - 1];
+    if (!last || last.parentDid !== null) {
+      return {trusted: false, chain, error: 'Cadeia não termina em um emissor raiz'};
+    }
+
+    return {trusted: true, chain};
+  }
+
+  /**
+   * Look up a trusted issuer by DID.
+   */
+  async getIssuer(did: string): Promise<TrustedIssuer | undefined> {
+    await this.load();
+    return this.issuers.get(did);
+  }
+
+  /**
+   * Return the root anchor issuer, if one has been initialized.
+   */
+  getRootIssuer(): TrustedIssuer | undefined {
+    for (const issuer of this.issuers.values()) {
+      if (issuer.parentDid === null) {
+        return issuer;
+      }
+    }
+    return undefined;
+  }
+
+  /**
+   * List all issuers registered in the trust chain.
+   */
+  async getAllIssuers(): Promise<TrustedIssuer[]> {
+    await this.load();
+    return Array.from(this.issuers.values());
+  }
+
+  /**
+   * Get the private key for a registered issuer (for signing child certificates).
+   */
+  async getIssuerPrivateKey(did: string): Promise<string | null> {
+    await this.load();
+    const issuer = this.issuers.get(did);
+    if (!issuer) {
+      return null;
+    }
+    if (issuer.parentDid === null) {
+      return StorageService.getRawItem('trust_root_private_key');
+    }
+    return StorageService.getRawItem(`trust_issuer_private_key_${did}`);
+  }
+
+  /**
+   * Check if a given DID is a trusted issuer.
+   */
+  async isTrustedIssuer(did: string): Promise<boolean> {
+    await this.load();
+    if (!this.issuers.has(did)) {
+      return false;
+    }
+    const result = await this.verifyTrustChain(did);
+    return result.trusted;
+  }
+
+  /**
+   * Remove all issuers and reset the trust chain.
+   */
+  async reset(): Promise<void> {
+    this.issuers.clear();
+    this.loaded = false;
+    await StorageService.setRawItem(STORAGE_KEY, '[]');
+  }
+}
+
+export default new TrustChainService();

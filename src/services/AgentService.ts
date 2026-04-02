@@ -70,8 +70,8 @@ class AgentService {
         modules: {
           askar: new AskarModule({ariesAskar}),
           anoncreds: new AnonCredsModule({
-            anoncreds,
-            registries: [],
+            anoncreds: anoncreds as any,
+            registries: [] as any,
           }),
         },
       }) as unknown as CredoAgent;

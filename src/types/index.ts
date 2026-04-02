@@ -87,6 +87,8 @@ export interface LogEntry {
     | 'verification'
     | 'hash_computation'
     | 'zkp_generation'
+    | 'trust_chain_init'
+    | 'trust_chain_register'
     | 'error';
   module: 'emissor' | 'titular' | 'verificador';
   details: LogDetails;
@@ -102,6 +104,12 @@ export interface LogDetails {
   verification_result?: boolean;
   parameters?: Record<string, any>;
   stack_trace?: string;
+  format?: string;
+  holder?: string;
+  root_did?: string;
+  parent_did?: string;
+  child_did?: string;
+  child_name?: string;
 }
 
 // PEX (Presentation Exchange) Types
@@ -159,6 +167,7 @@ export interface ValidationResult {
   verified_attributes?: Record<string, any>;
   predicates_satisfied?: boolean;
   nullifier_check?: 'new' | 'duplicate';
+  trust_chain_valid?: boolean;
 }
 
 // Secure Storage

@@ -3,11 +3,15 @@ module.exports = {
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
   transformIgnorePatterns: [
-    'node_modules/(?!(react-native|@react-native|@react-navigation|zustand|@noble|@credo-ts|@hyperledger|mopro-ffi|uniffi-bindgen-react-native)/)',
+    'node_modules/(?!(react-native|@react-native|@react-navigation|zustand|@noble|@credo-ts|@hyperledger|mopro-ffi|uniffi-bindgen-react-native|@openwallet-foundation)/)',
   ],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
   },
+  testPathIgnorePatterns: [
+    '/node_modules/',
+    '/docs/libs_Docs/',
+  ],
   // Reduce verbose output in test failures
   verbose: false,
   silent: false,

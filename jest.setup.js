@@ -24,9 +24,13 @@ jest.mock('./src/services/AgentService', () => {
     initialize: jest.fn().mockResolvedValue(undefined),
     shutdown: jest.fn().mockResolvedValue(undefined),
     dids: {
-      create: jest.fn().mockImplementation(() => {
+      create: jest.fn().mockImplementation((opts) => {
         callCount++;
-        const did = `did:key:z6Mk${callCount}${Date.now()}${Math.random().toString(36).slice(2, 12)}`;
+        const method = (opts && opts.method) || 'key';
+        const suffix = `${callCount}${Date.now()}${Math.random().toString(36).slice(2, 12)}`;
+        const did = method === 'peer'
+          ? `did:peer:0z6Mk${suffix}`
+          : `did:key:z6Mk${suffix}`;
         return Promise.resolve({
           didState: {
             state: 'finished',
@@ -92,9 +96,18 @@ jest.mock('./src/services/ZKProofService', () => {
         proof: mockCircomProof,
         inputs: ['1'],
       }),
-      generateNullifierProof: jest.fn().mockResolvedValue({
-        proof: mockCircomProof,
-        inputs: ['0xnullifier123'],
+      generateNullifierProof: jest.fn().mockImplementation(async (holderSecret, electionId) => {
+        // Deterministic but unique per input pair
+        let hash = 0;
+        const combined = `${holderSecret}:${electionId}`;
+        for (let i = 0; i < combined.length; i++) {
+          hash = ((hash << 5) - hash + combined.charCodeAt(i)) | 0;
+        }
+        const nullifierHex = '0x' + Math.abs(hash).toString(16).padStart(16, '0');
+        return {
+          proof: mockCircomProof,
+          inputs: [nullifierHex],
+        };
       }),
       verifyProof: jest.fn().mockResolvedValue(true),
       isCircuitAvailable: jest.fn().mockResolvedValue(true),
@@ -103,7 +116,9 @@ jest.mock('./src/services/ZKProofService', () => {
         {name: 'status_check', fileName: 'status_check_final.zkey', available: true},
         {name: 'nullifier', fileName: 'nullifier_final.zkey', available: true},
       ]),
-      extractNullifier: jest.fn().mockReturnValue('0xnullifier123'),
+      extractNullifier: jest.fn().mockImplementation((proofResult) => {
+        return proofResult && proofResult.inputs ? proofResult.inputs[0] : undefined;
+      }),
     },
   };
 });
@@ -115,6 +130,113 @@ expect.addSnapshotSerializer({
     const truncated = val.length > 100 ? `${val.substring(0, 50)}...${val.substring(val.length - 50)}` : val;
     return `"${truncated}"`;
   },
+});
+
+// Mock AnonCredsService globally for all tests
+// The @hyperledger/anoncreds-react-native package requires native Rust bindings via JSI
+jest.mock('./src/services/AnonCredsService', () => {
+  const mockSchemaArtifact = {
+    schemaId: 'did:web:ufsc.br:2:academic-id:1.0',
+    schema: {
+      issuerId: 'did:web:ufsc.br',
+      name: 'academic-id',
+      version: '1.0',
+      attrNames: ['nome_completo', 'cpf', 'matricula', 'curso', 'status_matricula', 'data_nascimento'],
+    },
+  };
+
+  const mockCredDefArtifact = {
+    credDefId: 'did:web:ufsc.br:3:CL:did:web:ufsc.br:2:academic-id:1.0:default',
+    credDef: {
+      schemaId: mockSchemaArtifact.schemaId,
+      type: 'CL',
+      tag: 'default',
+      issuerId: 'did:web:ufsc.br',
+      value: {primary: {}},
+    },
+    credDefPrivate: {value: {p_key: 'mock'}},
+    keyCorrectnessProof: {c: 'mock', xz_cap: 'mock', xr_cap: []},
+  };
+
+  return {
+    __esModule: true,
+    default: {
+      getOrCreateSchema: jest.fn().mockResolvedValue(mockSchemaArtifact),
+      getOrCreateCredentialDefinition: jest.fn().mockResolvedValue(mockCredDefArtifact),
+      getOrCreateLinkSecret: jest.fn().mockResolvedValue({
+        linkSecret: 'mock_link_secret',
+        linkSecretId: 'mock_link_secret_id',
+      }),
+      createCredentialOffer: jest.fn().mockReturnValue({
+        schema_id: mockSchemaArtifact.schemaId,
+        cred_def_id: mockCredDefArtifact.credDefId,
+        nonce: 'mock_nonce',
+      }),
+      createCredentialRequest: jest.fn().mockReturnValue({
+        credentialRequest: {prover_did: 'mock', nonce: 'mock'},
+        credentialRequestMetadata: {link_secret_name: 'mock'},
+      }),
+      createCredential: jest.fn().mockReturnValue({
+        schema_id: mockSchemaArtifact.schemaId,
+        cred_def_id: mockCredDefArtifact.credDefId,
+        values: {},
+        signature: {},
+      }),
+      processCredential: jest.fn().mockReturnValue({
+        schema_id: mockSchemaArtifact.schemaId,
+        cred_def_id: mockCredDefArtifact.credDefId,
+        values: {},
+        signature: {},
+      }),
+      issueCredentialFull: jest.fn().mockImplementation(
+        async (_issuerId, _holderDid, _schemaName, _schemaVersion, attrNames, attrValues) => {
+          const values = {};
+          for (const name of attrNames) {
+            values[name] = {raw: attrValues[name] || '', encoded: '0'};
+          }
+          return {
+            credential: {
+              schema_id: mockSchemaArtifact.schemaId,
+              cred_def_id: mockCredDefArtifact.credDefId,
+              values,
+              signature: {p_credential: {}, r_credential: null},
+            },
+            schemaArtifact: mockSchemaArtifact,
+            credDefArtifact: mockCredDefArtifact,
+          };
+        },
+      ),
+      createPresentation: jest.fn().mockReturnValue({
+        proof: {proofs: [], aggregated_proof: {}},
+        requested_proof: {
+          revealed_attrs: {},
+          self_attested_attrs: {},
+          unrevealed_attrs: {},
+          predicates: {},
+        },
+        identifiers: [],
+      }),
+      verifyPresentation: jest.fn().mockReturnValue(true),
+      buildSelectiveDisclosureRequest: jest.fn().mockImplementation(
+        (name, nonce, revealedAttributes) => ({
+          name,
+          version: '1.0',
+          nonce,
+          requested_attributes: revealedAttributes,
+          requested_predicates: {},
+        }),
+      ),
+      buildPredicateRequest: jest.fn().mockImplementation(
+        (name, nonce, revealedAttributes, predicates) => ({
+          name,
+          version: '1.0',
+          nonce,
+          requested_attributes: revealedAttributes,
+          requested_predicates: predicates,
+        }),
+      ),
+    },
+  };
 });
 
 // Override console methods to reduce noise in test output

@@ -1,236 +1,119 @@
-# Documentação de APIs dos Serviços
+# API dos Serviços
 
-## Visão Geral
-
-Esta documentação descreve as APIs públicas de todos os serviços da aplicação. Cada serviço é uma classe singleton que encapsula operações específicas.
+Referência das APIs públicas de todos os serviços. Cada serviço é uma classe singleton exportada como instância.
 
 ## Índice
 
-- [CryptoService](#cryptoservice)
+- [AgentService](#agentservice)
 - [DIDService](#didservice)
 - [CredentialService](#credentialservice)
+- [AnonCredsService](#anoncredsservice)
 - [PresentationService](#presentationservice)
 - [VerificationService](#verificationservice)
+- [ZKProofService](#zkproofservice)
+- [EudiTransportService](#euditransportservice)
+- [CryptoService](#cryptoservice)
 - [StorageService](#storageservice)
 - [LogService](#logservice)
 - [ErrorHandler](#errorhandler)
 
 ---
 
-## CryptoService
+## AgentService
 
-Serviço responsável por operações criptográficas de baixo nível.
+Gerencia o ciclo de vida do agente Credo (Aries Framework JavaScript). Inicializa o agente com os módulos Askar (wallet criptografado) e AnonCreds (credenciais CL-signature). Singleton com inicialização lazy.
+
+**Tipo interno**: `CredoAgent = Agent<{ askar: AskarModule; anoncreds: AnonCredsModule }>`
 
 ### Métodos
 
-#### `computeHash(data: string, algorithm?: 'SHA-256' | 'SHA-512'): Promise<string>`
+#### `getAgent(): Promise<CredoAgent>`
 
-Computa o hash criptográfico de uma string.
+Retorna a instância do agente Credo. Inicializa na primeira chamada (Argon2IMod key derivation, wallet id `academic-wallet`). Chamadas subsequentes retornam a mesma instância.
 
-**Parâmetros**:
-- `data`: String a ser hasheada
-- `algorithm`: Algoritmo de hash (padrão: 'SHA-256')
+#### `shutdown(): Promise<void>`
 
-**Retorna**: Hash em formato hexadecimal
+Encerra o agente e limpa a referência interna.
 
-**Exemplo**:
-```typescript
-const hash = await CryptoService.computeHash('Hello World');
-// Retorna: "a591a6d40bf420404a011733cfb7b190d62c65bf0bcda32b57b277d9ad9f146e"
-```
+#### `isInitialized(): boolean`
 
-**Throws**: `CryptoError` se a operação falhar
-
----
-
-#### `signData(data: string, privateKeyHex: string): Promise<string>`
-
-Assina dados usando uma chave privada Ed25519.
-
-**Parâmetros**:
-- `data`: Dados a serem assinados
-- `privateKeyHex`: Chave privada em formato hexadecimal
-
-**Retorna**: Assinatura em formato hexadecimal
-
-**Exemplo**:
-```typescript
-const signature = await CryptoService.signData(
-  'message',
-  privateKey
-);
-```
-
-**Throws**: `CryptoError` se a assinatura falhar
-
----
-
-#### `verifySignature(data: string, signatureHex: string, publicKeyHex: string): Promise<boolean>`
-
-Verifica uma assinatura digital.
-
-**Parâmetros**:
-- `data`: Dados originais
-- `signatureHex`: Assinatura em hexadecimal
-- `publicKeyHex`: Chave pública em hexadecimal
-
-**Retorna**: `true` se válida, `false` caso contrário
-
-**Exemplo**:
-```typescript
-const isValid = await CryptoService.verifySignature(
-  'message',
-  signature,
-  publicKey
-);
-```
-
----
-
-#### `computeCompositeHash(parts: string[]): Promise<string>`
-
-Computa hash de múltiplas partes concatenadas.
-
-**Parâmetros**:
-- `parts`: Array de strings a serem hasheadas juntas
-
-**Retorna**: Hash composto em hexadecimal
-
-**Exemplo**:
-```typescript
-const hash = await CryptoService.computeCompositeHash([
-  'part1',
-  'part2',
-  'part3'
-]);
-```
+Retorna `true` se o agente já foi inicializado.
 
 ---
 
 ## DIDService
 
-Serviço para geração e gerenciamento de Identificadores Descentralizados.
+Cria DIDs via agente Credo. Métodos `createDidKey` e `createDidPeer` delegam para `agent.dids.create()`. `createDidWeb` faz formatação local de string (não publica documento DID).
 
 ### Métodos
 
-#### `generateKeyPair(): Promise<{privateKey: string; publicKey: string}>`
+#### `createDidKey(): Promise<{ did: string; verificationMethodId: string }>`
 
-Gera um par de chaves Ed25519.
+Cria um DID usando o método `did:key` via Credo. A chave Ed25519 é gerada internamente pelo Askar.
 
-**Retorna**: Objeto com chaves privada e pública em hexadecimal
+#### `createDidPeer(): Promise<{ did: string; verificationMethodId: string }>`
 
-**Exemplo**:
-```typescript
-const { privateKey, publicKey } = await DIDService.generateKeyPair();
-```
-
-**Throws**: `CryptoError` se a geração falhar
-
----
-
-#### `createDidKey(publicKeyHex: string): string`
-
-Cria um DID usando o método did:key.
-
-**Parâmetros**:
-- `publicKeyHex`: Chave pública em hexadecimal
-
-**Retorna**: DID no formato `did:key:z...`
-
-**Exemplo**:
-```typescript
-const did = DIDService.createDidKey(publicKey);
-// Retorna: "did:key:z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH"
-```
-
----
-
-#### `createDidPeer(publicKeyHex: string): string`
-
-Cria um DID usando o método did:peer.
-
-**Parâmetros**:
-- `publicKeyHex`: Chave pública em hexadecimal
-
-**Retorna**: DID no formato `did:peer:...`
-
-**Exemplo**:
-```typescript
-const did = DIDService.createDidPeer(publicKey);
-```
-
----
+Cria um DID usando o método `did:peer` via Credo.
 
 #### `createDidWeb(domain: string, path?: string): string`
 
-Cria um DID usando o método did:web.
+Formata uma string `did:web:domain:path`. Não publica documento DID.
 
-**Parâmetros**:
-- `domain`: Domínio web (ex: 'ufsc.br')
-- `path`: Caminho opcional (ex: 'identity')
-
-**Retorna**: DID no formato `did:web:...`
-
-**Exemplo**:
 ```typescript
-const did = DIDService.createDidWeb('ufsc.br', 'identity');
-// Retorna: "did:web:ufsc.br:identity"
+DIDService.createDidWeb('ufsc.br', 'identity');
+// "did:web:ufsc.br:identity"
 ```
+
+#### `generateHolderIdentity(method?: 'key' | 'peer'): Promise<{ did: string; publicKey: string }>`
+
+Cria um DID para o titular e persiste no StorageService. Default: `'key'`.
+
+#### `generateIssuerIdentity(domain?: string, path?: string): Promise<{ did: string; publicKey: string }>`
+
+Cria um `did:key` para assinatura e um `did:web` para identidade do emissor. Ambos são persistidos.
+
+#### `resolveDid(did: string): Promise<any>`
+
+Resolve um DID via `agent.dids.resolve()`.
 
 ---
 
 ## CredentialService
 
-Serviço para emissão e gerenciamento de credenciais verificáveis.
+Emissão de credenciais em dois formatos: SD-JWT e AnonCreds.
 
 ### Métodos
 
-#### `getOrCreateIssuerDID(): Promise<{did: string; publicKey: string}>`
+#### `getOrCreateIssuerDID(): Promise<{ did: string; publicKey: string }>`
 
-Obtém ou cria o DID do emissor (UFSC).
+Retorna o DID do emissor do StorageService. Se não existir, chama `DIDService.generateIssuerIdentity()`.
 
-**Retorna**: Objeto com DID e chave pública do emissor
+#### `issueCredential(studentData: StudentData, holderDID: string, format?: 'sd-jwt' | 'anoncreds'): Promise<string>`
 
-**Exemplo**:
+Emite uma credencial. O parâmetro `format` tem default `'sd-jwt'`.
+
+- **SD-JWT**: Monta header/payload JSON, assina com `CryptoService.signData()` usando a chave do emissor, retorna token `header.payload.signature`.
+- **AnonCreds**: Delega para `AnonCredsService.issueCredentialFull()`. Retorna JSON stringificado com `{ format: 'anoncreds', credential, schema_id, cred_def_id }`.
+
 ```typescript
-const { did, publicKey } = await CredentialService.getOrCreateIssuerDID();
+// SD-JWT
+const token = await CredentialService.issueCredential(studentData, holderDID);
+
+// AnonCreds
+const token = await CredentialService.issueCredential(studentData, holderDID, 'anoncreds');
 ```
 
-**Throws**: `CryptoError` se a geração falhar
+#### `validateAndParseCredential(token: string): Promise<VerifiableCredential>`
 
----
+Detecta o formato (AnonCreds se `format === 'anoncreds'` no JSON, SD-JWT caso contrário) e retorna um objeto `VerifiableCredential` normalizado.
 
-#### `issueCredential(studentData: StudentData, format: 'SD-JWT' | 'AnonCreds'): Promise<string>`
+#### `validateStudentData(data: StudentData): void`
 
-Emite uma credencial verificável.
+Valida campos obrigatórios. Lança `ValidationError` se algum campo faltar ou for inválido.
 
-**Parâmetros**:
-- `studentData`: Dados do estudante
-- `format`: Formato da credencial ('SD-JWT' ou 'AnonCreds')
+#### `copyToClipboard(credential: string): Promise<void>`
 
-**Retorna**: Token da credencial (string)
-
-**Exemplo**:
-```typescript
-const credential = await CredentialService.issueCredential(
-  {
-    nome_completo: 'João Silva',
-    cpf: '12345678900',
-    matricula: '20231234567',
-    curso: 'Ciência da Computação',
-    status_matricula: 'Ativo',
-    data_nascimento: '2000-05-15',
-    // ... outros campos
-  },
-  'SD-JWT'
-);
-```
-
-**Throws**: 
-- `ValidationError` se dados inválidos
-- `CryptoError` se assinatura falhar
-
----
+Copia a credencial para o clipboard do sistema.
 
 ### Tipos
 
@@ -241,7 +124,7 @@ interface StudentData {
   matricula: string;
   curso: string;
   status_matricula: 'Ativo' | 'Inativo';
-  data_nascimento: string; // ISO 8601
+  data_nascimento: string; // YYYY-MM-DD
   alojamento_indigena: boolean;
   auxilio_creche: boolean;
   auxilio_moradia: boolean;
@@ -259,281 +142,199 @@ interface StudentData {
 
 ---
 
-## PresentationService
+## AnonCredsService
 
-Serviço para processamento de requisições e geração de apresentações.
+Wrapper sobre `@hyperledger/anoncreds-react-native`. Implementa o protocolo AnonCreds completo: criação de schema, credential definition, link secret, oferta, requisição, credencial e apresentação. Usa CL-signatures (Camenisch-Lysyanskaya).
+
+Artefatos são persistidos no StorageService com prefixo `anoncreds_`.
+
+### Tipos internos
+
+```typescript
+interface SchemaArtifact {
+  schemaId: string;
+  schema: Record<string, unknown>;
+}
+
+interface CredDefArtifact {
+  credDefId: string;
+  credDef: Record<string, unknown>;
+  credDefPrivate: Record<string, unknown>;
+  keyCorrectnessProof: Record<string, unknown>;
+}
+```
 
 ### Métodos
 
-#### `validatePEXFormat(request: any): boolean`
+#### `issueCredentialFull(issuerId, holderDid, schemaName, schemaVersion, attributeNames, attributeValues): Promise<{credential, schemaArtifact, credDefArtifact}>`
 
-Valida o formato de uma requisição PEX.
+Executa o protocolo de emissão completo em uma chamada: cria/recupera schema → cria/recupera credential definition → cria/recupera link secret → gera offer → gera request → cria credencial → processa credencial. Persiste todos os artefatos.
 
-**Parâmetros**:
-- `request`: Objeto da requisição
-
-**Retorna**: `true` se válida, `false` caso contrário
-
-**Exemplo**:
 ```typescript
-const isValid = PresentationService.validatePEXFormat(pexRequest);
+async issueCredentialFull(
+  issuerId: string,
+  holderDid: string,
+  schemaName: string,
+  schemaVersion: string,
+  attributeNames: string[],
+  attributeValues: Record<string, string>
+): Promise<{
+  credential: Record<string, unknown>;
+  schemaArtifact: SchemaArtifact;
+  credDefArtifact: CredDefArtifact;
+}>
 ```
+
+#### `getOrCreateSchema(issuerId, name, version, attributeNames): Promise<SchemaArtifact>`
+
+Recupera schema do storage ou cria via `Schema.create()`.
+
+#### `getOrCreateCredentialDefinition(issuerId, schemaArtifact, tag?): Promise<CredDefArtifact>`
+
+Recupera credential definition do storage ou cria via `CredentialDefinition.create()`.
+
+#### `getOrCreateLinkSecret(): Promise<{ linkSecret: string; linkSecretId: string }>`
+
+Recupera link secret do storage ou cria via `LinkSecret.create()`.
+
+#### `createCredentialOffer(credDefArtifact): Record<string, unknown>`
+
+Cria oferta de credencial a partir do credential definition.
+
+#### `createCredentialRequest(holderDid, credDefArtifact, offer, linkSecret, linkSecretId): { credentialRequest, credentialRequestMetadata }`
+
+Gera requisição de credencial do lado do holder.
+
+#### `createCredential(credDefArtifact, offer, request, attributeRawValues): Record<string, unknown>`
+
+Cria a credencial com CL-signature no lado do issuer.
+
+#### `processCredential(rawCredential, credDefArtifact, credentialRequestMetadata, linkSecret): Record<string, unknown>`
+
+Processa a credencial recebida no lado do holder (aplica link secret).
+
+#### `createPresentation(presentationRequestJson, credentials, credentialsProve, linkSecret, schemas, credentialDefinitions): Record<string, unknown>`
+
+Cria apresentação AnonCreds com divulgação seletiva e/ou predicados.
+
+#### `verifyPresentation(presentationJson, presentationRequestJson, schemas, credentialDefinitions): boolean`
+
+Verifica uma apresentação AnonCreds. Retorna `true` se válida.
+
+#### `buildSelectiveDisclosureRequest(name, nonce, revealedAttributes): Record<string, unknown>`
+
+Monta um `presentation_request` JSON para divulgação seletiva.
+
+#### `buildPredicateRequest(name, nonce, revealedAttributes, predicates): Record<string, unknown>`
+
+Monta um `presentation_request` JSON com predicados (e.g., `age >= 18`).
 
 ---
 
-#### `extractRequestedAttributes(pexRequest: PresentationExchangeRequest): {required: string[]; optional: string[]}`
+## PresentationService
 
-Extrai atributos solicitados de uma requisição PEX.
+Gera apresentações verificáveis a partir de credenciais. Três modos: SD-JWT (divulgação seletiva por atributo), ZKP (provas Groth16 via mopro), AnonCreds (CL-signature com predicados).
 
-**Parâmetros**:
-- `pexRequest`: Requisição PEX
+### Métodos
 
-**Retorna**: Objeto com arrays de atributos obrigatórios e opcionais
+#### `validatePEXFormat(request: string | PresentationExchangeRequest): PresentationExchangeRequest`
 
-**Exemplo**:
+Parseia e valida uma requisição PEX. Aceita string JSON ou objeto. Lança `ValidationError` se inválida.
+
+#### `extractRequestedAttributes(pexRequest): { required: string[]; optional: string[]; all: string[] }`
+
+Extrai os atributos solicitados da requisição PEX.
+
+#### `processPEXRequest(pexRequest, credential): Promise<ConsentData>`
+
+Processa a requisição PEX contra a credencial e retorna dados para exibição no modal de consentimento.
+
+#### `createPresentation(credential, pexRequest, selectedAttributes): Promise<VerifiablePresentation>`
+
+Cria apresentação SD-JWT. Revela apenas `selectedAttributes`. Assina com `CryptoService.signData()`. Proof type: `JsonWebSignature2020`.
+
+#### `createZKPPresentation(credential, pexRequest, predicates): Promise<VerifiablePresentation>`
+
+Cria apresentação com provas Groth16 via `ZKProofService`. Cada predicado gera uma prova de circuito (age_range, status_check, nullifier). Proof type: `Groth16Proof`.
+
 ```typescript
-const { required, optional } = PresentationService.extractRequestedAttributes(
-  pexRequest
-);
-// required: ['status_matricula', 'isencao_ru']
-// optional: []
+await PresentationService.createZKPPresentation(credential, pexRequest, [
+  { attribute: 'data_nascimento', p_type: '>=', value: 18 }
+]);
 ```
 
----
+#### `createAnonCredsPresentation(credentialToken, pexRequest, revealedAttrs, predicates): Promise<VerifiablePresentation>`
 
-#### `processPEXRequest(pexRequest: PresentationExchangeRequest, credential: VerifiableCredential): Promise<ConsentData>`
+Cria apresentação AnonCreds. Recupera schema, credential definition e link secret do storage. Monta proof request e delega para `AnonCredsService.createPresentation()`. Proof type: `CLSignature2023`.
 
-Processa uma requisição PEX e prepara dados para consentimento.
-
-**Parâmetros**:
-- `pexRequest`: Requisição PEX
-- `credential`: Credencial do titular
-
-**Retorna**: Dados para modal de consentimento
-
-**Exemplo**:
 ```typescript
-const consentData = await PresentationService.processPEXRequest(
+await PresentationService.createAnonCredsPresentation(
+  credentialToken,
   pexRequest,
-  credential
-);
-```
-
-**Throws**: `ValidationError` se requisição inválida
-
----
-
-#### `createSDJWTPresentation(credential: VerifiableCredential, selectedAttributes: string[], challenge: string): Promise<string>`
-
-Cria uma apresentação SD-JWT.
-
-**Parâmetros**:
-- `credential`: Credencial verificável
-- `selectedAttributes`: Atributos a revelar
-- `challenge`: Nonce criptográfico
-
-**Retorna**: Token da apresentação
-
-**Exemplo**:
-```typescript
-const presentation = await PresentationService.createSDJWTPresentation(
-  credential,
   ['status_matricula', 'isencao_ru'],
-  challenge
+  [{ attribute: 'age', p_type: '>=', value: 18 }]
 );
 ```
 
----
+#### `copyPresentationToClipboard(presentation): Promise<void>`
 
-#### `createZKPPresentation(credential: VerifiableCredential, predicates: Predicate[], challenge: string): Promise<string>`
-
-Cria uma apresentação com provas ZKP.
-
-**Parâmetros**:
-- `credential`: Credencial verificável
-- `predicates`: Predicados a provar
-- `challenge`: Nonce criptográfico
-
-**Retorna**: Token da apresentação
-
-**Exemplo**:
-```typescript
-const presentation = await PresentationService.createZKPPresentation(
-  credential,
-  [{ attribute: 'status_matricula', operator: '==', value: 'Ativo' }],
-  challenge
-);
-```
-
----
-
-#### `generateNullifier(credential: VerifiableCredential, electionId: string): Promise<string>`
-
-Gera um nullifier determinístico para eleições.
-
-**Parâmetros**:
-- `credential`: Credencial do titular
-- `electionId`: ID único da eleição
-
-**Retorna**: Hash nullifier
-
-**Exemplo**:
-```typescript
-const nullifier = await PresentationService.generateNullifier(
-  credential,
-  'election-2026-01'
-);
-```
-
----
-
-#### `generateRangeProof(credential: VerifiableCredential, attribute: string, operator: string, value: number): Promise<RangeProof>`
-
-Gera uma Range Proof para predicados numéricos.
-
-**Parâmetros**:
-- `credential`: Credencial verificável
-- `attribute`: Nome do atributo (ex: 'data_nascimento')
-- `operator`: Operador ('>=', '<=', '==', '!=')
-- `value`: Valor de comparação
-
-**Retorna**: Objeto RangeProof
-
-**Exemplo**:
-```typescript
-const proof = await PresentationService.generateRangeProof(
-  credential,
-  'data_nascimento',
-  '>=',
-  18 // idade mínima
-);
-```
+Serializa e copia a apresentação para o clipboard.
 
 ---
 
 ## VerificationService
 
-Serviço para validação de apresentações verificáveis.
+Valida apresentações recebidas. Despacha verificação por tipo de prova.
+
+### Cenários pré-configurados
+
+| ID | Tipo |
+|---|---|
+| `ru` | Selective disclosure (status_matricula, isencao_ru) |
+| `elections` | ZKP eligibility + nullifier |
+| `age_verification` | Range proof (idade >= 18) |
+| `lab_access` | Access control (acesso_laboratorios) |
 
 ### Métodos
 
 #### `getScenarios(): Scenario[]`
 
-Retorna lista de cenários pré-configurados.
-
-**Retorna**: Array de cenários
-
-**Exemplo**:
-```typescript
-const scenarios = VerificationService.getScenarios();
-// [
-//   { id: 'ru', name: 'Restaurante Universitário', ... },
-//   { id: 'elections', name: 'Eleições', ... },
-//   ...
-// ]
-```
-
----
+Retorna os 4 cenários configurados.
 
 #### `getScenario(scenarioId: string): Scenario | undefined`
 
-Obtém um cenário específico por ID.
+Retorna cenário por ID.
 
-**Parâmetros**:
-- `scenarioId`: ID do cenário ('ru', 'elections', 'labs', 'age')
+#### `generateChallenge(scenarioId: string, additionalData?: { election_id?: string; resource_id?: string }): Promise<PresentationExchangeRequest>`
 
-**Retorna**: Cenário ou undefined
+Gera uma requisição PEX para o cenário, incluindo nonce criptográfico.
 
-**Exemplo**:
-```typescript
-const scenario = VerificationService.getScenario('ru');
-```
+#### `validatePresentationFormat(presentation: string | VerifiablePresentation): VerifiablePresentation`
 
----
+Parseia e valida estrutura da apresentação.
 
-#### `generateChallenge(scenario: Scenario, resourceId?: string): Promise<PresentationExchangeRequest>`
+#### `verifyIssuerSignature(presentation, issuerPublicKey?): Promise<boolean>`
 
-Gera uma requisição PEX para um cenário.
+Despacha por tipo de prova:
+- `JsonWebSignature2020` → verifica assinatura Ed25519 via `CryptoService.verifySignature()`
+- `Groth16Proof` → aceita (verificação feita no passo de circuito)
+- `CLSignature2023` → delega para `verifyAnonCredsPresentation()`
 
-**Parâmetros**:
-- `scenario`: Cenário selecionado
-- `resourceId`: ID do recurso (opcional, para laboratórios)
+#### `verifyStructuralIntegrity(presentation, pexRequest): Promise<boolean>`
 
-**Retorna**: Requisição PEX
+Verifica que os atributos revelados atendem aos requisitos da requisição PEX.
 
-**Exemplo**:
-```typescript
-const request = await VerificationService.generateChallenge(
-  scenario,
-  'LCN' // para laboratórios
-);
-```
+#### `validatePresentation(presentation, pexRequest): Promise<ValidationResult>`
 
----
-
-#### `validatePresentation(presentation: VerifiablePresentation, request: PresentationExchangeRequest): Promise<ValidationResult>`
-
-Valida uma apresentação verificável.
-
-**Parâmetros**:
-- `presentation`: Apresentação recebida
-- `request`: Requisição original
-
-**Retorna**: Resultado da validação
-
-**Exemplo**:
-```typescript
-const result = await VerificationService.validatePresentation(
-  presentation,
-  request
-);
-
-if (result.valid) {
-  console.log('Acesso aprovado');
-} else {
-  console.log('Acesso negado:', result.errors);
-}
-```
-
----
+Pipeline de validação: formato → assinatura → integridade estrutural → nullifier check (se eleição). Retorna `ValidationResult`.
 
 #### `checkNullifier(nullifier: string, electionId: string): Promise<boolean>`
 
-Verifica se um nullifier já foi usado.
-
-**Parâmetros**:
-- `nullifier`: Hash nullifier
-- `electionId`: ID da eleição
-
-**Retorna**: `true` se já existe (duplicado), `false` se novo
-
-**Exemplo**:
-```typescript
-const isDuplicate = await VerificationService.checkNullifier(
-  nullifier,
-  'election-2026-01'
-);
-```
-
----
+Retorna `true` se o nullifier já foi usado nessa eleição.
 
 #### `storeNullifier(nullifier: string, electionId: string): Promise<void>`
 
-Armazena um nullifier após validação bem-sucedida.
-
-**Parâmetros**:
-- `nullifier`: Hash nullifier
-- `electionId`: ID da eleição
-
-**Exemplo**:
-```typescript
-await VerificationService.storeNullifier(
-  nullifier,
-  'election-2026-01'
-);
-```
-
----
+Persiste nullifier para prevenir voto duplo.
 
 ### Tipos
 
@@ -558,158 +359,305 @@ interface Scenario {
 
 ---
 
-## StorageService
+## ZKProofService
 
-Serviço para armazenamento seguro de dados.
+Executa provas zero-knowledge Groth16 via `mopro-ffi` (Circom circuits). Cada circuito requer um arquivo `.zkey` na build do app.
+
+### Circuitos
+
+| Nome | Arquivo | Uso |
+|---|---|---|
+| `age_range` | `age_range_final.zkey` | Prova de faixa etária |
+| `status_check` | `status_check_final.zkey` | Prova de status (e.g., matrícula ativa) |
+| `nullifier` | `nullifier_final.zkey` | Geração de nullifier determinístico |
 
 ### Métodos
 
-#### `storeHolderPrivateKey(privateKey: string, did: string): Promise<void>`
+#### `generateAgeRangeProof(birthdate: string, threshold: number): Promise<CircomProofResult>`
 
-Armazena a chave privada do titular.
+Gera prova Groth16 de que a idade derivada de `birthdate` atende ao `threshold`.
 
-**Parâmetros**:
-- `privateKey`: Chave privada em hexadecimal
-- `did`: DID do titular
+#### `generateStatusCheckProof(statusValue: string, expectedValue: string): Promise<CircomProofResult>`
 
-**Exemplo**:
-```typescript
-await StorageService.storeHolderPrivateKey(privateKey, did);
-```
+Gera prova de que `statusValue` é igual a `expectedValue` sem revelar o valor.
 
-**Throws**: `StorageError` se falhar
+#### `generateNullifierProof(holderSecret: string, electionId: string): Promise<CircomProofResult>`
 
----
+Gera prova com nullifier determinístico derivado de `holderSecret` e `electionId`.
 
-#### `getHolderPrivateKey(): Promise<string | null>`
+#### `verifyProof(circuitName: string, proofResult: CircomProofResult): Promise<boolean>`
 
-Recupera a chave privada do titular.
+Verifica uma prova Groth16 usando `verifyCircomProof()` do mopro-ffi.
 
-**Retorna**: Chave privada ou null se não existir
+#### `isCircuitAvailable(circuitName: string): Promise<boolean>`
 
-**Exemplo**:
-```typescript
-const privateKey = await StorageService.getHolderPrivateKey();
-```
+Verifica se o arquivo `.zkey` do circuito está acessível.
 
----
+#### `getCircuitStatus(): Promise<Array<{ name: string; fileName: string; available: boolean }>>`
 
-#### `getHolderDID(): Promise<string | null>`
+Retorna status de disponibilidade de todos os circuitos.
 
-Recupera o DID do titular.
+#### `extractNullifier(proofResult: CircomProofResult): string | undefined`
 
-**Retorna**: DID ou null se não existir
-
-**Exemplo**:
-```typescript
-const did = await StorageService.getHolderDID();
-```
+Extrai o nullifier dos outputs públicos da prova (se presente).
 
 ---
 
-#### `storeCredential(credential: VerifiableCredential): Promise<void>`
+## EudiTransportService
 
-Armazena uma credencial de forma criptografada.
+Camada de transporte opcional baseada no `@openwallet-foundation/eudi-wallet-kit-react-native`. Suporta três modos. O módulo EUDI é carregado via `require()` dinâmico — se não estiver disponível, o serviço opera apenas em modo clipboard.
 
-**Parâmetros**:
-- `credential`: Credencial verificável
+### Modos
 
-**Exemplo**:
+| Modo | Protocolo | Descrição |
+|---|---|---|
+| `clipboard` | Nenhum | Copia/cola via clipboard do sistema (default) |
+| `proximity` | ISO 18013-5 BLE | Apresentação presencial via Bluetooth |
+| `remote` | OpenID4VP | Apresentação remota via URL |
+
+### Tipos
+
 ```typescript
-await StorageService.storeCredential(credential);
+type TransportMode = 'clipboard' | 'proximity' | 'remote';
+
+enum TransportEventType {
+  Connecting, Connected, Disconnected, Error,
+  QrReady, RequestReceived, ResponseSent, Redirect
+}
+
+interface TransportEvent { type: TransportEventType; data?: any }
+type TransportEventListener = (event: TransportEvent) => void;
 ```
+
+### Métodos
+
+#### `getMode(): TransportMode`
+
+Retorna o modo atual.
+
+#### `isAvailable(): Promise<boolean>`
+
+Retorna `true` se o módulo EUDI foi carregado.
+
+#### `initialize(config?): Promise<void>`
+
+Inicializa o módulo EUDI com certificados de leitores confiáveis e configuração OpenID4VP.
+
+#### `setMode(mode: TransportMode): Promise<void>`
+
+Altera o modo de transporte. Lança erro se `proximity` ou `remote` forem selecionados e o EUDI não estiver disponível.
+
+#### `startProximityPresentation(): Promise<void>`
+
+Inicia apresentação BLE. Emite evento `QrReady` com URI de engajamento.
+
+#### `startRemotePresentation(url: string): Promise<void>`
+
+Inicia apresentação OpenID4VP a partir de uma URL de autorização.
+
+#### `sendResponse(disclosedDocuments): Promise<void>`
+
+Envia documentos selecionados ao verifier.
+
+#### `stopPresentation(): void`
+
+Encerra apresentação em andamento.
+
+#### `addEventListener(listener: TransportEventListener): string`
+
+Registra listener. Retorna ID para remoção posterior.
+
+#### `removeEventListener(listenerId: string): void`
+
+Remove listener por ID.
 
 ---
 
-#### `getCredentials(): Promise<VerifiableCredential[]>`
+## TrustChainService
 
-Recupera todas as credenciais armazenadas.
+Gerencia uma cadeia de confiança hierárquica (PKI) para emissores de credenciais. Usa Ed25519 para assinatura de certificados.
 
-**Retorna**: Array de credenciais
+### Tipos
 
-**Exemplo**:
 ```typescript
-const credentials = await StorageService.getCredentials();
+interface TrustedIssuer {
+  did: string;           // DID do emissor (ex: did:web:ufsc.br)
+  publicKey: string;     // Chave pública Ed25519 (hex, 64 chars)
+  name: string;          // Nome descritivo
+  parentDid: string | null; // DID do pai (null para raiz)
+  certificate: string;   // Assinatura do pai sobre os dados do emissor (hex)
+  createdAt: string;     // ISO 8601 timestamp
+}
+
+interface TrustChainResult {
+  trusted: boolean;      // Se o emissor é confiável
+  chain: TrustedIssuer[]; // Cadeia do emissor até a raiz
+  error?: string;        // Mensagem de erro (quando trusted=false)
+}
 ```
+
+### Métodos
+
+#### `initializeRootIssuer(did: string, name: string): Promise<TrustedIssuer>`
+
+Cria a âncora raiz da cadeia de confiança. Gera par Ed25519 e auto-assina certificado.
+
+```typescript
+const root = await TrustChainService.initializeRootIssuer(
+  'did:web:ufsc.br',
+  'UFSC - Âncora Raiz',
+);
+// root.parentDid === null
+```
+
+#### `registerChildIssuer(parentDid, parentPrivateKey, childDid, childName): Promise<TrustedIssuer>`
+
+Registra um emissor filho assinado pelo pai.
+
+```typescript
+const rootKey = await TrustChainService.getIssuerPrivateKey('did:web:ufsc.br');
+const child = await TrustChainService.registerChildIssuer(
+  'did:web:ufsc.br',
+  rootKey!,
+  'did:web:cagr.ufsc.br',
+  'CAGR - Coordenadoria Acadêmica',
+);
+```
+
+**Erros**: `'Emissor pai não encontrado'`, `'Emissor já registrado'`.
+
+#### `verifyTrustChain(issuerDid: string): Promise<TrustChainResult>`
+
+Percorre a cadeia do emissor até a raiz, verificando cada certificado.
+
+```typescript
+const result = await TrustChainService.verifyTrustChain('did:web:ine.ufsc.br');
+// result.trusted === true
+// result.chain === [ine, ctc, ufsc] (do emissor até a raiz)
+```
+
+#### `isTrustedIssuer(did: string): Promise<boolean>`
+
+Verifica se um DID pertence à cadeia de confiança e se a cadeia é válida.
+
+#### `getAllIssuers(): Promise<TrustedIssuer[]>`
+
+Retorna todos os emissores registrados.
+
+#### `getRootIssuer(): Promise<TrustedIssuer | null>`
+
+Retorna o emissor raiz (parentDid === null).
+
+#### `getIssuerPrivateKey(did: string): Promise<string | null>`
+
+Retorna a chave privada Ed25519 (hex) de um emissor.
+
+#### `reset(): Promise<void>`
+
+Remove todos os emissores e chaves da cadeia de confiança.
+
+---
+
+## CryptoService
+
+Operações criptográficas de baixo nível. Usa `crypto-js` para SHA-256 e `@noble/ed25519` para assinaturas.
+
+### Métodos
+
+#### `computeHash(data: string | Buffer, module?: 'emissor' | 'titular' | 'verificador'): Promise<string>`
+
+SHA-256 hash. Retorna hexadecimal. O parâmetro `module` é usado para logging.
+
+#### `signData(data: string | Buffer, privateKeyHex: string, module?: 'emissor' | 'titular' | 'verificador'): Promise<string>`
+
+Assinatura Ed25519. Retorna assinatura em hexadecimal.
+
+#### `verifySignature(data: string | Buffer, signatureHex: string, publicKeyHex: string, module?: 'emissor' | 'titular' | 'verificador'): Promise<boolean>`
+
+Verifica assinatura Ed25519. Retorna `boolean`.
+
+#### `computeCompositeHash(values: (string | Buffer)[], module?: 'emissor' | 'titular' | 'verificador'): Promise<string>`
+
+Hash SHA-256 de múltiplos valores concatenados.
+
+#### `generateNonce(): string`
+
+Gera nonce aleatório.
+
+---
+
+## StorageService
+
+Armazenamento criptografado via `react-native-encrypted-storage` (AES-256, chaves gerenciadas pelo OS Keystore). Todos os métodos são async.
+
+### Métodos — Chaves e DIDs
+
+| Método | Assinatura |
+|---|---|
+| `storeHolderPrivateKey` | `(privateKey: string, did: string): Promise<void>` |
+| `getHolderPrivateKey` | `(): Promise<string \| null>` |
+| `getHolderDID` | `(): Promise<string \| null>` |
+| `storeHolderDID` | `(did: string): Promise<void>` |
+| `storeHolderPublicKey` | `(publicKey: string): Promise<void>` |
+| `getHolderPublicKey` | `(): Promise<string \| null>` |
+| `storeIssuerPrivateKey` | `(privateKey: string, did: string): Promise<void>` |
+| `getIssuerPrivateKey` | `(): Promise<string \| null>` |
+| `getIssuerDID` | `(): Promise<string \| null>` |
+| `storeIssuerDID` | `(did: string): Promise<void>` |
+| `storeIssuerPublicKey` | `(publicKey: string): Promise<void>` |
+| `getIssuerPublicKey` | `(): Promise<string \| null>` |
+| `storeIssuerSigningDid` | `(signingDid: string): Promise<void>` |
+| `getIssuerSigningDid` | `(): Promise<string \| null>` |
+
+### Métodos — Credenciais
+
+| Método | Assinatura |
+|---|---|
+| `storeCredential` | `(credential: string): Promise<void>` |
+| `getCredentials` | `(): Promise<string[]>` |
+| `deleteCredential` | `(index: number): Promise<void>` |
+
+### Métodos — Nullifiers
+
+| Método | Assinatura |
+|---|---|
+| `getNullifiers` | `(electionId: string): Promise<string[]>` |
+| `storeNullifier` | `(nullifier: string, electionId: string): Promise<void>` |
+
+### Métodos — Raw key-value (AnonCreds artifacts)
+
+| Método | Assinatura |
+|---|---|
+| `setRawItem` | `(key: string, value: string): Promise<void>` |
+| `getRawItem` | `(key: string): Promise<string \| null>` |
+
+### Métodos — Manutenção
+
+| Método | Assinatura |
+|---|---|
+| `clearAll` | `(): Promise<void>` |
 
 ---
 
 ## LogService
 
-Serviço para captura e gerenciamento de logs.
+Captura eventos para exibição na tela de logs. Armazena em memória (não persistido).
 
 ### Métodos
 
-#### `captureEvent(entry: Omit<LogEntry, 'id' | 'timestamp'>): void`
-
-Captura um evento e adiciona ao log.
-
-**Parâmetros**:
-- `entry`: Dados do evento (sem id e timestamp)
-
-**Exemplo**:
-```typescript
-LogService.captureEvent({
-  operation: 'credential_issuance',
-  module: 'emissor',
-  details: {
-    algorithm: 'EdDSA',
-    did_method: 'did:web'
-  },
-  success: true
-});
-```
-
----
-
-#### `logKeyGeneration(algorithm: string, keySize: number, didMethod: string, did: string): void`
-
-Registra geração de chaves.
-
-**Parâmetros**:
-- `algorithm`: Nome do algoritmo
-- `keySize`: Tamanho da chave em bits
-- `didMethod`: Método DID usado
-- `did`: DID gerado
-
-**Exemplo**:
-```typescript
-LogService.logKeyGeneration('Ed25519', 256, 'did:key', did);
-```
-
----
-
-#### `logCredentialIssuance(issuerDID: string, holderDID: string, format: string): void`
-
-Registra emissão de credencial.
-
-**Parâmetros**:
-- `issuerDID`: DID do emissor
-- `holderDID`: DID do titular
-- `format`: Formato da credencial
-
-**Exemplo**:
-```typescript
-LogService.logCredentialIssuance(issuerDID, holderDID, 'SD-JWT');
-```
-
----
-
-#### `logPresentationCreation(type: string, attributesCount: number, hasZKP: boolean): void`
-
-Registra criação de apresentação.
-
-**Parâmetros**:
-- `type`: Tipo de apresentação
-- `attributesCount`: Número de atributos revelados
-- `hasZKP`: Se contém provas ZKP
-
-**Exemplo**:
-```typescript
-LogService.logPresentationCreation('SD-JWT', 2, false);
-```
-
----
+| Método | Assinatura |
+|---|---|
+| `captureEvent` | `(operation, module, details, success?, error?): void` |
+| `logKeyGeneration` | `(module, algorithm, keySize, didMethod, success?, error?): void` |
+| `logCredentialIssuance` | `(algorithm, success?, parameters?, error?): void` |
+| `logPresentationCreation` | `(algorithm, success?, parameters?, error?): void` |
+| `logVerification` | `(algorithm, verificationResult, success?, parameters?, error?): void` |
+| `logHashComputation` | `(module, algorithm, hashOutput, success?, error?): void` |
+| `logZKPGeneration` | `(module, algorithm, success?, parameters?, error?): void` |
+| `logError` | `(module, error, stackTrace?): void` |
+| `getLogs` | `(): LogEntry[]` |
+| `clearLogs` | `(): void` |
+| `filterLogs` | `(operation?, module?): LogEntry[]` |
 
 ### Tipos
 
@@ -717,7 +665,7 @@ LogService.logPresentationCreation('SD-JWT', 2, false);
 interface LogEntry {
   id: string;
   timestamp: Date;
-  operation: 'key_generation' | 'credential_issuance' | 'presentation_creation' | 
+  operation: 'key_generation' | 'credential_issuance' | 'presentation_creation' |
              'verification' | 'hash_computation' | 'zkp_generation' | 'error';
   module: 'emissor' | 'titular' | 'verificador';
   details: LogDetails;
@@ -740,216 +688,32 @@ interface LogDetails {
 
 ## ErrorHandler
 
-Classes de erro customizadas para tratamento de exceções.
+Tratamento centralizado de erros. Loga via `LogService` e retorna mensagens legíveis.
 
-### Classes
-
-#### `CryptoError`
-
-Erro relacionado a operações criptográficas.
-
-**Construtor**:
-```typescript
-new CryptoError(message: string, operation: string, details?: any)
-```
-
-**Exemplo**:
-```typescript
-throw new CryptoError(
-  'Falha na assinatura',
-  'signData',
-  { algorithm: 'Ed25519' }
-);
-```
-
----
-
-#### `ValidationError`
-
-Erro relacionado a validação de dados.
-
-**Construtor**:
-```typescript
-new ValidationError(message: string, field?: string, value?: any)
-```
-
-**Exemplo**:
-```typescript
-throw new ValidationError(
-  'CPF inválido',
-  'cpf',
-  '123'
-);
-```
-
----
-
-#### `StorageError`
-
-Erro relacionado a operações de armazenamento.
-
-**Construtor**:
-```typescript
-new StorageError(message: string, operation: string, details?: any)
-```
-
-**Exemplo**:
-```typescript
-throw new StorageError(
-  'Falha ao salvar credencial',
-  'storeCredential'
-);
-```
-
----
-
-## Convenções de Uso
-
-### Async/Await
-
-Todos os métodos assíncronos devem ser chamados com `await`:
+### Classes de erro
 
 ```typescript
-// ✅ Correto
-const credential = await CredentialService.issueCredential(data, 'SD-JWT');
+class CryptoError extends Error {
+  constructor(message: string, public operation: string, public details?: any)
+}
 
-// ❌ Incorreto
-const credential = CredentialService.issueCredential(data, 'SD-JWT');
-```
+class ValidationError extends Error {
+  constructor(message: string, public field?: string, public value?: any)
+}
 
-### Tratamento de Erros
-
-Sempre use try-catch para operações que podem falhar:
-
-```typescript
-try {
-  const credential = await CredentialService.issueCredential(data, 'SD-JWT');
-} catch (error) {
-  if (error instanceof ValidationError) {
-    console.error('Dados inválidos:', error.field);
-  } else if (error instanceof CryptoError) {
-    console.error('Erro criptográfico:', error.operation);
-  }
+class StorageError extends Error {
+  constructor(message: string, public operation: 'read' | 'write' | 'delete' | 'encrypt' | 'decrypt', public details?: any)
 }
 ```
 
-### Logging
+### Métodos
 
-Operações importantes devem ser logadas:
+| Método | Assinatura |
+|---|---|
+| `handleCryptoError` | `(error: CryptoError, module): string` |
+| `handleValidationError` | `(error: ValidationError, module): string` |
+| `handleStorageError` | `(error: StorageError, module): string` |
+| `handleGenericError` | `(error: Error, module): string` |
+| `logError` | `(error: Error, module, context?): void` |
 
-```typescript
-try {
-  const result = await someOperation();
-  LogService.captureEvent({
-    operation: 'some_operation',
-    module: 'titular',
-    details: { result },
-    success: true
-  });
-} catch (error) {
-  LogService.captureEvent({
-    operation: 'some_operation',
-    module: 'titular',
-    details: {},
-    success: false,
-    error
-  });
-}
-```
-
----
-
-## Exemplos Completos
-
-### Fluxo de Emissão
-
-```typescript
-// 1. Obter DID do emissor
-const { did: issuerDID } = await CredentialService.getOrCreateIssuerDID();
-
-// 2. Preparar dados
-const studentData: StudentData = {
-  nome_completo: 'João Silva',
-  cpf: '12345678900',
-  // ... outros campos
-};
-
-// 3. Emitir credencial
-try {
-  const credential = await CredentialService.issueCredential(
-    studentData,
-    'SD-JWT'
-  );
-  
-  // 4. Copiar para área de transferência
-  Clipboard.setString(credential);
-  
-  console.log('Credencial emitida com sucesso');
-} catch (error) {
-  console.error('Erro na emissão:', error);
-}
-```
-
-### Fluxo de Apresentação
-
-```typescript
-// 1. Validar requisição PEX
-const isValid = PresentationService.validatePEXFormat(pexRequest);
-if (!isValid) {
-  throw new ValidationError('Requisição PEX inválida');
-}
-
-// 2. Extrair atributos solicitados
-const { required, optional } = PresentationService.extractRequestedAttributes(
-  pexRequest
-);
-
-// 3. Obter credencial armazenada
-const credentials = await StorageService.getCredentials();
-const credential = credentials[0];
-
-// 4. Criar apresentação
-const presentation = await PresentationService.createSDJWTPresentation(
-  credential,
-  required, // Revelar apenas atributos obrigatórios
-  pexRequest.challenge
-);
-
-// 5. Copiar para área de transferência
-Clipboard.setString(presentation);
-```
-
-### Fluxo de Validação
-
-```typescript
-// 1. Gerar desafio
-const scenario = VerificationService.getScenario('ru');
-const request = await VerificationService.generateChallenge(scenario);
-
-// 2. Receber apresentação (via clipboard)
-const presentationToken = await Clipboard.getString();
-const presentation = JSON.parse(presentationToken);
-
-// 3. Validar
-try {
-  const result = await VerificationService.validatePresentation(
-    presentation,
-    request
-  );
-  
-  if (result.valid) {
-    console.log('Acesso aprovado');
-    console.log('Atributos verificados:', result.verified_attributes);
-  } else {
-    console.log('Acesso negado');
-    console.log('Erros:', result.errors);
-  }
-} catch (error) {
-  console.error('Erro na validação:', error);
-}
-```
-
----
-
-**Versão**: 1.0.0  
-**Última atualização**: Março 2026
+Cada `handle*` retorna uma string com mensagem para exibição ao usuário.

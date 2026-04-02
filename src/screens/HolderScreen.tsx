@@ -7,6 +7,7 @@ import {
   TextInput,
   TouchableOpacity,
   Alert,
+  Clipboard,
 } from 'react-native';
 import {useAppStore} from '../stores/useAppStore';
 import {
@@ -15,12 +16,15 @@ import {
   SuccessMessage,
   CredentialCard,
   ConsentModal,
+  TransportModeSelector,
 } from '../components';
 import {VerifiableCredential, ConsentData, PresentationExchangeRequest} from '../types';
+import {TransportMode} from '../services/EudiTransportService';
 import CredentialService from '../services/CredentialService';
 import StorageService from '../services/StorageService';
 import LogService from '../services/LogService';
 import PresentationService from '../services/PresentationService';
+import QRCode from 'react-native-qrcode-svg';
 
 const HolderScreen: React.FC = () => {
   const setCurrentModule = useAppStore(state => state.setCurrentModule);
@@ -40,6 +44,8 @@ const HolderScreen: React.FC = () => {
   const [showConsentModal, setShowConsentModal] = useState(false);
   const [selectedAttributes, setSelectedAttributes] = useState<string[]>([]);
   const [currentRequest, setCurrentRequest] = useState<PresentationExchangeRequest | null>(null);
+  const [transportMode, setTransportMode] = useState<TransportMode>('clipboard');
+  const [presentationOutput, setPresentationOutput] = useState<string | null>(null);
 
   useEffect(() => {
     setCurrentModule('titular');
@@ -313,11 +319,19 @@ const HolderScreen: React.FC = () => {
       // Convert to JSON string
       const presentationJson = JSON.stringify(presentation, null, 2);
 
-      // Copy to clipboard (simulated for now)
-      // In a real app, use @react-native-clipboard/clipboard
-      // Clipboard.setString(presentationJson);
+      // Store presentation for QR display
+      setPresentationOutput(presentationJson);
 
-      setSuccess('Apresentação criada e copiada para área de transferência!');
+      if (transportMode === 'clipboard') {
+        // Copy to clipboard for transfer to Verifier module
+        Clipboard.setString(presentationJson);
+        setSuccess('Apresentação criada e copiada para área de transferência!');
+      } else if (transportMode === 'qrcode') {
+        setSuccess('Apresentação criada! Escaneie o QR Code abaixo com o verificador.');
+      } else {
+        Clipboard.setString(presentationJson);
+        setSuccess('Apresentação criada! Modo BLE/NFC requer EUDI wallet-kit.');
+      }
       setRequestInput('');
       setCurrentRequest(null);
       setConsentData(null);
@@ -400,30 +414,78 @@ const HolderScreen: React.FC = () => {
 
         {/* Presentation Request Section */}
         {credentials.length > 0 && (
-          <View style={styles.requestSection}>
-            <Text style={styles.sectionTitle}>Processar Requisição de Apresentação</Text>
-            <Text style={styles.sectionSubtitle}>
-              Cole uma requisição PEX para criar uma apresentação
-            </Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Cole a requisição PEX aqui"
-              placeholderTextColor="#999"
-              multiline
-              numberOfLines={4}
-              value={requestInput}
-              onChangeText={setRequestInput}
-              editable={!isProcessingRequest}
+          <>
+            {/* Transport Mode Selector */}
+            <TransportModeSelector
+              selectedMode={transportMode}
+              onSelectMode={(mode) => {
+                setTransportMode(mode);
+                setPresentationOutput(null);
+              }}
+              disabled={isProcessingRequest}
             />
-            <TouchableOpacity
-              style={[styles.button, isProcessingRequest && styles.buttonDisabled]}
-              onPress={handleProcessRequest}
-              disabled={isProcessingRequest}>
-              <Text style={styles.buttonText}>
-                {isProcessingRequest ? 'Processando...' : 'Processar Requisição'}
+
+            <View style={styles.requestSection}>
+              <Text style={styles.sectionTitle}>Processar Requisição de Apresentação</Text>
+              <Text style={styles.sectionSubtitle}>
+                Cole uma requisição PEX para criar uma apresentação
               </Text>
-            </TouchableOpacity>
-          </View>
+              <TextInput
+                style={styles.input}
+                placeholder="Cole a requisição PEX aqui"
+                placeholderTextColor="#999"
+                multiline
+                numberOfLines={4}
+                value={requestInput}
+                onChangeText={setRequestInput}
+                editable={!isProcessingRequest}
+              />
+              <TouchableOpacity
+                style={[styles.button, isProcessingRequest && styles.buttonDisabled]}
+                onPress={handleProcessRequest}
+                disabled={isProcessingRequest}>
+                <Text style={styles.buttonText}>
+                  {isProcessingRequest ? 'Processando...' : 'Processar Requisição'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Presentation Output (QR Code or Text) */}
+            {presentationOutput && (
+              <View style={styles.presentationOutputSection}>
+                <Text style={styles.sectionTitle}>Apresentação Gerada</Text>
+                {transportMode === 'qrcode' ? (
+                  <View style={styles.qrContainer}>
+                    <QRCode
+                      value={presentationOutput}
+                      size={220}
+                      backgroundColor="#ffffff"
+                      color="#003366"
+                    />
+                    <Text style={styles.qrHint}>
+                      Escaneie com o módulo Verificador
+                    </Text>
+                  </View>
+                ) : transportMode === 'proximity' ? (
+                  <View style={styles.proximityInfo}>
+                    <Text style={styles.proximityIcon}>📡</Text>
+                    <Text style={styles.proximityText}>
+                      Modo BLE/NFC ativo. Aproxime os dispositivos.
+                    </Text>
+                  </View>
+                ) : null}
+                <TouchableOpacity
+                  style={styles.copyOutputButton}
+                  onPress={() => {
+                    Clipboard.setString(presentationOutput);
+                    setSuccess('Apresentação copiada para área de transferência!');
+                    setTimeout(() => setSuccess(null), 3000);
+                  }}>
+                  <Text style={styles.copyOutputButtonText}>📋 Copiar Apresentação</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </>
         )}
 
         {/* Consent Modal */}
@@ -661,6 +723,61 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#999',
     textAlign: 'center',
+  },
+  presentationOutputSection: {
+    backgroundColor: '#ffffff',
+    borderRadius: 8,
+    padding: 16,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 1},
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  qrContainer: {
+    alignItems: 'center',
+    padding: 20,
+    backgroundColor: '#ffffff',
+    borderRadius: 8,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  qrHint: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 12,
+    textAlign: 'center',
+  },
+  proximityInfo: {
+    alignItems: 'center',
+    padding: 20,
+    backgroundColor: '#e8f5e9',
+    borderRadius: 8,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#a5d6a7',
+  },
+  proximityIcon: {
+    fontSize: 48,
+    marginBottom: 12,
+  },
+  proximityText: {
+    fontSize: 14,
+    color: '#2e7d32',
+    textAlign: 'center',
+  },
+  copyOutputButton: {
+    backgroundColor: '#1976d2',
+    borderRadius: 8,
+    padding: 12,
+    alignItems: 'center',
+  },
+  copyOutputButtonText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '600',
   },
 });
 
