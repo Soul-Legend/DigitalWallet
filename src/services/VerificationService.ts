@@ -4,14 +4,28 @@ import {
   ValidationResult,
   Scenario,
   Predicate,
+  IVerificationStep,
+  VerificationContext,
+  StepResult,
 } from '../types';
+import type {ILogService, ICryptoService, IStorageService, IZKProofService, IAnonCredsService, ITrustChainService} from '../types';
 import {ValidationError, CryptoError} from './ErrorHandler';
-import LogService from './LogService';
-import CryptoService from './CryptoService';
-import StorageService from './StorageService';
-import ZKProofService from './ZKProofService';
-import AnonCredsService from './AnonCredsService';
-import TrustChainService from './TrustChainService';
+import LogServiceInstance from './LogService';
+import CryptoServiceInstance from './CryptoService';
+import StorageServiceInstance from './StorageService';
+import ZKProofServiceInstance from './ZKProofService';
+import AnonCredsServiceInstance from './AnonCredsService';
+import TrustChainServiceInstance from './TrustChainService';
+import {VerificationPipeline} from './VerificationPipeline';
+import {
+  createSignatureStep,
+  createTrustChainStep,
+  createIntegrityStep,
+  createChallengeStep,
+  createPredicateStep,
+  createNullifierStep,
+  createResourceAccessStep,
+} from './VerificationSteps';
 
 /**
  * VerificationService - Handles presentation validation and verification
@@ -24,6 +38,29 @@ import TrustChainService from './TrustChainService';
  * - Managing nullifiers for election scenarios
  */
 class VerificationService {
+  private readonly logger: ILogService;
+  private readonly crypto: ICryptoService;
+  private readonly storage: IStorageService;
+  private readonly zkProof: IZKProofService;
+  private readonly anonCredsService: IAnonCredsService;
+  private readonly trustChainService: ITrustChainService;
+
+  constructor(
+    logger: ILogService = LogServiceInstance,
+    crypto: ICryptoService = CryptoServiceInstance,
+    storage: IStorageService = StorageServiceInstance,
+    zkProof: IZKProofService = ZKProofServiceInstance,
+    anonCredsService: IAnonCredsService = AnonCredsServiceInstance,
+    trustChainService: ITrustChainService = TrustChainServiceInstance,
+  ) {
+    this.logger = logger;
+    this.crypto = crypto;
+    this.storage = storage;
+    this.zkProof = zkProof;
+    this.anonCredsService = anonCredsService;
+    this.trustChainService = trustChainService;
+  }
+
   /**
    * Pre-configured verification scenarios
    */
@@ -106,7 +143,7 @@ class VerificationService {
       }
 
       // Generate cryptographic nonce
-      const challenge = CryptoService.generateNonce();
+      const challenge = this.crypto.generateNonce();
 
       // Build PEX request based on scenario type
       const pexRequest: PresentationExchangeRequest = {
@@ -134,7 +171,7 @@ class VerificationService {
       }
 
       // Log challenge generation
-      LogService.captureEvent(
+      this.logger.captureEvent(
         'verification',
         'verificador',
         {
@@ -152,7 +189,7 @@ class VerificationService {
       return pexRequest;
     } catch (error) {
       // Log error
-      LogService.captureEvent(
+      this.logger.captureEvent(
         'verification',
         'verificador',
         {
@@ -299,7 +336,7 @@ class VerificationService {
       }
 
       // Log successful validation
-      LogService.captureEvent(
+      this.logger.captureEvent(
         'verification',
         'verificador',
         {
@@ -315,7 +352,7 @@ class VerificationService {
       return parsedPresentation;
     } catch (error) {
       // Log validation error
-      LogService.captureEvent(
+      this.logger.captureEvent(
         'verification',
         'verificador',
         {
@@ -363,7 +400,7 @@ class VerificationService {
       if (!publicKey) {
         // In production, we would resolve the DID to get the public key
         // For MVP, we'll get it from storage (simulated issuer)
-        publicKey = await StorageService.getIssuerPublicKey() ?? undefined;
+        publicKey = await this.storage.getIssuerPublicKey() ?? undefined;
 
         if (!publicKey) {
           throw new CryptoError(
@@ -386,7 +423,7 @@ class VerificationService {
       // (handled in verifyZKPIntegrity), not via traditional signatures
       if (presentationProof.type === 'Groth16Proof') {
         // ZKP presentations are verified through their Groth16 proofs
-        LogService.captureEvent(
+        this.logger.captureEvent(
           'verification',
           'verificador',
           {
@@ -422,7 +459,7 @@ class VerificationService {
       // 2. Verify the presentation's holder signature using holder's public key
       
       // Log verification result
-      LogService.captureEvent(
+      this.logger.captureEvent(
         'verification',
         'verificador',
         {
@@ -440,7 +477,7 @@ class VerificationService {
       return true;
     } catch (error) {
       // Log error
-      LogService.captureEvent(
+      this.logger.captureEvent(
         'verification',
         'verificador',
         {
@@ -505,7 +542,7 @@ class VerificationService {
       }
 
       // Log verification result
-      LogService.captureEvent(
+      this.logger.captureEvent(
         'verification',
         'verificador',
         {
@@ -521,7 +558,7 @@ class VerificationService {
       return integrityValid;
     } catch (error) {
       // Log error
-      LogService.captureEvent(
+      this.logger.captureEvent(
         'verification',
         'verificador',
         {
@@ -601,7 +638,7 @@ class VerificationService {
             ? JSON.stringify(credentialValue)
             : String(credentialValue);
 
-        const expectedHash = await CryptoService.computeHash(
+        const expectedHash = await this.crypto.computeHash(
           `${attr}:${valueString}`,
           'verificador',
         );
@@ -674,7 +711,7 @@ class VerificationService {
           const circuitName = this.getCircuitNameForPredicate(proof.predicate);
 
           try {
-            const isValid = await ZKProofService.verifyProof(
+            const isValid = await this.zkProof.verifyProof(
               circuitName,
               {
                 proof: proof.proof_data.circom_proof,
@@ -690,7 +727,7 @@ class VerificationService {
               );
             }
 
-            LogService.captureEvent(
+            this.logger.captureEvent(
               'verification',
               'verificador',
               {
@@ -704,20 +741,28 @@ class VerificationService {
               true,
             );
           } catch (verifyError) {
-            // If circuit is not available, log warning but accept proof structure
+            // SECURITY: If the circuit zkey is unavailable, we CANNOT verify the ZKP.
+            // Accepting an unverified proof completely undermines the zero-knowledge
+            // guarantee. The verifier must reject the presentation.
             if (verifyError instanceof CryptoError &&
                 String(verifyError.message).includes('zkey não encontrado')) {
-              LogService.captureEvent(
+              this.logger.captureEvent(
                 'verification',
                 'verificador',
                 {
                   parameters: {
-                    action: 'zkp_circuit_unavailable_warning',
+                    action: 'zkp_circuit_unavailable_rejected',
                     circuit: circuitName,
-                    message: 'Circuit zkey not available for verification',
+                    message: 'Circuit zkey not available — cannot verify ZKP, rejecting proof',
                   },
                 },
-                true,
+                false,
+              );
+              throw new ValidationError(
+                `Cannot verify ZKP: circuit file (${circuitName}) not available. ` +
+                'The verifier must have the circuit zkey to validate Groth16 proofs.',
+                'zkp_circuit',
+                {circuit: circuitName},
               );
             } else if (verifyError instanceof ValidationError) {
               throw verifyError;
@@ -726,17 +771,25 @@ class VerificationService {
             }
           }
         } else {
-          // Legacy proof format - check basic structure only
-          LogService.captureEvent(
+          // SECURITY: A ZKP presentation MUST contain verifiable Groth16 proof data.
+          // Accepting a proof without circom_proof + public_inputs means we have
+          // no cryptographic evidence. Reject the proof.
+          this.logger.captureEvent(
             'verification',
             'verificador',
             {
               parameters: {
-                action: 'zkp_legacy_proof_accepted',
-                message: 'Proof does not contain Groth16 data, accepting structure only',
+                action: 'zkp_missing_groth16_data_rejected',
+                message: 'Proof does not contain Groth16 data (circom_proof + public_inputs). Rejecting.',
               },
             },
-            true,
+            false,
+          );
+          throw new ValidationError(
+            `ZKP proof for predicate '${proof.predicate.attr_name}' is missing Groth16 proof data (circom_proof and public_inputs). ` +
+            'Cannot verify without cryptographic proof.',
+            'zkp_proof_data',
+            proof,
           );
         }
       }
@@ -796,28 +849,38 @@ class VerificationService {
       const schemaId = credToken.schema_id || credToken.issuer;
       const credDefId = credToken.cred_def_id || credToken.issuer;
 
-      const schemaRaw = await StorageService.getRawItem(
+      const schemaRaw = await this.storage.getRawItem(
         `anoncreds_schema_${schemaId}`,
       );
-      const credDefRaw = await StorageService.getRawItem(
+      const credDefRaw = await this.storage.getRawItem(
         `anoncreds_creddef_${credDefId}`,
       );
 
       if (!schemaRaw || !credDefRaw) {
-        // If artifacts are missing we can't verify with the lib — accept structure only
-        LogService.captureEvent(
+        // SECURITY: Without the original schema and credential definition artifacts,
+        // we cannot cryptographically verify the CL-signature ZKP.
+        // Accepting the presentation without this verification would undermine
+        // the entire AnonCreds trust model. Reject the presentation.
+        this.logger.captureEvent(
           'verification',
           'verificador',
           {
             algorithm: 'CL',
-            verification_result: true,
+            verification_result: false,
             parameters: {
-              action: 'anoncreds_artifacts_missing_accepting_structure',
+              action: 'anoncreds_artifacts_missing_rejected',
+              schemaId,
+              credDefId,
             },
           },
-          true,
+          false,
         );
-        return true;
+        throw new ValidationError(
+          'Cannot verify AnonCreds presentation: issuer artifacts (schema or credential definition) not found in storage. ' +
+          'The credential may have been issued by a different instance or the artifacts were cleared.',
+          'anoncreds_artifacts',
+          {schemaId, credDefId},
+        );
       }
 
       const schema = JSON.parse(schemaRaw);
@@ -828,14 +891,14 @@ class VerificationService {
         ? (zkpProof.proof_data as Record<string, unknown>)
         : this.rebuildPresentationRequest(zkpProof);
 
-      const isValid = AnonCredsService.verifyPresentation(
+      const isValid = this.anonCredsService.verifyPresentation(
         zkpProof.proof_data as Record<string, unknown>,
         presRequestJson,
         {[schemaId]: schema.schema},
         {[credDefId]: credDef.credDef},
       );
 
-      LogService.captureEvent(
+      this.logger.captureEvent(
         'verification',
         'verificador',
         {
@@ -852,7 +915,7 @@ class VerificationService {
 
       return isValid;
     } catch (error) {
-      LogService.captureEvent(
+      this.logger.captureEvent(
         'verification',
         'verificador',
         {parameters: {action: 'anoncreds_verification_failed'}},
@@ -865,7 +928,7 @@ class VerificationService {
 
   /**
    * Rebuilds a minimal AnonCreds presentation request from zkp_proof data
-   * so it can be passed to AnonCredsService.verifyPresentation().
+   * so it can be passed to this.anonCredsService.verifyPresentation().
    */
   private rebuildPresentationRequest(
     zkpProof: NonNullable<VerifiablePresentation['zkp_proof']>,
@@ -1045,7 +1108,7 @@ class VerificationService {
     if (holderDID.startsWith('did:key:')) {
       // In production, we would decode the multibase-encoded key
       // For MVP, we'll get it from storage
-      const publicKey = await StorageService.getHolderPublicKey();
+      const publicKey = await this.storage.getHolderPublicKey();
       if (!publicKey) {
         throw new CryptoError(
           'Chave pública do titular não encontrada',
@@ -1064,140 +1127,43 @@ class VerificationService {
   }
 
   /**
-   * Validates a complete presentation against a PEX request
-   * @param presentation - The presentation to validate
-   * @param pexRequest - The original PEX request
-   * @returns Validation result with details
+   * Validates a complete presentation against a PEX request.
+   *
+   * Uses VerificationPipeline (Chain of Responsibility) to compose
+   * independent verification steps.  New steps can be added via
+   * `register()` without changing existing code (Open/Closed Principle).
    */
   async validatePresentation(
     presentation: string | VerifiablePresentation,
     pexRequest: PresentationExchangeRequest,
   ): Promise<ValidationResult> {
-    const errors: string[] = [];
-    let valid = true;
-
     try {
-      // Step 1: Validate presentation format
+      // Step 1: Validate presentation format (must succeed to continue)
       const validatedPresentation = this.validatePresentationFormat(presentation);
 
-      // Step 2: Verify issuer signature
-      try {
-        const signatureValid = await this.verifyIssuerSignature(validatedPresentation);
-        if (!signatureValid) {
-          errors.push('Assinatura do emissor inválida');
-          valid = false;
-        }
-      } catch (error) {
-        errors.push(
-          `Erro ao verificar assinatura: ${error instanceof Error ? error.message : String(error)}`,
-        );
-        valid = false;
-      }
+      // Build verification pipeline with composable steps
+      const pipeline = new VerificationPipeline()
+        .register(createSignatureStep(this))
+        .register(createTrustChainStep())
+        .register(createIntegrityStep(this))
+        .register(createChallengeStep())
+        .register(createPredicateStep(
+          (p, preds) => this.checkPredicates(p, preds),
+          (p, preds) => this.getFailedPredicates(p, preds),
+        ))
+        .register(createNullifierStep(this))
+        .register(createResourceAccessStep(
+          (p) => this.extractVerifiedAttributes(p),
+          (attrs, resourceId) => this.checkLabAccess(attrs, resourceId),
+        ));
 
-      // Step 3: Verify trust chain (if trust chain is initialized)
-      let trustChainValid: boolean | undefined;
-      try {
-        const credential =
-          typeof validatedPresentation.verifiableCredential === 'string'
-            ? JSON.parse(validatedPresentation.verifiableCredential)
-            : validatedPresentation.verifiableCredential;
-        const issuerDid = credential.issuer;
-        const allIssuers = await TrustChainService.getAllIssuers();
-        if (allIssuers.length > 0) {
-          const chainResult = await TrustChainService.verifyTrustChain(issuerDid);
-          trustChainValid = chainResult.trusted;
-          if (!chainResult.trusted) {
-            errors.push(
-              `Emissor não pertence à cadeia de confiança: ${chainResult.error || issuerDid}`,
-            );
-            valid = false;
-          }
-        }
-      } catch (error) {
-        // Trust chain not configured — skip (backwards compatible)
-      }
+      const context = await pipeline.execute(validatedPresentation, pexRequest);
 
-      // Step 4: Verify structural integrity
-      try {
-        const integrityValid = await this.verifyStructuralIntegrity(
-          validatedPresentation,
-          pexRequest,
-        );
-        if (!integrityValid) {
-          errors.push('Integridade estrutural inválida');
-          valid = false;
-        }
-      } catch (error) {
-        errors.push(
-          `Erro ao verificar integridade: ${error instanceof Error ? error.message : String(error)}`,
-        );
-        valid = false;
-      }
-
-      // Step 5: Check challenge matches
-      if (validatedPresentation.proof.challenge !== pexRequest.challenge) {
-        errors.push('Challenge não corresponde à requisição');
-        valid = false;
-      }
-
-      // Step 6: Extract verified attributes
+      // Derive result from pipeline context
       const verifiedAttributes = this.extractVerifiedAttributes(validatedPresentation);
+      const valid = context.errors.length === 0;
 
-      // Step 7: Check predicates if present
-      let predicatesSatisfied = true;
-      if (pexRequest.predicates && pexRequest.predicates.length > 0) {
-        predicatesSatisfied = this.checkPredicates(
-          validatedPresentation,
-          pexRequest.predicates,
-        );
-        if (!predicatesSatisfied) {
-          // Get more specific error message
-          const failedPredicates = this.getFailedPredicates(
-            validatedPresentation,
-            pexRequest.predicates,
-          );
-          errors.push(`Predicados não satisfeitos: ${failedPredicates.join(', ')}`);
-          valid = false;
-        }
-      }
-
-      // Step 8: Check nullifier if election scenario
-      let nullifierCheck: 'new' | 'duplicate' | undefined;
-      if (pexRequest.election_id && validatedPresentation.nullifier) {
-        const isDuplicate = await this.checkNullifier(
-          validatedPresentation.nullifier,
-          pexRequest.election_id,
-        );
-        nullifierCheck = isDuplicate ? 'duplicate' : 'new';
-
-        if (isDuplicate) {
-          errors.push('Nullifier já registrado - voto duplicado detectado');
-          valid = false;
-        } else {
-          // Store new nullifier
-          await this.storeNullifier(
-            validatedPresentation.nullifier,
-            pexRequest.election_id,
-          );
-        }
-      }
-
-      // Step 9: Check resource_id if lab access scenario
-      if (pexRequest.resource_id) {
-        const hasPermission = this.checkLabAccess(
-          verifiedAttributes,
-          pexRequest.resource_id,
-        );
-        if (!hasPermission) {
-          errors.push(
-            `Permissão de acesso não encontrada para: ${pexRequest.resource_id}`,
-          );
-          valid = false;
-        }
-      }
-
-      // Log validation result
-      LogService.captureEvent(
+      this.logger.captureEvent(
         'verification',
         'verificador',
         {
@@ -1205,8 +1171,8 @@ class VerificationService {
           parameters: {
             action: 'presentation_validated',
             valid,
-            errors_count: errors.length,
-            nullifier_check: nullifierCheck,
+            errors_count: context.errors.length,
+            nullifier_check: context.nullifierCheck,
           },
         },
         true,
@@ -1214,22 +1180,19 @@ class VerificationService {
 
       return {
         valid,
-        errors: errors.length > 0 ? errors : undefined,
+        errors: context.errors.length > 0 ? context.errors : undefined,
         verified_attributes: verifiedAttributes,
-        predicates_satisfied: predicatesSatisfied,
-        nullifier_check: nullifierCheck,
-        trust_chain_valid: trustChainValid,
+        predicates_satisfied: context.predicatesSatisfied ?? true,
+        nullifier_check: context.nullifierCheck,
+        trust_chain_valid: context.trustChainValid,
       };
     } catch (error) {
-      // Log error
-      LogService.captureEvent(
+      this.logger.captureEvent(
         'verification',
         'verificador',
         {
           verification_result: false,
-          parameters: {
-            action: 'presentation_validation_failed',
-          },
+          parameters: {action: 'presentation_validation_failed'},
         },
         false,
         error instanceof Error ? error : new Error(String(error)),
@@ -1243,6 +1206,10 @@ class VerificationService {
       };
     }
   }
+
+  // -------------------------------------------------------------------
+  // Pipeline Step Factories (Strategy Pattern)
+  // -------------------------------------------------------------------
 
   /**
    * Extracts verified attributes from a presentation
@@ -1442,7 +1409,7 @@ class VerificationService {
    */
   async checkNullifier(nullifier: string, electionId: string): Promise<boolean> {
     try {
-      const nullifiers = await StorageService.getNullifiers(electionId);
+      const nullifiers = await this.storage.getNullifiers(electionId);
       return nullifiers.includes(nullifier);
     } catch (error) {
       throw new CryptoError(
@@ -1460,10 +1427,10 @@ class VerificationService {
    */
   async storeNullifier(nullifier: string, electionId: string): Promise<void> {
     try {
-      await StorageService.storeNullifier(nullifier, electionId);
+      await this.storage.storeNullifier(nullifier, electionId);
 
       // Log nullifier storage
-      LogService.captureEvent(
+      this.logger.captureEvent(
         'verification',
         'verificador',
         {
@@ -1498,7 +1465,7 @@ class VerificationService {
       // Check if resource is in acesso_laboratorios array
       const labs = verifiedAttributes.acesso_laboratorios;
       if (Array.isArray(labs) && labs.includes(resourceId)) {
-        LogService.captureEvent(
+        this.logger.captureEvent(
           'verification',
           'verificador',
           {
@@ -1516,7 +1483,7 @@ class VerificationService {
       // Check if resource is in acesso_predios array
       const buildings = verifiedAttributes.acesso_predios;
       if (Array.isArray(buildings) && buildings.includes(resourceId)) {
-        LogService.captureEvent(
+        this.logger.captureEvent(
           'verification',
           'verificador',
           {
@@ -1532,7 +1499,7 @@ class VerificationService {
       }
 
       // Permission not found
-      LogService.captureEvent(
+      this.logger.captureEvent(
         'verification',
         'verificador',
         {
@@ -1547,7 +1514,7 @@ class VerificationService {
 
       return false;
     } catch (error) {
-      LogService.captureEvent(
+      this.logger.captureEvent(
         'verification',
         'verificador',
         {
@@ -1565,4 +1532,7 @@ class VerificationService {
 }
 
 // Export singleton instance
-export default new VerificationService();
+export { VerificationService };
+
+const verificationServiceInstance = new VerificationService();
+export default verificationServiceInstance;

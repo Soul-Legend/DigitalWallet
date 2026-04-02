@@ -5,8 +5,9 @@ import {
   ProofLib,
 } from 'mopro-ffi';
 import RNFS from 'react-native-fs';
-import LogService from './LogService';
+import LogServiceInstance from './LogService';
 import {CryptoError} from './ErrorHandler';
+import type {ILogService} from '../types';
 
 /**
  * ZKProofService - Handles Zero-Knowledge Proof operations using mopro-ffi
@@ -30,8 +31,10 @@ const CIRCUIT_ZKEYS: Record<string, string> = {
 class ZKProofService {
   private zkeyBasePath: string;
   private zkeyCache: Map<string, string> = new Map();
+  private readonly logger: ILogService;
 
-  constructor() {
+  constructor(logger: ILogService = LogServiceInstance) {
+    this.logger = logger;
     // Use the app's document directory for zkey files
     this.zkeyBasePath = `${RNFS.DocumentDirectoryPath}/zkeys`;
   }
@@ -108,7 +111,7 @@ class ZKProofService {
         threshold: [threshold.toString()],
       };
 
-      LogService.captureEvent(
+      this.logger.captureEvent(
         'zkp_generation',
         'titular',
         {
@@ -127,7 +130,7 @@ class ZKProofService {
         ProofLib.Arkworks,
       );
 
-      LogService.captureEvent(
+      this.logger.captureEvent(
         'zkp_generation',
         'titular',
         {
@@ -143,7 +146,7 @@ class ZKProofService {
 
       return proofResult;
     } catch (error) {
-      LogService.captureEvent(
+      this.logger.captureEvent(
         'zkp_generation',
         'titular',
         {
@@ -191,7 +194,7 @@ class ZKProofService {
         expected: [expectedNumeric.toString()],
       };
 
-      LogService.captureEvent(
+      this.logger.captureEvent(
         'zkp_generation',
         'titular',
         {
@@ -209,7 +212,7 @@ class ZKProofService {
         ProofLib.Arkworks,
       );
 
-      LogService.captureEvent(
+      this.logger.captureEvent(
         'zkp_generation',
         'titular',
         {
@@ -224,7 +227,7 @@ class ZKProofService {
 
       return proofResult;
     } catch (error) {
-      LogService.captureEvent(
+      this.logger.captureEvent(
         'zkp_generation',
         'titular',
         {
@@ -272,7 +275,7 @@ class ZKProofService {
         electionId: [electionNumeric.toString()],
       };
 
-      LogService.captureEvent(
+      this.logger.captureEvent(
         'zkp_generation',
         'titular',
         {
@@ -290,7 +293,7 @@ class ZKProofService {
         ProofLib.Arkworks,
       );
 
-      LogService.captureEvent(
+      this.logger.captureEvent(
         'zkp_generation',
         'titular',
         {
@@ -305,7 +308,7 @@ class ZKProofService {
 
       return proofResult;
     } catch (error) {
-      LogService.captureEvent(
+      this.logger.captureEvent(
         'zkp_generation',
         'titular',
         {
@@ -340,7 +343,7 @@ class ZKProofService {
     try {
       const zkeyPath = await this.getZkeyPath(circuitName);
 
-      LogService.captureEvent(
+      this.logger.captureEvent(
         'verification',
         'verificador',
         {
@@ -358,7 +361,7 @@ class ZKProofService {
         ProofLib.Arkworks,
       );
 
-      LogService.captureEvent(
+      this.logger.captureEvent(
         'verification',
         'verificador',
         {
@@ -373,7 +376,7 @@ class ZKProofService {
 
       return isValid;
     } catch (error) {
-      LogService.captureEvent(
+      this.logger.captureEvent(
         'verification',
         'verificador',
         {
@@ -453,4 +456,7 @@ class ZKProofService {
 }
 
 // Export singleton instance
-export default new ZKProofService();
+export { ZKProofService };
+
+const zkProofServiceInstance = new ZKProofService();
+export default zkProofServiceInstance;

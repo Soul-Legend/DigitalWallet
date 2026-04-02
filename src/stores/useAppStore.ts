@@ -1,5 +1,6 @@
 import {create} from 'zustand';
 import {LogEntry} from '../types';
+import {AppModule, AppModuleType} from '../utils/constants';
 
 interface AppState {
   // Logs
@@ -16,8 +17,8 @@ interface AppState {
   setIssuerDID: (did: string) => void;
   
   // Navigation state
-  currentModule: 'emissor' | 'titular' | 'verificador' | 'logs' | 'home';
-  setCurrentModule: (module: 'emissor' | 'titular' | 'verificador' | 'logs' | 'home') => void;
+  currentModule: AppModuleType;
+  setCurrentModule: (module: AppModuleType) => void;
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -26,7 +27,7 @@ export const useAppStore = create<AppState>((set) => ({
   addLog: (log) =>
     set((state) => ({
       logs: [
-        ...state.logs,
+        ...state.logs.slice(-999),
         {
           ...log,
           id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -45,6 +46,6 @@ export const useAppStore = create<AppState>((set) => ({
   setIssuerDID: (did) => set({issuerDID: did}),
   
   // Navigation state
-  currentModule: 'home',
+  currentModule: AppModule.HOME,
   setCurrentModule: (module) => set({currentModule: module}),
 }));

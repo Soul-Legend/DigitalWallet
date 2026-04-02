@@ -1,5 +1,6 @@
 import EncryptedStorage from 'react-native-encrypted-storage';
 import {CryptoError, StorageError} from './ErrorHandler';
+import {StorageKey, HOLDER_KEY_PREFIX, ISSUER_KEY_PREFIX, NULLIFIER_KEY_PREFIX} from '../utils/constants';
 
 /**
  * StorageService - Manages encrypted storage of sensitive data
@@ -8,8 +9,39 @@ import {CryptoError, StorageError} from './ErrorHandler';
  * using the device's encrypted storage capabilities.
  */
 class StorageService {
-  private readonly HOLDER_KEY_PREFIX = 'holder_';
-  private readonly ISSUER_KEY_PREFIX = 'issuer_';
+  private readonly HOLDER_KEY_PREFIX = HOLDER_KEY_PREFIX;
+  private readonly ISSUER_KEY_PREFIX = ISSUER_KEY_PREFIX;
+
+  /**
+   * Per-key mutex map to serialise read-modify-write operations on array-
+   * valued storage entries (credentials, nullifiers).  This prevents race
+   * conditions when concurrent callers modify the same key.
+   */
+  private readonly locks = new Map<string, Promise<void>>();
+
+  /**
+   * Executes `fn` while holding an exclusive lock for `key`.
+   * Concurrent calls with the same key are queued; different keys run in parallel.
+   */
+  private async withLock<T>(key: string, fn: () => Promise<T>): Promise<T> {
+    // Chain onto the existing promise for this key (or a resolved one).
+    const prev = this.locks.get(key) ?? Promise.resolve();
+    let release: () => void;
+    const next = new Promise<void>(resolve => { release = resolve; });
+    this.locks.set(key, next);
+
+    // Wait for the previous operation on this key to finish.
+    await prev;
+    try {
+      return await fn();
+    } finally {
+      release!();
+      // Clean up the entry when the queue is drained.
+      if (this.locks.get(key) === next) {
+        this.locks.delete(key);
+      }
+    }
+  }
   
   /**
    * Stores holder's private key in encrypted storage
@@ -176,25 +208,27 @@ class StorageService {
    * Stores a credential in encrypted storage
    */
   async storeCredential(credential: string): Promise<void> {
-    try {
-      // Get existing credentials
-      const credentials = await this.getCredentials();
-      
-      // Add new credential
-      credentials.push(credential);
-      
-      // Store updated credentials array
-      await EncryptedStorage.setItem(
-        'holder_credentials',
-        JSON.stringify(credentials)
-      );
-    } catch (error) {
-      throw new StorageError(
-        'Failed to store credential',
-        'write',
-        {error}
-      );
-    }
+    return this.withLock(StorageKey.HOLDER_CREDENTIALS, async () => {
+      try {
+        // Get existing credentials
+        const credentials = await this.getCredentials();
+        
+        // Add new credential
+        credentials.push(credential);
+        
+        // Store updated credentials array
+        await EncryptedStorage.setItem(
+          StorageKey.HOLDER_CREDENTIALS,
+          JSON.stringify(credentials)
+        );
+      } catch (error) {
+        throw new StorageError(
+          'Failed to store credential',
+          'write',
+          {error}
+        );
+      }
+    });
   }
   
   /**
@@ -202,7 +236,7 @@ class StorageService {
    */
   async getCredentials(): Promise<string[]> {
     try {
-      const credentialsJson = await EncryptedStorage.getItem('holder_credentials');
+      const credentialsJson = await EncryptedStorage.getItem(StorageKey.HOLDER_CREDENTIALS);
       
       if (!credentialsJson) {
         return [];
@@ -222,30 +256,35 @@ class StorageService {
    * Deletes a credential at the specified index
    */
   async deleteCredential(index: number): Promise<void> {
-    try {
-      const credentials = await this.getCredentials();
-      
-      if (index < 0 || index >= credentials.length) {
+    return this.withLock(StorageKey.HOLDER_CREDENTIALS, async () => {
+      try {
+        const credentials = await this.getCredentials();
+        
+        if (index < 0 || index >= credentials.length) {
+          throw new StorageError(
+            'Invalid credential index',
+            'delete',
+            {index}
+          );
+        }
+        
+        credentials.splice(index, 1);
+        
+        await EncryptedStorage.setItem(
+          StorageKey.HOLDER_CREDENTIALS,
+          JSON.stringify(credentials)
+        );
+      } catch (error) {
+        if (error instanceof StorageError) {
+          throw error;
+        }
         throw new StorageError(
-          'Invalid credential index',
+          'Failed to delete credential',
           'delete',
-          {index}
+          {error}
         );
       }
-      
-      credentials.splice(index, 1);
-      
-      await EncryptedStorage.setItem(
-        'holder_credentials',
-        JSON.stringify(credentials)
-      );
-    } catch (error) {
-      throw new StorageError(
-        'Failed to delete credential',
-        'delete',
-        {error}
-      );
-    }
+    });
   }
   
   /**
@@ -319,7 +358,7 @@ class StorageService {
    */
   async getNullifiers(electionId: string): Promise<string[]> {
     try {
-      const nullifiersJson = await EncryptedStorage.getItem(`nullifiers_${electionId}`);
+      const nullifiersJson = await EncryptedStorage.getItem(`${NULLIFIER_KEY_PREFIX}${electionId}`);
       
       if (!nullifiersJson) {
         return [];
@@ -339,25 +378,28 @@ class StorageService {
    * Stores a nullifier for a specific election
    */
   async storeNullifier(nullifier: string, electionId: string): Promise<void> {
-    try {
-      const nullifiers = await this.getNullifiers(electionId);
-      
-      // Add new nullifier if not already present
-      if (!nullifiers.includes(nullifier)) {
-        nullifiers.push(nullifier);
+    const lockKey = `${NULLIFIER_KEY_PREFIX}${electionId}`;
+    return this.withLock(lockKey, async () => {
+      try {
+        const nullifiers = await this.getNullifiers(electionId);
         
-        await EncryptedStorage.setItem(
-          `nullifiers_${electionId}`,
-          JSON.stringify(nullifiers)
+        // Add new nullifier if not already present
+        if (!nullifiers.includes(nullifier)) {
+          nullifiers.push(nullifier);
+          
+          await EncryptedStorage.setItem(
+            `${NULLIFIER_KEY_PREFIX}${electionId}`,
+            JSON.stringify(nullifiers)
+          );
+        }
+      } catch (error) {
+        throw new StorageError(
+          'Failed to store nullifier',
+          'write',
+          {error}
         );
       }
-    } catch (error) {
-      throw new StorageError(
-        'Failed to store nullifier',
-        'write',
-        {error}
-      );
-    }
+    });
   }
   
   /**
@@ -395,5 +437,8 @@ class StorageService {
   }
 }
 
+export { StorageService };
+
 // Export singleton instance
-export default new StorageService();
+const storageServiceInstance = new StorageService();
+export default storageServiceInstance;

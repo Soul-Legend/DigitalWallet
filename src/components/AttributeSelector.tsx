@@ -1,5 +1,6 @@
 import React from 'react';
 import {View, Text, StyleSheet, TouchableOpacity} from 'react-native';
+import {formatAttributeName} from '../utils/formatters';
 
 interface AttributeSelectorProps {
   attributes: string[];
@@ -22,16 +23,7 @@ const AttributeSelector: React.FC<AttributeSelectorProps> = ({
   onToggle,
   disabled = false,
 }) => {
-  /**
-   * Formats attribute name for display
-   */
-  const formatAttributeName = (attr: string): string => {
-    // Convert snake_case to readable format
-    return attr
-      .split('_')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ');
-  };
+
 
   if (attributes.length === 0) {
     return (

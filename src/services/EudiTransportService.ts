@@ -1,4 +1,5 @@
-import LogService from './LogService';
+import LogServiceInstance from './LogService';
+import type {ILogService} from '../types';
 
 // Declare require for dynamic imports (provided by Metro bundler at runtime)
 declare const require: (id: string) => any;
@@ -65,6 +66,11 @@ class EudiTransportService {
   private eudiListenerId: string | null = null;
   private isEudiAvailable: boolean | null = null;
   private initialized = false;
+  private readonly logger: ILogService;
+
+  constructor(logger: ILogService = LogServiceInstance) {
+    this.logger = logger;
+  }
 
   /**
    * Gets the current transport mode
@@ -103,7 +109,7 @@ class EudiTransportService {
 
     const available = await this.isAvailable();
     if (!available) {
-      LogService.captureEvent(
+      this.logger.captureEvent(
         'presentation_creation',
         'titular',
         {
@@ -138,7 +144,7 @@ class EudiTransportService {
       await EudiWallet.initialize(walletConfig);
       this.initialized = true;
 
-      LogService.captureEvent(
+      this.logger.captureEvent(
         'presentation_creation',
         'titular',
         {
@@ -150,7 +156,7 @@ class EudiTransportService {
         true,
       );
     } catch (error) {
-      LogService.captureEvent(
+      this.logger.captureEvent(
         'presentation_creation',
         'titular',
         {
@@ -184,7 +190,7 @@ class EudiTransportService {
 
     this.currentMode = mode;
 
-    LogService.captureEvent(
+    this.logger.captureEvent(
       'presentation_creation',
       'titular',
       {
@@ -212,7 +218,7 @@ class EudiTransportService {
     this.setupEudiEventBridge();
     EudiWallet.startProximityPresentation();
 
-    LogService.captureEvent(
+    this.logger.captureEvent(
       'presentation_creation',
       'titular',
       {
@@ -237,7 +243,7 @@ class EudiTransportService {
     this.setupEudiEventBridge();
     EudiWallet.startRemotePresentation(url);
 
-    LogService.captureEvent(
+    this.logger.captureEvent(
       'presentation_creation',
       'titular',
       {
@@ -266,7 +272,7 @@ class EudiTransportService {
 
     await EudiWallet.sendResponse(disclosedDocuments);
 
-    LogService.captureEvent(
+    this.logger.captureEvent(
       'presentation_creation',
       'titular',
       {
@@ -295,7 +301,7 @@ class EudiTransportService {
 
     this.cleanupEudiEventBridge();
 
-    LogService.captureEvent(
+    this.logger.captureEvent(
       'presentation_creation',
       'titular',
       {
@@ -412,4 +418,7 @@ class EudiTransportService {
 }
 
 // Export singleton instance
-export default new EudiTransportService();
+export { EudiTransportService };
+
+const eudiTransportServiceInstance = new EudiTransportService();
+export default eudiTransportServiceInstance;

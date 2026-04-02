@@ -1,11 +1,13 @@
-import {StudentData, VerifiableCredential} from '../types';
+import {StudentData, VerifiableCredential, ICredentialFormat} from '../types';
+import type {ILogService, IStorageService, IDIDService, IAgentService, IAnonCredsService} from '../types';
 import {Clipboard} from 'react-native';
-import DIDService from './DIDService';
-import StorageService from './StorageService';
-import LogService from './LogService';
-import AgentService from './AgentService';
-import AnonCredsService from './AnonCredsService';
+import DIDServiceInstance from './DIDService';
+import StorageServiceInstance from './StorageService';
+import LogServiceInstance from './LogService';
+import AgentServiceInstance from './AgentService';
+import AnonCredsServiceInstance from './AnonCredsService';
 import {CryptoError, ValidationError} from './ErrorHandler';
+import {CredentialFormat, CredentialFormatType} from '../utils/constants';
 
 /**
  * CredentialService - Handles credential issuance and management
@@ -19,19 +21,65 @@ import {CryptoError, ValidationError} from './ErrorHandler';
  */
 class CredentialService {
   /**
+   * Format registry (Open/Closed Principle).
+   * New credential formats can be registered without modifying parsing logic.
+   */
+  private formats: ICredentialFormat[] = [];
+  private readonly didService: IDIDService;
+  private readonly storage: IStorageService;
+  private readonly logger: ILogService;
+  private readonly agentService: IAgentService;
+  private readonly anonCredsService: IAnonCredsService;
+
+  constructor(
+    didService: IDIDService = DIDServiceInstance,
+    storage: IStorageService = StorageServiceInstance,
+    logger: ILogService = LogServiceInstance,
+    agentService: IAgentService = AgentServiceInstance,
+    anonCredsService: IAnonCredsService = AnonCredsServiceInstance,
+  ) {
+    this.didService = didService;
+    this.storage = storage;
+    this.logger = logger;
+    this.agentService = agentService;
+    this.anonCredsService = anonCredsService;
+    // Register default formats (order matters — first match wins)
+    this.registerFormat({
+      name: 'AnonCreds',
+      detect: (_token, parsed) =>
+        parsed !== null &&
+        ((parsed.format === CredentialFormat.ANONCREDS && parsed.credential) ||
+          (parsed.schema_id && parsed.values)),
+      parse: (token) => this.parseAnonCreds(token),
+    });
+    this.registerFormat({
+      name: 'SD-JWT',
+      detect: (token, _parsed) => token.includes('.'),
+      parse: (token) => this.parseSDJWT(token),
+    });
+  }
+
+  /**
+   * Registers a new credential format parser (extensibility point).
+   */
+  registerFormat(format: ICredentialFormat): void {
+    this.formats.push(format);
+  }
+
+  /**
    * Generates or retrieves the institution's DID (did:web)
    * For the MVP, we simulate UFSC as the issuer
    */
   async getOrCreateIssuerDID(): Promise<{did: string; publicKey: string}> {
     try {
       // Check if issuer DID already exists
-      const existingDID = await StorageService.getIssuerDID();
+      const existingDID = await this.storage.getIssuerDID();
 
       if (existingDID) {
         // DID exists, retrieve the stored public key
-        const existingPublicKey = await StorageService.getIssuerPublicKey();
+        const existingPublicKey = await this.storage.getIssuerPublicKey();
 
-        LogService.captureEvent(
+        this.logger.captureEvent(
           'key_generation',
           'emissor',
           {
@@ -49,7 +97,7 @@ class CredentialService {
       }
 
       // Generate new issuer identity
-      const {did, publicKey} = await DIDService.generateIssuerIdentity(
+      const {did, publicKey} = await this.didService.generateIssuerIdentity(
         'ufsc.br',
         'identidade-academica',
       );
@@ -74,7 +122,7 @@ class CredentialService {
   async issueCredential(
     studentData: StudentData,
     holderDID: string,
-    format: 'sd-jwt' | 'anoncreds' = 'sd-jwt',
+    format: CredentialFormatType = CredentialFormat.SD_JWT,
   ): Promise<string> {
     try {
       // Get or create issuer DID
@@ -90,7 +138,7 @@ class CredentialService {
       // Sign and format the credential based on the requested format
       let signedCredential: string;
 
-      if (format === 'sd-jwt') {
+      if (format === CredentialFormat.SD_JWT) {
         signedCredential = await this.signCredentialAsSDJWT(
           credential,
           issuerDID,
@@ -103,8 +151,8 @@ class CredentialService {
       }
 
       // Log the credential issuance
-      LogService.logCredentialIssuance(
-        format === 'sd-jwt' ? 'SD-JWT' : 'AnonCreds',
+      this.logger.logCredentialIssuance(
+        format === CredentialFormat.SD_JWT ? 'SD-JWT' : 'AnonCreds',
         true,
         {
           issuer: issuerDID,
@@ -116,8 +164,8 @@ class CredentialService {
       return signedCredential;
     } catch (error) {
       // Log the error
-      LogService.logCredentialIssuance(
-        format === 'sd-jwt' ? 'SD-JWT' : 'AnonCreds',
+      this.logger.logCredentialIssuance(
+        format === CredentialFormat.SD_JWT ? 'SD-JWT' : 'AnonCreds',
         false,
         undefined,
         error instanceof Error ? error : new Error(String(error)),
@@ -174,10 +222,10 @@ class CredentialService {
     issuerDID: string,
   ): Promise<string> {
     try {
-      const agent = await AgentService.getAgent();
+      const agent = await this.agentService.getAgent();
 
       // Resolve the issuer's signing DID (did:key) to get the key reference
-      const signingDid = await StorageService.getIssuerSigningDid();
+      const signingDid = await this.storage.getIssuerSigningDid();
       if (!signingDid) {
         throw new CryptoError(
           'Issuer signing DID not found',
@@ -252,7 +300,7 @@ class CredentialService {
   ): Promise<string> {
     try {
       const issuerDid =
-        (await StorageService.getIssuerDID()) || 'did:web:ufsc.br';
+        (await this.storage.getIssuerDID()) || 'did:web:ufsc.br';
       const holderDid = credential.credentialSubject.id;
 
       // Convert StudentData attributes to flat string map for AnonCreds
@@ -275,7 +323,7 @@ class CredentialService {
 
       // Full AnonCreds issuance protocol
       const {credential: anonCredsCredential, schemaArtifact, credDefArtifact} =
-        await AnonCredsService.issueCredentialFull(
+        await this.anonCredsService.issueCredentialFull(
           issuerDid,
           holderDid,
           'academic-id',
@@ -287,7 +335,7 @@ class CredentialService {
       // Wrap in an envelope that includes artifact references for later
       // presentation creation and verification
       const envelope = {
-        format: 'anoncreds',
+        format: CredentialFormat.ANONCREDS,
         credential: anonCredsCredential,
         schema_id: schemaArtifact.schemaId,
         cred_def_id: credDefArtifact.credDefId,
@@ -312,7 +360,7 @@ class CredentialService {
     try {
       Clipboard.setString(credential);
 
-      LogService.captureEvent(
+      this.logger.captureEvent(
         'credential_issuance',
         'emissor',
         {
@@ -339,30 +387,22 @@ class CredentialService {
    */
   async validateAndParseCredential(token: string): Promise<VerifiableCredential> {
     try {
-      // Try to parse as JSON first (could be AnonCreds)
-      let parsedToken: any;
+      // Try to parse as JSON first (could be AnonCreds or other JSON format)
+      let parsedToken: any = null;
       try {
         parsedToken = JSON.parse(token);
       } catch {
         // Not JSON, might be JWT
-        parsedToken = null;
       }
 
-      // Check if it's AnonCreds format (new envelope or legacy)
-      if (
-        parsedToken &&
-        ((parsedToken.format === 'anoncreds' && parsedToken.credential) ||
-          (parsedToken.schema_id && parsedToken.values))
-      ) {
-        return await this.parseAnonCreds(token);
+      // Iterate through format registry (first match wins)
+      for (const format of this.formats) {
+        if (format.detect(token, parsedToken)) {
+          return await format.parse(token);
+        }
       }
 
-      // Try to parse as SD-JWT (has dots)
-      if (token.includes('.')) {
-        return await this.parseSDJWT(token);
-      }
-
-      // If we got here, format is unknown
+      // No format matched
       throw new ValidationError(
         'Formato de credencial inválido',
         'token',
@@ -438,7 +478,7 @@ class CredentialService {
       const parsed = JSON.parse(anonCredsJson);
 
       // New envelope format: { format: 'anoncreds', credential, schema_id, cred_def_id }
-      const isEnvelope = parsed.format === 'anoncreds' && parsed.credential;
+      const isEnvelope = parsed.format === CredentialFormat.ANONCREDS && parsed.credential;
       const anonCreds = isEnvelope ? parsed.credential : parsed;
       const schemaId = isEnvelope
         ? parsed.schema_id
@@ -635,4 +675,7 @@ class CredentialService {
 }
 
 // Export singleton instance
-export default new CredentialService();
+export { CredentialService };
+
+const credentialServiceInstance = new CredentialService();
+export default credentialServiceInstance;

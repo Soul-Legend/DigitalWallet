@@ -10,13 +10,22 @@ Aplicativo React Native 0.76.5 (Android) que implementa os três papéis do mode
 ┌─────────────────────────────────────────────────────────┐
 │                    UI (React Native)                     │
 │  Screens: Home, Issuer, Holder, Verifier, Logs, Glossary│
-│  Components: ConsentModal, CredentialCard, etc.          │
+│  Hooks: useHolderState, useIssuerState                   │
+│  Components: ConsentModal, CredentialCard,               │
+│              TrustChainSection, AttributeSelector, etc.  │
 ├─────────────────────────────────────────────────────────┤
-│                    Service Layer                         │
+│              Service Layer (Dependency Injection)         │
 │  AgentService  │ AnonCredsService │ CredentialService    │
 │  DIDService    │ PresentationService │ VerificationService│
 │  ZKProofService│ CryptoService   │ EudiTransportService  │
 │  StorageService│ LogService      │ ErrorHandler           │
+│  Helpers: PresentationHelpers, VerificationSteps         │
+│  Composition Root: container.ts                          │
+├─────────────────────────────────────────────────────────┤
+│                    Utilities                             │
+│  constants.ts (Module, CredentialFormat, StorageKey, etc)│
+│  formatters.ts │ errorMessages.ts │ performanceCache.ts  │
+│  accessibility.ts │ glossary.ts │ theme.ts               │
 ├─────────────────────────────────────────────────────────┤
 │                 Native Libraries (JSI/Rust)              │
 │  @credo-ts/core        │ @hyperledger/aries-askar-react-native │
@@ -58,7 +67,7 @@ Emissão de credenciais em dois formatos:
 - **SD-JWT** (`'sd-jwt'`): Constrói JWT com header/payload/signature. Assinatura Ed25519 via `agent.wallet.sign()` (Aries Askar). Chave de assinatura resolvida do DID do emissor.
 - **AnonCreds** (`'anoncreds'`): Delega para `AnonCredsService.issueCredentialFull()` que executa o protocolo completo (Schema → CredDef → Offer → Request → Credential → Process). O resultado é um envelope JSON `{format: 'anoncreds', credential, schema_id, cred_def_id}`.
 
-Parsing: `validateAndParseCredential()` detecta o formato (JWT com dots vs JSON com `format: 'anoncreds'` vs legacy `schema_id`) e converte para `VerifiableCredential` internamente.
+Parsing: `validateAndParseCredential()` utiliza um registro de formatos (`ICredentialFormat[]`) para detectar e processar o token. Formatos padrão (AnonCreds, SD-JWT) são registrados automaticamente. Novos formatos podem ser adicionados via `registerFormat()` sem modificar o código existente (Princípio Aberto/Fechado).
 
 ### DIDService
 
@@ -79,20 +88,25 @@ Gera apresentações verificáveis em três modos:
 
 Nullifiers para eleições: tenta usar circuito ZK Circom, fallback para hash SHA-256 composto.
 
+Funções auxiliares puras foram extraídas para `PresentationHelpers.ts`: `evaluatePredicate()`, `extractDisclosedAttributes()`, `obfuscateNonDisclosedAttributes()`, `generateZKPProofs()`, `generateNullifier()`. Cada helper aceita um parâmetro `PresentationDeps` para injeção de dependências.
+
 ### VerificationService
 
-Valida apresentações recebidas. Entrypoint: `validatePresentation()` que executa:
+Valida apresentações recebidas. Entrypoint: `validatePresentation()` que constrói um `VerificationPipeline` com 7 passos independentes (Chain of Responsibility):
 
-1. Validação de formato PEX
-2. Verificação de assinatura do emissor (dispatch por proof type):
-   - `Groth16Proof`: aceita — verificação delegada ao passo de integridade ZKP
-   - `CLSignature2023`: executa `AnonCredsService.verifyPresentation()` contra artefatos locais
-   - `JsonWebSignature2020`: verifica JWS com chave pública do emissor
-3. **Verificação da cadeia de confiança** (se configurada): valida que o emissor da credencial pertence à cadeia de confiança PKI via `TrustChainService.verifyTrustChain()`. Se a cadeia existe mas o emissor não pertence, a verificação falha. Passo ignorado quando nenhuma cadeia está configurada (retrocompatível).
-4. Integridade estrutural (atributos presentes na credencial)
-5. Integridade ZKP: verifica cada prova Groth16 via `ZKProofService.verifyProof()`
-6. Validação de predicados
-7. Verificação de nullifiers (eleições)
+1. **SignatureVerification**: Verificação de assinatura do emissor (dispatch por proof type: Groth16Proof, CLSignature2023, JsonWebSignature2020)
+2. **TrustChainVerification**: Validação da cadeia de confiança PKI via `TrustChainService.verifyTrustChain()`
+3. **StructuralIntegrity**: Integridade estrutural (atributos presentes, hashes, ZKP)
+4. **ChallengeVerification**: Challenge PEX corresponde à requisição
+5. **PredicateVerification**: Predicados satisfeitos (age >= 18, status == 'Ativo')
+6. **NullifierVerification**: Anti-replay para cenários de eleição
+7. **ResourceAccessVerification**: Controle de acesso a laboratórios
+
+Cada passo implementa `IVerificationStep` e pode ser adicionado/removido sem alterar o pipeline existente.
+
+As 7 fábricas de passos foram extraídas para `VerificationSteps.ts`. Cada fábrica recebe uma interface `IVerificationOperations` que abstrai os métodos do serviço, evitando importação circular. Os nomes dos passos são definidos como constantes em `VerificationStepName` (`utils/constants.ts`).
+
+**Segurança reforçada**: verificação AnonCreds agora lança `ValidationError` quando artefatos do emissor não estão disponíveis (antes retornava `true` silenciosamente). Verificação ZKP rejeita provas quando circuito `.zkey` não está disponível e quando dados Groth16 estão ausentes.
 
 ### TrustChainService
 
@@ -136,6 +150,8 @@ Operações criptográficas de baixo nível independentes do agente Credo:
 
 Usado pelo PresentationService (SD-JWT hashing/signing) e VerificationService (SD-JWT verification).
 
+**Segurança**: O fallback para `Math.random()` foi removido. Se `react-native-get-random-values` não estiver disponível, o serviço lança `CryptoError` em vez de gerar bytes previsíveis.
+
 ### EudiTransportService
 
 Camada de transporte opcional que encapsula o `@openwallet-foundation/eudi-wallet-kit-react-native`. Três modos:
@@ -153,6 +169,10 @@ Wrapper sobre `react-native-encrypted-storage`. Armazena:
 - Credenciais (array JSON)
 - Nullifiers por eleição
 - Artefatos AnonCreds (schemas, cred defs, link secrets) via `setRawItem()`/`getRawItem()`
+
+Chaves de armazenamento são definidas como constantes em `StorageKey` (`utils/constants.ts`), evitando strings mágicas repetidas.
+
+**Proteção contra condições de corrida**: operações read-modify-write em arrays (credenciais e nullifiers) são protegidas por um mutex per-key. Operações concorrentes na mesma chave são serializadas; chaves diferentes podem ser processadas em paralelo.
 
 ### LogService
 
@@ -302,5 +322,178 @@ O `jest.config.js` configura `moduleNameMapper` para redirecionar imports para e
 Store único (`useAppStore`) com:
 - `holderDID`, `issuerDID`: DIDs ativos
 - `credentials`: array de credenciais armazenadas
-- `logs`: histórico de eventos criptográficos
+- `logs`: histórico de eventos criptográficos (máximo 1000 entradas — circular buffer para evitar vazamento de memória)
 - `nullifiers`: mapa electionId → string[] para prevenção de voto duplicado
+
+## Padrões de Projeto (Design Patterns)
+
+### Singleton + Dependency Injection
+Todos os 13 serviços são exportados como instância singleton (`export default new Service()`) para manter compatibilidade, mas cada classe também aceita dependências via **injeção no construtor**. As dependências têm valores padrão apontando para os singletons:
+
+```typescript
+class CryptoService {
+  constructor(logger: ILogService = LogServiceInstance) {
+    this.logger = logger;
+  }
+}
+export { CryptoService };                      // Named export (classe)
+export default new CryptoService();             // Default export (singleton)
+```
+
+Uma **composition root** em `src/container.ts` instancia todos os serviços na ordem correta de dependência e os exporta como um conjunto coeso:
+
+```
+Level 0 (folhas):    LogService, StorageService
+Level 1:             CryptoService, AgentService, ErrorHandler, EudiTransportService
+Level 2:             DIDService, AnonCredsService, ZKProofService, TrustChainService
+Level 3:             CredentialService
+Level 4:             PresentationService
+Level 5:             VerificationService
+```
+
+Para testes, basta criar instâncias diretamente com mocks: `new CryptoService(mockLogger)` — sem necessidade de `jest.mock()`.
+
+### Facade
+Serviços de alto nível (CredentialService, PresentationService, VerificationService) ocultam a complexidade de múltiplos serviços internos. As telas interagem apenas com a fachada:
+- `CredentialService.issueCredential()` → orquestra DIDService, AgentService, AnonCredsService
+- `PresentationService.createPresentation()` → orquestra CryptoService, ZKProofService, AnonCredsService
+- `VerificationService.validatePresentation()` → orquestra pipeline de validação completo
+
+### Chain of Responsibility / Pipeline (`VerificationPipeline`)
+A validação de apresentações utiliza o padrão Pipeline (cadeia de responsabilidade), implementado em `VerificationPipeline.ts`:
+
+```typescript
+const pipeline = new VerificationPipeline()
+  .register(signatureStep)      // Verifica assinatura Ed25519
+  .register(trustChainStep)     // Valida cadeia de confiança PKI
+  .register(integrityStep)      // Integridade estrutural
+  .register(challengeStep)      // Challenge PEX
+  .register(predicateStep)      // Predicados (age >= 18, status == 'Ativo')
+  .register(nullifierStep)      // Anti-replay para eleições
+  .register(resourceAccessStep) // Controle de acesso a laboratórios
+```
+
+Cada passo implementa `IVerificationStep` e é independente. Novos passos podem ser adicionados sem modificar os existentes (Princípio Aberto/Fechado). Falhas acumulam-se no `VerificationContext` compartilhado — a pipeline não interrompe ao primeiro erro.
+
+### Strategy
+Dois pontos de variação via Strategy:
+- **Formato de credencial**: `issueCredential(data, did, 'sd-jwt' | 'anoncreds')` — implementações distintas para SD-JWT (JWT + Ed25519) e AnonCreds (CL-signatures)
+- **Modo de transporte**: `EudiTransportService('clipboard' | 'proximity' | 'remote')`
+
+### Open/Closed Principle — Registro de Formatos
+`CredentialService` mantém um registro de formatos (`ICredentialFormat[]`) que permite adicionar novos formatos de credencial sem modificar a lógica de parsing:
+
+```typescript
+CredentialService.registerFormat({
+  name: 'mdoc',
+  detect: (token, parsed) => parsed?.docType === 'org.iso.18013.5.1',
+  parse: (token) => parseMdocCredential(token),
+});
+```
+
+Formatos padrão (AnonCreds, SD-JWT) são registrados no construtor. A detecção usa o padrão "first match wins" — o primeiro formato cujo `detect()` retorna `true` é utilizado.
+
+### Repository / DAO
+`StorageService` abstrai o `EncryptedStorage` como repositório de dados. Toda persistência passa por esse serviço, permitindo trocar a implementação de storage sem afetar a lógica de negócio.
+
+### Observer
+`LogService` funciona como coletor de eventos. Todos os serviços emitem eventos via `LogService.captureEvent()`, armazenados no Zustand store e exibidos na tela de logs.
+
+## Interfaces de Serviço (Dependency Inversion)
+
+Interfaces definidas em `types/index.ts` para os serviços principais:
+
+| Interface | Serviço | Propósito |
+|-----------|---------|-----------|
+| `ICryptoService` | CryptoService | Hash SHA-256, assinatura Ed25519, verificação |
+| `IStorageService` | StorageService | Persistência encriptada, mutex per-key |
+| `ICredentialService` | CredentialService | Emissão e parsing de credenciais |
+| `ITrustChainService` | TrustChainService | Gestão da cadeia de confiança PKI |
+| `IVerificationService` | VerificationService | Validação de apresentações |
+| `ILogService` | LogService | Captura e filtragem de eventos criptográficos |
+| `IAgentService` | AgentService | Ciclo de vida do agente Credo |
+| `IDIDService` | DIDService | Criação de DIDs (did:key, did:peer, did:web) |
+| `IAnonCredsService` | AnonCredsService | Protocolo CL-signature completo |
+| `IZKProofService` | ZKProofService | Geração e verificação de provas Groth16 (mopro-ffi) |
+| `IVerificationStep` | (pipeline steps) | Passos individuais de validação |
+| `ICredentialFormat` | (format registry) | Detecção e parsing de formatos |
+
+Essas interfaces seguem o Princípio da Inversão de Dependência (DIP) e Segregação de Interface (ISP), permitindo que implementações sejam substituídas em testes ou futuramente em produção.
+
+## Grafo de Dependências
+
+O diagrama abaixo mostra a hierarquia de injeção de dependências entre os serviços. Setas indicam "depende de".
+
+```mermaid
+graph TD
+    subgraph "Nível 0 — Sem dependências"
+        LogService
+        StorageService
+    end
+
+    subgraph "Nível 1 — Dependem apenas de LogService"
+        CryptoService --> LogService
+        AgentService --> LogService
+        ErrorHandler --> LogService
+        EudiTransportService --> LogService
+        ZKProofService --> LogService
+    end
+
+    subgraph "Nível 2 — Dependem de Nível 0–1"
+        AnonCredsService --> LogService
+        AnonCredsService --> StorageService
+        DIDService --> LogService
+        DIDService --> StorageService
+        DIDService --> AgentService
+        TrustChainService --> CryptoService
+        TrustChainService --> StorageService
+        TrustChainService --> LogService
+    end
+
+    subgraph "Nível 3 — PresentationService"
+        PresentationService --> LogService
+        PresentationService --> CryptoService
+        PresentationService --> StorageService
+        PresentationService --> AnonCredsService
+    end
+
+    subgraph "Nível 4 — CredentialService"
+        CredentialService --> DIDService
+        CredentialService --> StorageService
+        CredentialService --> LogService
+        CredentialService --> AgentService
+        CredentialService --> AnonCredsService
+    end
+
+    subgraph "Nível 5 — VerificationService"
+        VerificationService --> LogService
+        VerificationService --> CryptoService
+        VerificationService --> StorageService
+        VerificationService --> ZKProofService
+        VerificationService --> AnonCredsService
+        VerificationService --> TrustChainService
+    end
+```
+
+A composição é centralizada em `src/container.ts`, que instância os serviços em ordem topológica (nível 0 → nível 5).
+
+## Segurança Reforçada
+
+Três vulnerabilidades críticas foram corrigidas:
+
+1. **CryptoService — Remoção do fallback `Math.random()`**: O gerador de bytes aleatórios agora lança `CryptoError` se o polyfill `react-native-get-random-values` não estiver disponível, em vez de recorrer a `Math.random()`, que é previsível e inseguro para uso criptográfico.
+
+2. **VerificationService — Remoção do bypass AnonCreds**: A verificação AnonCreds anteriormente retornava `true` como placeholder. Agora lança `ValidationError` exigindo a implementação real via `@credo-ts` antes de aceitar credenciais AnonCreds.
+
+3. **VerificationService — Remoção do fallback ZKP**: A verificação de provas de conhecimento zero agora rejeita provas de circuitos não reconhecidos (`legacyProof`, etc.) com `ValidationError`, em vez de aceitar silenciosamente.
+
+## Qualidade de Código
+
+Melhorias aplicadas para reduzir duplicação e aumentar a manutenibilidade:
+
+- **Constantes tipadas** (`utils/constants.ts`): `Module`, `AppModule`, `CredentialFormat`, `VerificationStepName`, `StorageKey` substituem strings mágicas em todo o projeto.
+- **Formatador compartilhado** (`utils/formatters.ts`): `formatAttributeName()` era duplicado em `AttributeSelector` e `ConsentModal`; agora importado de uma única fonte.
+- **Hooks extraídos**: `useHolderState` e `useIssuerState` encapsulam a lógica de estado e efeitos colaterais dos respetivos ecrãs.
+- **Componente extraído**: `TrustChainSection` encapsula a visualização da cadeia de confiança, extraído do `IssuerScreen`.
+- **Helpers extraídos**: `PresentationHelpers.ts` (funções puras de lógica de apresentação) e `VerificationSteps.ts` (fábricas de passos do pipeline) reduzem os ficheiros de serviço originais.
+- **Mutex per-key** (`StorageService`): Operações read-modify-write concorrentes são serializadas por chave, prevenindo perda de dados.

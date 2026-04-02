@@ -36,24 +36,57 @@ O aplicativo roda em Android (React Native 0.76.5) e implementa os três papéis
 
 ```
 src/
+├── container.ts                 # Composition root — instância todos os serviços com DI
 ├── services/
-│   ├── AgentService.ts          # Singleton do agente Credo (Askar + AnonCreds modules)
+│   ├── AgentService.ts          # Agente Credo (Askar + AnonCreds modules)
 │   ├── AnonCredsService.ts      # Protocolo CL-signature completo
 │   ├── CredentialService.ts     # Emissão SD-JWT e AnonCreds
 │   ├── CryptoService.ts         # SHA-256, Ed25519 (via @noble/ed25519)
 │   ├── DIDService.ts            # did:key, did:peer, did:web (via agente Credo)
 │   ├── EudiTransportService.ts  # Camada de transporte BLE/OpenID4VP (opcional)
 │   ├── PresentationService.ts   # Apresentações SD-JWT, Groth16 e AnonCreds
-│   ├── StorageService.ts        # Encrypted storage wrapper
-│   ├── VerificationService.ts   # Validação de apresentações
+│   ├── PresentationHelpers.ts   # Funções puras extraídas do PresentationService
+│   ├── StorageService.ts        # Encrypted storage wrapper (mutex per-key)
+│   ├── TrustChainService.ts     # Cadeia de confiança PKI (Ed25519)
+│   ├── VerificationService.ts   # Pipeline de validação de apresentações
+│   ├── VerificationPipeline.ts  # Engine do pipeline (Chain of Responsibility)
+│   ├── VerificationSteps.ts     # 7 factories de passos do pipeline
 │   ├── ZKProofService.ts        # Wrapper mopro-ffi para Groth16
 │   ├── LogService.ts            # Registro de eventos criptográficos
 │   └── ErrorHandler.ts          # Classes de erro tipadas
-├── screens/                     # UI: Home, Issuer, Holder, Verifier, Logs, Glossary
-├── components/                  # ConsentModal, CredentialCard, etc.
-├── stores/                      # Zustand (useAppStore)
-├── types/                       # TypeScript interfaces
-└── utils/                       # Acessibilidade, tema, glossário
+├── screens/
+│   ├── HomeScreen.tsx
+│   ├── IssuerScreen.tsx
+│   ├── HolderScreen.tsx
+│   ├── VerifierScreen.tsx
+│   ├── LogsScreen.tsx
+│   ├── GlossaryScreen.tsx
+│   ├── InitializationScreen.tsx
+│   └── hooks/
+│       ├── useHolderState.ts    # Estado e efeitos do HolderScreen
+│       └── useIssuerState.ts    # Estado e efeitos do IssuerScreen
+├── components/
+│   ├── AttributeSelector.tsx
+│   ├── ConsentModal.tsx
+│   ├── CredentialCard.tsx
+│   ├── TrustChainSection.tsx    # Visualização da cadeia de confiança
+│   ├── ErrorMessage.tsx
+│   ├── LoadingIndicator.tsx
+│   ├── LogEntry.tsx
+│   ├── SuccessMessage.tsx
+│   └── TransportModeSelector.tsx
+├── stores/
+│   └── useAppStore.ts           # Zustand (módulos, credenciais, logs)
+├── types/
+│   └── index.ts                 # Interfaces de serviço (ICryptoService, etc.)
+└── utils/
+    ├── constants.ts             # Module, CredentialFormat, StorageKey, etc.
+    ├── formatters.ts            # formatAttributeName (compartilhado)
+    ├── accessibility.ts
+    ├── errorMessages.ts
+    ├── glossary.ts
+    ├── performanceCache.ts
+    └── theme.ts
 ```
 
 ## Cenários de verificação implementados

@@ -4,13 +4,19 @@ import {
   VerifiableCredential,
   VerifiablePresentation,
 } from '../types';
+import type {ILogService, ICryptoService, IStorageService, IAnonCredsService} from '../types';
 import {ValidationError} from './ErrorHandler';
-import LogService from './LogService';
-import CryptoService from './CryptoService';
-import StorageService from './StorageService';
-import ZKProofService from './ZKProofService';
-import AnonCredsService from './AnonCredsService';
-import type {CircomProofResult} from 'mopro-ffi';
+import LogServiceInstance from './LogService';
+import CryptoServiceInstance from './CryptoService';
+import StorageServiceInstance from './StorageService';
+import AnonCredsServiceInstance from './AnonCredsService';
+import {
+  evaluatePredicate,
+  extractDisclosedAttributes,
+  obfuscateNonDisclosedAttributes,
+  generateZKPProofs,
+  generateNullifier,
+} from './PresentationHelpers';
 
 /**
  * PresentationService - Handles presentation request processing and generation
@@ -23,6 +29,22 @@ import type {CircomProofResult} from 'mopro-ffi';
  * - Creating verifiable presentations (SD-JWT and ZKP)
  */
 class PresentationService {
+  private readonly logger: ILogService;
+  private readonly crypto: ICryptoService;
+  private readonly storage: IStorageService;
+  private readonly anonCredsService: IAnonCredsService;
+
+  constructor(
+    logger: ILogService = LogServiceInstance,
+    crypto: ICryptoService = CryptoServiceInstance,
+    storage: IStorageService = StorageServiceInstance,
+    anonCredsService: IAnonCredsService = AnonCredsServiceInstance,
+  ) {
+    this.logger = logger;
+    this.crypto = crypto;
+    this.storage = storage;
+    this.anonCredsService = anonCredsService;
+  }
   /**
    * Validates the format of a PEX request
    * @param request - The PEX request object or JSON string
@@ -92,7 +114,7 @@ class PresentationService {
       }
 
       // Log successful validation
-      LogService.captureEvent(
+      this.logger.captureEvent(
         'presentation_creation',
         'titular',
         {
@@ -108,7 +130,7 @@ class PresentationService {
       return pexRequest;
     } catch (error) {
       // Log validation error
-      LogService.captureEvent(
+      this.logger.captureEvent(
         'presentation_creation',
         'titular',
         {
@@ -173,7 +195,7 @@ class PresentationService {
       const all = [...required, ...optional];
 
       // Log extraction
-      LogService.captureEvent(
+      this.logger.captureEvent(
         'presentation_creation',
         'titular',
         {
@@ -191,7 +213,7 @@ class PresentationService {
       return {required, optional, all};
     } catch (error) {
       // Log error
-      LogService.captureEvent(
+      this.logger.captureEvent(
         'presentation_creation',
         'titular',
         {
@@ -268,7 +290,7 @@ class PresentationService {
       };
 
       // Log consent data generation
-      LogService.captureEvent(
+      this.logger.captureEvent(
         'presentation_creation',
         'titular',
         {
@@ -285,7 +307,7 @@ class PresentationService {
       return consentData;
     } catch (error) {
       // Log error
-      LogService.captureEvent(
+      this.logger.captureEvent(
         'presentation_creation',
         'titular',
         {
@@ -315,7 +337,7 @@ class PresentationService {
   ): Promise<VerifiablePresentation> {
     try {
       // Get holder's private key
-      const holderPrivateKey = await StorageService.getHolderPrivateKey();
+      const holderPrivateKey = await this.storage.getHolderPrivateKey();
       if (!holderPrivateKey) {
         throw new ValidationError(
           'Chave privada do titular não encontrada',
@@ -325,7 +347,7 @@ class PresentationService {
       }
 
       // Log start of presentation creation
-      LogService.captureEvent(
+      this.logger.captureEvent(
         'presentation_creation',
         'titular',
         {
@@ -338,13 +360,13 @@ class PresentationService {
       );
 
       // Extract disclosed attributes
-      const disclosedAttributes = this.extractDisclosedAttributes(
+      const disclosedAttributes = extractDisclosedAttributes(
         credential,
         selectedAttributes,
       );
 
       // Obfuscate non-disclosed attributes using hash
-      const obfuscatedAttributes = await this.obfuscateNonDisclosedAttributes(
+      const obfuscatedAttributes = await obfuscateNonDisclosedAttributes(
         credential,
         selectedAttributes,
       );
@@ -381,7 +403,7 @@ class PresentationService {
         hashed_attributes: obfuscatedAttributes,
       });
 
-      const signature = await CryptoService.signData(
+      const signature = await this.crypto.signData(
         presentationString,
         holderPrivateKey,
         'titular',
@@ -390,7 +412,7 @@ class PresentationService {
       presentation.proof.jws = signature;
 
       // Log presentation creation success
-      LogService.captureEvent(
+      this.logger.captureEvent(
         'presentation_creation',
         'titular',
         {
@@ -407,7 +429,7 @@ class PresentationService {
       return presentation;
     } catch (error) {
       // Log error
-      LogService.captureEvent(
+      this.logger.captureEvent(
         'presentation_creation',
         'titular',
         {
@@ -426,74 +448,6 @@ class PresentationService {
   /**
    * Extracts disclosed attributes from credential
    */
-  private extractDisclosedAttributes(
-    credential: VerifiableCredential,
-    selectedAttributes: string[],
-  ): Record<string, any> {
-    const disclosed: Record<string, any> = {};
-
-    for (const attr of selectedAttributes) {
-      if (attr in credential.credentialSubject) {
-        disclosed[attr] = (credential.credentialSubject as any)[attr];
-      }
-    }
-
-    return disclosed;
-  }
-
-  /**
-   * Obfuscates non-disclosed attributes using cryptographic hash
-   * Implements SD-JWT selective disclosure by hashing attributes not revealed
-   * @param credential - The credential containing all attributes
-   * @param selectedAttributes - Attributes that will be disclosed (not hashed)
-   * @returns Object mapping attribute names to their hash values
-   */
-  private async obfuscateNonDisclosedAttributes(
-    credential: VerifiableCredential,
-    selectedAttributes: string[],
-  ): Promise<Record<string, string>> {
-    const obfuscated: Record<string, string> = {};
-
-    // Get all attributes from credential subject (excluding 'id')
-    const allAttributes = Object.keys(credential.credentialSubject).filter(
-      key => key !== 'id',
-    );
-
-    // Hash attributes that are NOT in selectedAttributes
-    for (const attr of allAttributes) {
-      if (!selectedAttributes.includes(attr)) {
-        const value = (credential.credentialSubject as any)[attr];
-        
-        // Convert value to string for hashing
-        const valueString = typeof value === 'object' 
-          ? JSON.stringify(value) 
-          : String(value);
-        
-        // Compute hash of attribute name + value (salt with attribute name for security)
-        const hashInput = `${attr}:${valueString}`;
-        const hash = await CryptoService.computeHash(hashInput, 'titular');
-        
-        obfuscated[attr] = hash;
-
-        // Log obfuscation
-        LogService.captureEvent(
-          'hash_computation',
-          'titular',
-          {
-            parameters: {
-              action: 'attribute_obfuscated',
-              attribute: attr,
-              hash_truncated: hash.substring(0, 16) + '...',
-            },
-          },
-          true,
-        );
-      }
-    }
-
-    return obfuscated;
-  }
-
   /**
    * Creates a verifiable presentation with ZKP (Zero-Knowledge Proofs) using mopro/Circom
    * @param credential - The credential to present
@@ -508,7 +462,7 @@ class PresentationService {
   ): Promise<VerifiablePresentation> {
     try {
       // Log start of ZKP generation
-      LogService.captureEvent(
+      this.logger.captureEvent(
         'zkp_generation',
         'titular',
         {
@@ -522,7 +476,7 @@ class PresentationService {
       );
 
       // Generate mopro ZKP proofs for each predicate
-      const zkpProofs = await this.generateZKPProofs(
+      const zkpProofs = await generateZKPProofs(
         credential,
         predicates,
       );
@@ -530,15 +484,15 @@ class PresentationService {
       // Generate nullifier if this is an election scenario
       let nullifier: string | undefined;
       if (pexRequest.election_id) {
-        const holderPrivateKey = await StorageService.getHolderPrivateKey();
+        const holderPrivateKey = await this.storage.getHolderPrivateKey();
         if (holderPrivateKey) {
-          nullifier = await this.generateNullifier(
+          nullifier = await generateNullifier(
             holderPrivateKey,
             pexRequest.election_id,
           );
 
           // Log nullifier generation
-          LogService.captureEvent(
+          this.logger.captureEvent(
             'hash_computation',
             'titular',
             {
@@ -594,7 +548,7 @@ class PresentationService {
       };
 
       // Log ZKP generation success
-      LogService.captureEvent(
+      this.logger.captureEvent(
         'zkp_generation',
         'titular',
         {
@@ -610,243 +564,12 @@ class PresentationService {
       return presentation;
     } catch (error) {
       // Log error
-      LogService.captureEvent(
+      this.logger.captureEvent(
         'zkp_generation',
         'titular',
         {
           parameters: {
             action: 'zkp_generation_failed',
-          },
-        },
-        false,
-        error instanceof Error ? error : new Error(String(error)),
-      );
-
-      throw error;
-    }
-  }
-
-  /**
-   * Generates ZKP proofs for predicates using mopro/Circom Groth16 proofs
-   * 
-   * Each predicate is mapped to a corresponding Circom circuit:
-   * - Age/date predicates → age_range circuit
-   * - Status/equality predicates → status_check circuit
-   * 
-   * @param credential - The credential containing attributes
-   * @param predicates - Predicates to prove
-   * @returns Array of ZKP proofs with mopro CircomProofResult data
-   */
-  private async generateZKPProofs(
-    credential: VerifiableCredential,
-    predicates: Array<{attribute: string; p_type: string; value: any}>,
-  ): Promise<any[]> {
-    const proofs: any[] = [];
-
-    for (const predicate of predicates) {
-      try {
-        // Get the attribute value from credential
-        const attributeValue = (credential.credentialSubject as any)[predicate.attribute];
-
-        if (attributeValue === undefined) {
-          throw new ValidationError(
-            `Atributo ${predicate.attribute} não encontrado na credencial`,
-            predicate.attribute,
-            undefined,
-          );
-        }
-
-        // Evaluate the predicate locally (for the satisfied flag)
-        const predicateSatisfied = this.evaluatePredicate(
-          attributeValue,
-          predicate.p_type,
-          predicate.value,
-        );
-
-        // Generate the actual ZK proof using mopro based on predicate type
-        let circomProofResult: CircomProofResult;
-
-        if (this.isDateAttribute(attributeValue) && typeof predicate.value === 'number') {
-          // Age range proof - proves age >= threshold without revealing birthdate
-          circomProofResult = await ZKProofService.generateAgeRangeProof(
-            attributeValue,
-            predicate.value,
-          );
-        } else if (predicate.p_type === '==' || predicate.p_type === '!=') {
-          // Status/equality check proof
-          circomProofResult = await ZKProofService.generateStatusCheckProof(
-            String(attributeValue),
-            String(predicate.value),
-          );
-        } else {
-          // For other predicate types, use age_range circuit with numeric values
-          circomProofResult = await ZKProofService.generateAgeRangeProof(
-            attributeValue,
-            predicate.value,
-          );
-        }
-
-        // Create proof structure with mopro proof data
-        const proof = {
-          predicate: {
-            attr_name: predicate.attribute,
-            p_type: predicate.p_type,
-            value: predicate.value,
-          },
-          proof_data: {
-            circom_proof: circomProofResult.proof,
-            public_inputs: circomProofResult.inputs,
-          },
-          revealed_attrs: [], // ZKP doesn't reveal actual values
-          predicate_satisfied: predicateSatisfied,
-        };
-
-        proofs.push(proof);
-
-        // Log proof generation
-        LogService.captureEvent(
-          'zkp_generation',
-          'titular',
-          {
-            parameters: {
-              action: 'predicate_proof_generated',
-              attribute: predicate.attribute,
-              p_type: predicate.p_type,
-              satisfied: predicateSatisfied,
-              proof_system: 'groth16',
-            },
-          },
-          true,
-        );
-      } catch (error) {
-        // Log error for this specific predicate
-        LogService.captureEvent(
-          'zkp_generation',
-          'titular',
-          {
-            parameters: {
-              action: 'predicate_proof_failed',
-              attribute: predicate.attribute,
-            },
-          },
-          false,
-          error instanceof Error ? error : new Error(String(error)),
-        );
-
-        throw error;
-      }
-    }
-
-    return proofs;
-  }
-
-  /**
-   * Checks if an attribute value is a date string (YYYY-MM-DD format)
-   */
-  private isDateAttribute(value: any): boolean {
-    return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value);
-  }
-
-  /**
-   * Evaluates a predicate against an attribute value
-   * @param attributeValue - The actual value from the credential
-   * @param operator - Comparison operator (>=, <=, ==, !=)
-   * @param predicateValue - The value to compare against
-   * @returns True if predicate is satisfied
-   */
-  private evaluatePredicate(
-    attributeValue: any,
-    operator: string,
-    predicateValue: any,
-  ): boolean {
-    // Convert values for comparison
-    let attrVal = attributeValue;
-    let predVal = predicateValue;
-
-    // Handle date comparisons (for age verification)
-    if (typeof attributeValue === 'string' && attributeValue.match(/^\d{4}-\d{2}-\d{2}$/)) {
-      // Convert date to age if comparing with a number
-      if (typeof predicateValue === 'number') {
-        const birthDate = new Date(attributeValue);
-        const today = new Date();
-        let age = today.getFullYear() - birthDate.getFullYear();
-        const monthDiff = today.getMonth() - birthDate.getMonth();
-        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-          age--;
-        }
-        attrVal = age;
-      }
-    }
-
-    // Perform comparison based on operator
-    switch (operator) {
-      case '>=':
-        return attrVal >= predVal;
-      case '<=':
-        return attrVal <= predVal;
-      case '==':
-        return attrVal === predVal;
-      case '!=':
-        return attrVal !== predVal;
-      case '>':
-        return attrVal > predVal;
-      case '<':
-        return attrVal < predVal;
-      default:
-        throw new ValidationError(
-          `Operador inválido: ${operator}`,
-          'operator',
-          operator,
-        );
-    }
-  }
-
-  /**
-   * Generates a deterministic nullifier for election scenarios using mopro ZK proof
-   * 
-   * Uses a Circom circuit to compute: nullifier = hash(holder_secret, election_id)
-   * inside the ZK circuit, ensuring the nullifier is deterministic but unlinkable.
-   * 
-   * Falls back to SHA-256 hash if the nullifier circuit is not available.
-   * 
-   * @param holderPrivateKey - The holder's private key (used as secret input)
-   * @param electionId - The unique election identifier
-   * @returns Deterministic nullifier string
-   */
-  private async generateNullifier(
-    holderPrivateKey: string,
-    electionId: string,
-  ): Promise<string> {
-    try {
-      // Try to use mopro ZK nullifier circuit
-      const isAvailable = await ZKProofService.isCircuitAvailable('nullifier');
-
-      if (isAvailable) {
-        const proofResult = await ZKProofService.generateNullifierProof(
-          holderPrivateKey,
-          electionId,
-        );
-
-        const nullifier = ZKProofService.extractNullifier(proofResult);
-        if (nullifier) {
-          return nullifier;
-        }
-      }
-
-      // Fallback: compute deterministic hash if circuit not available
-      const nullifier = await CryptoService.computeCompositeHash(
-        [holderPrivateKey, electionId],
-        'titular',
-      );
-
-      return nullifier;
-    } catch (error) {
-      LogService.captureEvent(
-        'hash_computation',
-        'titular',
-        {
-          parameters: {
-            action: 'nullifier_generation_failed',
           },
         },
         false,
@@ -886,10 +609,10 @@ class PresentationService {
       }
 
       // Recover artifact references from storage
-      const schemaArtifact = await StorageService.getRawItem(
+      const schemaArtifact = await this.storage.getRawItem(
         `anoncreds_schema_${envelope.schema_id}`,
       );
-      const credDefArtifact = await StorageService.getRawItem(
+      const credDefArtifact = await this.storage.getRawItem(
         `anoncreds_creddef_${envelope.cred_def_id}`,
       );
 
@@ -905,7 +628,7 @@ class PresentationService {
       const credDef = JSON.parse(credDefArtifact);
 
       // Holder's link secret
-      const {linkSecret} = await AnonCredsService.getOrCreateLinkSecret();
+      const {linkSecret} = await this.anonCredsService.getOrCreateLinkSecret();
 
       // Build AnonCreds presentation request
       const nonce = String(Date.now());
@@ -926,7 +649,7 @@ class PresentationService {
         };
       });
 
-      const presRequest = AnonCredsService.buildPredicateRequest(
+      const presRequest = this.anonCredsService.buildPredicateRequest(
         pexRequest.presentation_definition?.id || 'presentation',
         nonce,
         requestedAttributes,
@@ -959,7 +682,7 @@ class PresentationService {
       });
 
       // Create the AnonCreds presentation (CL-signature ZKP)
-      const anonCredsPresentation = AnonCredsService.createPresentation(
+      const anonCredsPresentation = this.anonCredsService.createPresentation(
         presRequest,
         [{credential: envelope.credential}],
         credentialsProve,
@@ -1009,7 +732,7 @@ class PresentationService {
         }
       }
 
-      LogService.captureEvent(
+      this.logger.captureEvent(
         'presentation_creation',
         'titular',
         {
@@ -1025,7 +748,7 @@ class PresentationService {
 
       return presentation;
     } catch (error) {
-      LogService.captureEvent(
+      this.logger.captureEvent(
         'presentation_creation',
         'titular',
         {parameters: {action: 'anoncreds_presentation_failed'}},
@@ -1048,7 +771,7 @@ class PresentationService {
       
       // In a real React Native app, we would use Clipboard API
       // For now, we just log the action
-      LogService.captureEvent(
+      this.logger.captureEvent(
         'presentation_creation',
         'titular',
         {
@@ -1063,7 +786,7 @@ class PresentationService {
       // TODO: Implement actual clipboard copy when integrated with React Native
       // await Clipboard.setString(presentationString);
     } catch (error) {
-      LogService.captureEvent(
+      this.logger.captureEvent(
         'presentation_creation',
         'titular',
         {
@@ -1081,4 +804,7 @@ class PresentationService {
 }
 
 // Export singleton instance
-export default new PresentationService();
+export { PresentationService };
+
+const presentationServiceInstance = new PresentationService();
+export default presentationServiceInstance;

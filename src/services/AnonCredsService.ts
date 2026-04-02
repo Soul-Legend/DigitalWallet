@@ -11,9 +11,10 @@ import {
   KeyCorrectnessProof,
   CredentialRequestMetadata,
 } from '@hyperledger/anoncreds-react-native';
-import StorageService from './StorageService';
-import LogService from './LogService';
+import StorageServiceInstance from './StorageService';
+import LogServiceInstance from './LogService';
 import {CryptoError} from './ErrorHandler';
+import type {ILogService, IStorageService} from '../types';
 
 /**
  * AnonCredsService - Manages the AnonCreds v2 credential lifecycle
@@ -42,6 +43,16 @@ interface CredDefArtifact {
 
 class AnonCredsService {
   private readonly STORAGE_PREFIX = 'anoncreds_';
+  private readonly logger: ILogService;
+  private readonly storage: IStorageService;
+
+  constructor(
+    logger: ILogService = LogServiceInstance,
+    storage: IStorageService = StorageServiceInstance,
+  ) {
+    this.logger = logger;
+    this.storage = storage;
+  }
 
   // ------------------------------------------------------------------
   // Schema management
@@ -80,7 +91,7 @@ class AnonCredsService {
 
     await this.saveArtifact(`schema_${schemaId}`, artifact);
 
-    LogService.captureEvent(
+    this.logger.captureEvent(
       'credential_issuance',
       'emissor',
       {parameters: {action: 'schema_created', schemaId, attributeNames}},
@@ -131,7 +142,7 @@ class AnonCredsService {
 
     await this.saveArtifact(`creddef_${credDefId}`, artifact);
 
-    LogService.captureEvent(
+    this.logger.captureEvent(
       'credential_issuance',
       'emissor',
       {
@@ -172,7 +183,7 @@ class AnonCredsService {
     const artifact = {linkSecret, linkSecretId};
     await this.saveArtifact('link_secret', artifact);
 
-    LogService.captureEvent(
+    this.logger.captureEvent(
       'key_generation',
       'titular',
       {parameters: {action: 'link_secret_created', linkSecretId}},
@@ -449,7 +460,7 @@ class AnonCredsService {
       linkSecret,
     );
 
-    LogService.captureEvent(
+    this.logger.captureEvent(
       'credential_issuance',
       'emissor',
       {
@@ -486,14 +497,14 @@ class AnonCredsService {
   }
 
   private async saveArtifact<T>(key: string, artifact: T): Promise<void> {
-    await StorageService.setRawItem(
+    await this.storage.setRawItem(
       `${this.STORAGE_PREFIX}${key}`,
       JSON.stringify(artifact),
     );
   }
 
   private async loadArtifact<T>(key: string): Promise<T | null> {
-    const raw = await StorageService.getRawItem(
+    const raw = await this.storage.getRawItem(
       `${this.STORAGE_PREFIX}${key}`,
     );
     if (!raw) {
@@ -503,4 +514,7 @@ class AnonCredsService {
   }
 }
 
-export default new AnonCredsService();
+export { AnonCredsService };
+
+const anonCredsServiceInstance = new AnonCredsService();
+export default anonCredsServiceInstance;

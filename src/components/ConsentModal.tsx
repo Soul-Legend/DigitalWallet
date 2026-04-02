@@ -8,6 +8,7 @@ import {
   ScrollView,
 } from 'react-native';
 import {ConsentData, Predicate} from '../types';
+import {formatAttributeName} from '../utils/formatters';
 
 interface ConsentModalProps {
   visible: boolean;
@@ -39,16 +40,7 @@ const ConsentModal: React.FC<ConsentModalProps> = ({
     return null;
   }
 
-  /**
-   * Formats attribute name for display
-   */
-  const formatAttributeName = (attr: string): string => {
-    // Convert snake_case to readable format
-    return attr
-      .split('_')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ');
-  };
+
 
   /**
    * Formats predicate for display

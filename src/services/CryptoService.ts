@@ -3,7 +3,8 @@ import CryptoJS from 'crypto-js';
 import * as ed from '@noble/ed25519';
 import {sha512} from '@noble/hashes/sha512';
 import {CryptoError} from './ErrorHandler';
-import LogService from './LogService';
+import LogServiceInstance from './LogService';
+import type {ILogService} from '../types';
 
 // @noble/ed25519 v3+ requires configuring SHA-512 for sync operations
 ed.hashes.sha512 = (...m: Uint8Array[]) => sha512(ed.etc.concatBytes(...m)) as ed.Bytes;
@@ -30,6 +31,12 @@ function fromHex(hex: string): Uint8Array {
 }
 
 class CryptoService {
+  private readonly logger: ILogService;
+
+  constructor(logger: ILogService = LogServiceInstance) {
+    this.logger = logger;
+  }
+
   /**
    * Computes SHA-256 hash of input data
    */
@@ -46,10 +53,10 @@ class CryptoService {
               CryptoJS.enc.Hex,
             );
 
-      LogService.logHashComputation(module, 'SHA-256', hashOutput, true);
+      this.logger.logHashComputation(module, 'SHA-256', hashOutput, true);
       return hashOutput;
     } catch (error) {
-      LogService.logHashComputation(
+      this.logger.logHashComputation(
         module,
         'SHA-256',
         '',
@@ -76,7 +83,7 @@ class CryptoService {
       const signature = await ed.signAsync(dataBytes, privateKeyBytes);
       const signatureHex = toHex(signature);
 
-      LogService.captureEvent(
+      this.logger.captureEvent(
         'credential_issuance',
         module,
         {
@@ -91,7 +98,7 @@ class CryptoService {
 
       return signatureHex;
     } catch (error) {
-      LogService.captureEvent(
+      this.logger.captureEvent(
         'credential_issuance',
         module,
         {algorithm: 'Ed25519'},
@@ -123,14 +130,14 @@ class CryptoService {
         publicKeyBytes,
       );
 
-      LogService.logVerification('Ed25519', isValid, true, {
+      this.logger.logVerification('Ed25519', isValid, true, {
         data_length: dataBytes.length,
         signature_length: signatureBytes.length,
       });
 
       return isValid;
     } catch (error) {
-      LogService.logVerification(
+      this.logger.logVerification(
         'Ed25519',
         false,
         false,
@@ -158,10 +165,10 @@ class CryptoService {
       }
       const hashOutput = CryptoJS.SHA256(combined).toString(CryptoJS.enc.Hex);
 
-      LogService.logHashComputation(module, 'SHA-256', hashOutput, true);
+      this.logger.logHashComputation(module, 'SHA-256', hashOutput, true);
       return hashOutput;
     } catch (error) {
-      LogService.logHashComputation(
+      this.logger.logHashComputation(
         module,
         'SHA-256',
         '',
@@ -183,13 +190,21 @@ class CryptoService {
     if (typeof globalThis.crypto?.getRandomValues === 'function') {
       globalThis.crypto.getRandomValues(array);
     } else {
-      // Fallback for environments without Web Crypto
-      for (let i = 0; i < 32; i++) {
-        array[i] = Math.floor(Math.random() * 256);
-      }
+      // SECURITY: Refuse to generate nonces without a CSPRNG.
+      // Math.random() is NOT cryptographically secure and must never
+      // be used for nonce/challenge generation. Ensure the polyfill
+      // react-native-get-random-values is imported at app entry point.
+      throw new CryptoError(
+        'Secure random number generator unavailable. ' +
+        'Ensure react-native-get-random-values is imported before using CryptoService.',
+        'nonce_generation',
+      );
     }
     return toHex(array);
   }
 }
 
-export default new CryptoService();
+export { CryptoService };
+
+const cryptoServiceInstance = new CryptoService();
+export default cryptoServiceInstance;

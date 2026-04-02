@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -6,10 +6,7 @@ import {
   ScrollView,
   TextInput,
   TouchableOpacity,
-  Alert,
-  Clipboard,
 } from 'react-native';
-import {useAppStore} from '../stores/useAppStore';
 import {
   LoadingIndicator,
   ErrorMessage,
@@ -18,357 +15,38 @@ import {
   ConsentModal,
   TransportModeSelector,
 } from '../components';
-import {VerifiableCredential, ConsentData, PresentationExchangeRequest} from '../types';
-import {TransportMode} from '../services/EudiTransportService';
-import CredentialService from '../services/CredentialService';
-import StorageService from '../services/StorageService';
-import LogService from '../services/LogService';
-import PresentationService from '../services/PresentationService';
 import QRCode from 'react-native-qrcode-svg';
+import {useHolderState} from './hooks/useHolderState';
 
 const HolderScreen: React.FC = () => {
-  const setCurrentModule = useAppStore(state => state.setCurrentModule);
-
-  const [credentialInput, setCredentialInput] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
-  const [credentials, setCredentials] = useState<VerifiableCredential[]>([]);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [isLoadingCredentials, setIsLoadingCredentials] = useState(true);
-
-  // Presentation request state
-  const [requestInput, setRequestInput] = useState('');
-  const [isProcessingRequest, setIsProcessingRequest] = useState(false);
-  const [consentData, setConsentData] = useState<ConsentData | null>(null);
-  const [showConsentModal, setShowConsentModal] = useState(false);
-  const [selectedAttributes, setSelectedAttributes] = useState<string[]>([]);
-  const [currentRequest, setCurrentRequest] = useState<PresentationExchangeRequest | null>(null);
-  const [transportMode, setTransportMode] = useState<TransportMode>('clipboard');
-  const [presentationOutput, setPresentationOutput] = useState<string | null>(null);
-
-  useEffect(() => {
-    setCurrentModule('titular');
-    loadCredentials();
-  }, [setCurrentModule]);
-
-  /**
-   * Loads all stored credentials from encrypted storage
-   */
-  const loadCredentials = async () => {
-    try {
-      setIsLoadingCredentials(true);
-      const storedTokens = await StorageService.getCredentials();
-
-      // Parse all stored credentials
-      const parsedCredentials: VerifiableCredential[] = [];
-      for (const token of storedTokens) {
-        try {
-          const credential =
-            await CredentialService.validateAndParseCredential(token);
-          parsedCredentials.push(credential);
-        } catch (err) {
-          // Skip invalid credentials
-          console.error('Failed to parse stored credential:', err);
-        }
-      }
-
-      setCredentials(parsedCredentials);
-      setCurrentIndex(parsedCredentials.length > 0 ? 0 : -1);
-    } catch (err) {
-      console.error('Failed to load credentials:', err);
-      setError('Erro ao carregar credenciais armazenadas');
-    } finally {
-      setIsLoadingCredentials(false);
-    }
-  };
-
-  /**
-   * Handles pasting and storing a new credential
-   */
-  const handleStoreCredential = async () => {
-    if (!credentialInput.trim()) {
-      setError('Por favor, cole uma credencial válida');
-      return;
-    }
-
-    setIsLoading(true);
-    setError(null);
-    setSuccess(null);
-
-    try {
-      // Validate and parse the credential
-      const credential = await CredentialService.validateAndParseCredential(
-        credentialInput.trim(),
-      );
-
-      // Store the credential token
-      await StorageService.storeCredential(credentialInput.trim());
-
-      // Log the storage operation
-      LogService.captureEvent(
-        'credential_issuance',
-        'titular',
-        {
-          parameters: {
-            action: 'credential_stored',
-            issuer: credential.issuer,
-            holder: credential.credentialSubject.id,
-          },
-        },
-        true,
-      );
-
-      // Reload credentials
-      await loadCredentials();
-
-      setSuccess('Credencial armazenada com sucesso!');
-      setCredentialInput('');
-
-      // Clear success message after 3 seconds
-      setTimeout(() => setSuccess(null), 3000);
-    } catch (err: any) {
-      const errorMessage =
-        err.message || 'Erro ao armazenar credencial. Verifique o formato.';
-      setError(errorMessage);
-
-      // Log the error
-      LogService.captureEvent(
-        'credential_issuance',
-        'titular',
-        {
-          parameters: {
-            action: 'credential_storage_failed',
-          },
-        },
-        false,
-        err instanceof Error ? err : new Error(String(err)),
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  /**
-   * Navigates to the previous credential
-   */
-  const handlePrevious = () => {
-    if (currentIndex > 0) {
-      setCurrentIndex(currentIndex - 1);
-    }
-  };
-
-  /**
-   * Navigates to the next credential
-   */
-  const handleNext = () => {
-    if (currentIndex < credentials.length - 1) {
-      setCurrentIndex(currentIndex + 1);
-    }
-  };
-
-  /**
-   * Deletes the current credential
-   */
-  const handleDeleteCredential = () => {
-    Alert.alert(
-      'Excluir Credencial',
-      'Tem certeza que deseja excluir esta credencial?',
-      [
-        {
-          text: 'Cancelar',
-          style: 'cancel',
-        },
-        {
-          text: 'Excluir',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await StorageService.deleteCredential(currentIndex);
-              await loadCredentials();
-              setSuccess('Credencial excluída com sucesso');
-              setTimeout(() => setSuccess(null), 3000);
-            } catch (err) {
-              setError('Erro ao excluir credencial');
-            }
-          },
-        },
-      ],
-    );
-  };
-
-  /**
-   * Handles processing a presentation request
-   */
-  const handleProcessRequest = async () => {
-    if (!requestInput.trim()) {
-      setError('Por favor, cole uma requisição PEX válida');
-      return;
-    }
-
-    if (credentials.length === 0) {
-      setError('Nenhuma credencial disponível para criar apresentação');
-      return;
-    }
-
-    setIsProcessingRequest(true);
-    setError(null);
-    setSuccess(null);
-
-    try {
-      // Use the current credential
-      const credential = credentials[currentIndex];
-
-      // Process the PEX request
-      const consent = await PresentationService.processPEXRequest(
-        requestInput.trim(),
-        credential,
-      );
-
-      // Validate the request format and store it
-      const validatedRequest = PresentationService.validatePEXFormat(requestInput.trim());
-      setCurrentRequest(validatedRequest);
-
-      // Set consent data
-      setConsentData(consent);
-
-      // Initialize selected attributes with all required attributes
-      setSelectedAttributes([...consent.required_attributes]);
-
-      // Show consent modal
-      setShowConsentModal(true);
-    } catch (err: any) {
-      const errorMessage =
-        err.message || 'Erro ao processar requisição. Verifique o formato PEX.';
-      setError(errorMessage);
-
-      // Log the error
-      LogService.captureEvent(
-        'presentation_creation',
-        'titular',
-        {
-          parameters: {
-            action: 'request_processing_failed',
-          },
-        },
-        false,
-        err instanceof Error ? err : new Error(String(err)),
-      );
-    } finally {
-      setIsProcessingRequest(false);
-    }
-  };
-
-  /**
-   * Handles toggling an optional attribute
-   */
-  const handleAttributeToggle = (attribute: string) => {
-    if (!consentData) return;
-
-    // Don't allow toggling required attributes
-    if (consentData.required_attributes.includes(attribute)) {
-      return;
-    }
-
-    setSelectedAttributes(prev => {
-      if (prev.includes(attribute)) {
-        return prev.filter(a => a !== attribute);
-      } else {
-        return [...prev, attribute];
-      }
-    });
-  };
-
-  /**
-   * Handles approving the consent and creating presentation
-   */
-  const handleApproveConsent = async () => {
-    if (!currentRequest || !consentData) {
-      setError('Dados de consentimento não disponíveis');
-      setShowConsentModal(false);
-      return;
-    }
-
-    setShowConsentModal(false);
-    setIsProcessingRequest(true);
-    setError(null);
-
-    try {
-      const credential = credentials[currentIndex];
-
-      // Determine if this is a ZKP request (has predicates)
-      const hasPredicates = consentData.predicates && consentData.predicates.length > 0;
-
-      let presentation;
-      if (hasPredicates) {
-        // Create ZKP presentation for predicates (e.g., age verification, elections)
-        presentation = await PresentationService.createZKPPresentation(
-          credential,
-          currentRequest,
-          consentData.predicates!,
-        );
-      } else {
-        // Create SD-JWT presentation for selective disclosure
-        presentation = await PresentationService.createPresentation(
-          credential,
-          currentRequest,
-          selectedAttributes,
-        );
-      }
-
-      // Convert to JSON string
-      const presentationJson = JSON.stringify(presentation, null, 2);
-
-      // Store presentation for QR display
-      setPresentationOutput(presentationJson);
-
-      if (transportMode === 'clipboard') {
-        // Copy to clipboard for transfer to Verifier module
-        Clipboard.setString(presentationJson);
-        setSuccess('Apresentação criada e copiada para área de transferência!');
-      } else if (transportMode === 'qrcode') {
-        setSuccess('Apresentação criada! Escaneie o QR Code abaixo com o verificador.');
-      } else {
-        Clipboard.setString(presentationJson);
-        setSuccess('Apresentação criada! Modo BLE/NFC requer EUDI wallet-kit.');
-      }
-      setRequestInput('');
-      setCurrentRequest(null);
-      setConsentData(null);
-      setSelectedAttributes([]);
-
-      // Clear success message after 3 seconds
-      setTimeout(() => setSuccess(null), 3000);
-    } catch (err: any) {
-      const errorMessage =
-        err.message || 'Erro ao criar apresentação';
-      setError(errorMessage);
-    } finally {
-      setIsProcessingRequest(false);
-    }
-  };
-
-  /**
-   * Handles canceling the consent
-   */
-  const handleCancelConsent = () => {
-    setShowConsentModal(false);
-    setConsentData(null);
-    setSelectedAttributes([]);
-    setCurrentRequest(null);
-
-    // Log cancellation
-    LogService.captureEvent(
-      'presentation_creation',
-      'titular',
-      {
-        parameters: {
-          action: 'consent_cancelled',
-        },
-      },
-      true,
-    );
-  };
+  const {
+    credentialInput,
+    setCredentialInput,
+    isLoading,
+    error,
+    success,
+    credentials,
+    currentIndex,
+    isLoadingCredentials,
+    requestInput,
+    setRequestInput,
+    isProcessingRequest,
+    consentData,
+    showConsentModal,
+    selectedAttributes,
+    transportMode,
+    presentationOutput,
+    handleStoreCredential,
+    handlePrevious,
+    handleNext,
+    handleDeleteCredential,
+    handleProcessRequest,
+    handleAttributeToggle,
+    handleApproveConsent,
+    handleCancelConsent,
+    handleTransportModeChange,
+    handleCopyOutput,
+  } = useHolderState();
 
   return (
     <ScrollView style={styles.container}>
@@ -418,10 +96,7 @@ const HolderScreen: React.FC = () => {
             {/* Transport Mode Selector */}
             <TransportModeSelector
               selectedMode={transportMode}
-              onSelectMode={(mode) => {
-                setTransportMode(mode);
-                setPresentationOutput(null);
-              }}
+              onSelectMode={handleTransportModeChange}
               disabled={isProcessingRequest}
             />
 
@@ -476,11 +151,7 @@ const HolderScreen: React.FC = () => {
                 ) : null}
                 <TouchableOpacity
                   style={styles.copyOutputButton}
-                  onPress={() => {
-                    Clipboard.setString(presentationOutput);
-                    setSuccess('Apresentação copiada para área de transferência!');
-                    setTimeout(() => setSuccess(null), 3000);
-                  }}>
+                  onPress={handleCopyOutput}>
                   <Text style={styles.copyOutputButtonText}>📋 Copiar Apresentação</Text>
                 </TouchableOpacity>
               </View>

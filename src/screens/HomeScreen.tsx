@@ -9,6 +9,7 @@ import {
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {RootStackParamList} from '../App';
 import {useAppStore} from '../stores/useAppStore';
+import {AppModule, AppModuleType} from '../utils/constants';
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -23,7 +24,7 @@ const HomeScreen: React.FC<Props> = ({navigation}) => {
   const setCurrentModule = useAppStore(state => state.setCurrentModule);
 
   useEffect(() => {
-    setCurrentModule('home');
+    setCurrentModule(AppModule.HOME);
   }, [setCurrentModule]);
   const modules = [
     {
@@ -74,11 +75,7 @@ const HomeScreen: React.FC<Props> = ({navigation}) => {
             style={styles.moduleCard}
             onPress={() => {
               setCurrentModule(
-                module.route.toLowerCase() as
-                  | 'emissor'
-                  | 'titular'
-                  | 'verificador'
-                  | 'logs',
+                module.route.toLowerCase() as AppModuleType,
               );
               navigation.navigate(module.route);
             }}

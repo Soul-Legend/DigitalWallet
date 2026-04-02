@@ -10,7 +10,11 @@ Registro das decisões técnicas tomadas durante o desenvolvimento, com razões,
 4. [Transporte e Armazenamento](#transporte-e-armazenamento)
 5. [Interface](#interface)
 6. [Testes](#testes)
-7. [Decisões Futuras (Pós-MVP)](#decisões-futuras-pós-mvp)
+7. [Padrões e Princípios SOLID](#padrões-e-princípios-solid)
+8. [Injeção de Dependência e Composition Root](#injeção-de-dependência-e-composition-root)
+9. [Segurança Reforçada](#segurança-reforçada)
+10. [Qualidade de Código e Refatoração](#qualidade-de-código-e-refatoração)
+11. [Decisões Futuras (Pós-MVP)](#decisões-futuras-pós-mvp)
 
 ---
 
@@ -273,6 +277,163 @@ Seis cenários E2E que executam o fluxo completo (emissão → apresentação �
 - Faixa etária (range proof)
 - Acesso a laboratório
 - Estado de navegação
+
+---
+
+## Padrões e Princípios SOLID
+
+### Pipeline de Verificação (Chain of Responsibility)
+
+**Escolha**: Refatorar `validatePresentation()` de uma função monolítica para um `VerificationPipeline` composto por 7 passos independentes (`IVerificationStep`).
+
+**Razões**:
+- A função original continha ~200 linhas com 7 responsabilidades distintas misturadas (assinatura, cadeia de confiança, integridade, challenge, predicados, nullifiers, controle de acesso).
+- Cada passo pode ser testado isoladamente, adicionado ou removido sem alterar os demais.
+- Novos cenários de verificação (e.g., revogação) requerem apenas implementar `IVerificationStep` e registrar no pipeline.
+
+**Alternativas avaliadas**:
+- **Manter função monolítica**: Mais simples, mas viola SRP e dificulta extensão.
+- **Middleware pattern (Express-style)**: `next()` callbacks adicionam complexidade sem benefício — os passos são independentes (não precisam decidir se continuam).
+- **Decorator pattern**: Aninhamento dificulta depuração; pipeline linear é mais legível.
+
+**Trade-offs**:
+- Overhead de abstração para um protótipo acadêmico — justificável como demonstração de princípios SOLID.
+- Pipeline acumula todos os erros (não falha no primeiro) — intencional para fornecer feedback completo ao verificador.
+
+---
+
+### Registro de Formatos de Credencial (Open/Closed Principle)
+
+**Escolha**: `CredentialService` mantém um array de `ICredentialFormat` e itera para encontrar o parser adequado, em vez de usar `if/else` com strings mágicas.
+
+**Razões**:
+- Detecção de formato por magic strings (`'CLSignature2023'`, `'~'`) dispersa por múltiplos `if/else` viola OCP.
+- Novos formatos (e.g., JSON-LD, mDL/mdoc) requerem apenas `registerFormat()` sem modificar código existente.
+
+**Alternativas avaliadas**:
+- **Map<string, parser>**: Requer chave única por formato; SD-JWT é detectado por heurística (presença de `~`), não por um campo de tipo.
+- **Factory method**: Similar, mas `ICredentialFormat.canHandle()` é mais expressivo — permite qualquer lógica de detecção.
+
+**Trade-off**: Ligeiro overhead de iteração sequencial. Ordem de registro importa (primeiro match vence). Na prática, com 2-3 formatos o impacto é negligível.
+
+---
+
+### Interfaces de Serviço (Dependency Inversion)
+
+**Escolha**: Definir interfaces para todos os 13 serviços em `types/index.ts`: `ICryptoService`, `IStorageService`, `ICredentialService`, `ITrustChainService`, `IVerificationService`, `ILogService`, `IAgentService`, `IDIDService`, `IAnonCredsService`, `IZKProofService`.
+
+**Razões**:
+- Serviços singleton sem interface violam DIP — dependentes acoplam-se à implementação concreta.
+- Interfaces documentam o contrato público de cada serviço.
+- Facilitam criação de mocks tipados para testes.
+- Agora usadas em runtime para injeção de dependência real via construtores (ver seção seguinte).
+
+**Trade-off**: Overhead de manutenção — cada método público adicionado ao serviço deve ser refletido na interface. Na prática, a maioria das interfaces é estável.
+
+---
+
+### Limite de 1000 entradas no log
+
+**Escolha**: `useAppStore.addLog()` descarta entradas mais antigas quando o array excede 1000.
+
+**Razões**:
+- Array de logs não tinha limite superior, causando crescimento ilimitado em sessões longas.
+- 1000 entradas cobrem amplamente qualquer sessão de demonstração/avaliação.
+
+**Alternativa avaliada**: Persistir logs em storage com paginação — overhead desnecessário para logs de demonstração.
+
+---
+
+## Injeção de Dependência e Composition Root
+
+### Constructor Injection com defaults
+
+**Escolha**: Todos os 13 serviços aceitam dependências via construtor com valores default (instâncias singleton). Um composition root em `src/container.ts` instância todos os serviços em ordem topológica.
+
+**Razões**:
+- A arquitetura anterior usava singletons importados diretamente (`CryptoService` referenciando `LogService` pelo import). Isso criava acoplamento forte e impossibilitava injeção de mocks sem monkey-patching.
+- Constructor injection permite substituir qualquer dependência nos testes simplesmente passando um mock no construtor.
+- O composition root centraliza a criação de instâncias e explicit a hierarquia de 6 níveis (Nível 0: LogService, StorageService → Nível 5: VerificationService).
+- Defaults preservam retrocompatibilidade — código existente que usa `new CryptoService()` sem argumentos continua funcionando.
+
+**Alternativas avaliadas**:
+- **Service Locator** (container.get('CryptoService')): Esconde dependências, dificulta rastreabilidade, considerado anti-pattern.
+- **DI framework** (InversifyJS, tsyringe): Overhead de decorators e metadados de reflexão desnecessário para o tamanho do protótipo.
+- **Manter singletons puros**: Impede testabilidade real sem monkey-patching.
+
+**Trade-offs**:
+- Construtores mais verbosos (VerificationService aceita 6 argumentos).
+- Named exports (`export { CryptoService }`) adicionados ao lado do `export default` para permitir import da classe em `container.ts`.
+- Ordem de instanciação no composition root deve respeitar a topologia de dependências.
+
+---
+
+## Segurança Reforçada
+
+### Remoção do fallback Math.random() no CryptoService
+
+**Escolha**: Se o polyfill `react-native-get-random-values` não estiver disponível, `generateRandomBytes()` agora lança `CryptoError` em vez de recorrer a `Math.random()`.
+
+**Razões**:
+- `Math.random()` não é criptograficamente seguro (PRNG previsível) — usar para gerar chaves ou nonces compromete todo o sistema.
+- Fail-fast é preferível a segurança degradada silenciosa.
+
+**Trade-off**: Em ambientes onde o polyfill falha, a aplicação não funciona em vez de funcionar com segurança reduzida. Preferível para uma carteira de identidade.
+
+### Remoção do bypass AnonCreds no VerificationService
+
+**Escolha**: A verificação AnonCreds que retornava `true` como placeholder foi substituída por `ValidationError`.
+
+**Razões**:
+- Um placeholder `return true` aceita qualquer credencial AnonCreds sem verificação real — equivalente a desabilitar a segurança.
+- `ValidationError` exige implementação real via `@credo-ts` antes de aceitar credenciais AnonCreds em produção.
+
+### Remoção do fallback ZKP no VerificationService
+
+**Escolha**: Provas de circuitos não reconhecidos (`legacyProof`, etc.) agora são rejeitadas com `ValidationError` em vez de aceitas silenciosamente.
+
+**Razões**:
+- O fallback anterior aceitava qualquer tipo de prova como válido — anulava o propósito da verificação ZKP.
+- Apenas circuitos registrados (`age_range`, `status_check`, `nullifier`) devem ser aceitos.
+
+---
+
+## Qualidade de Código e Refatoração
+
+### Extração de Hooks de Estado (useHolderState, useIssuerState)
+
+**Escolha**: Extrair a lógica de estado e efeitos colaterais dos componentes `HolderScreen` e `IssuerScreen` para hooks custom (`useHolderState`, `useIssuerState`).
+
+**Razões**:
+- Screens de 300+ linhas misturavam lógica de estado com JSX. Hooks encapsulam state + effects, permitindo que o screen foque em layout.
+- Testabilidade melhorada — hooks podem ser testados com `renderHook()` sem montar o componente completo.
+
+### Extração de PresentationHelpers e VerificationSteps
+
+**Escolha**: Funções puras e fábricas de pipeline steps extraídas dos respectivos serviços para ficheiros dedicados.
+
+**Razões**:
+- PresentationService e VerificationService tinham 400+ linhas cada. Funções puras não necessitam do contexto `this` e são mais fáceis de testar.
+- `PresentationHelpers.ts` exporta funções utilitárias (`isDateAttribute`, `evaluatePredicate`, etc.) e aceita um `PresentationDeps` para as funções que necessitam de serviços.
+- `VerificationSteps.ts` exporta 7 funções factory que criam `IVerificationStep`, parametrizadas por `IVerificationOperations`.
+
+### Constantes Tipadas e Eliminação de Strings Mágicas
+
+**Escolha**: Centralizar strings repetidas em `utils/constants.ts` como objetos `as const` com tipos derivados.
+
+**Razões**:
+- Strings como `'emissor'`, `'titular'`, `'sd-jwt'`, `'anoncreds'` eram repetidas 20+ vezes. Typo em uma string causa bug silencioso.
+- Constantes tipadas (`Module`, `CredentialFormat`, `StorageKey`, `VerificationStepName`) dão autocompletar e erros de compilação.
+
+### Mutex Per-Key no StorageService
+
+**Escolha**: Operações read-modify-write em arrays JSON (credenciais, nullifiers) são protegidas por um mutex per-key.
+
+**Razões**:
+- Operações assíncronas concorrentes na mesma chave podem causar lost updates (read-A, read-B, write-A, write-B — update de A é perdido).
+- Mutex per-key serializa operações na mesma chave sem bloquear chaves diferentes.
+
+**Trade-off**: Overhead mínimo de serialização. Na prática, write contention é raro em um app de carteira single-user.
 
 ---
 

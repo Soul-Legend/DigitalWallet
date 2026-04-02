@@ -1,4 +1,5 @@
-import LogService from './LogService';
+import LogServiceInstance from './LogService';
+import type {ILogService} from '../types';
 
 /**
  * Custom error classes for different error categories
@@ -56,6 +57,12 @@ export class StorageError extends Error {
  * and integrates with LogService for error logging.
  */
 class ErrorHandler {
+  private readonly logger: ILogService;
+
+  constructor(logger: ILogService = LogServiceInstance) {
+    this.logger = logger;
+  }
+
   /**
    * Handles cryptographic errors
    */
@@ -64,7 +71,7 @@ class ErrorHandler {
     module: 'emissor' | 'titular' | 'verificador'
   ): string {
     // Log the error
-    LogService.logError(module, error, error.stack);
+    this.logger.logError(module, error, error.stack);
     
     // Return user-friendly message in Portuguese
     return this.getCryptoErrorMessage(error);
@@ -78,7 +85,7 @@ class ErrorHandler {
     module: 'emissor' | 'titular' | 'verificador'
   ): string {
     // Log the error
-    LogService.logError(module, error, error.stack);
+    this.logger.logError(module, error, error.stack);
     
     // Return user-friendly message in Portuguese
     return this.getValidationErrorMessage(error);
@@ -92,7 +99,7 @@ class ErrorHandler {
     module: 'emissor' | 'titular' | 'verificador'
   ): string {
     // Log the error
-    LogService.logError(module, error, error.stack);
+    this.logger.logError(module, error, error.stack);
     
     // Return user-friendly message in Portuguese
     return this.getStorageErrorMessage(error);
@@ -106,7 +113,7 @@ class ErrorHandler {
     module: 'emissor' | 'titular' | 'verificador'
   ): string {
     // Log the error
-    LogService.logError(module, error, error.stack);
+    this.logger.logError(module, error, error.stack);
     
     // Return generic user-friendly message
     return 'Ocorreu um erro inesperado. Por favor, tente novamente.';
@@ -120,7 +127,7 @@ class ErrorHandler {
     module: 'emissor' | 'titular' | 'verificador',
     context?: string
   ): void {
-    LogService.logError(module, error, error.stack);
+    this.logger.logError(module, error, error.stack);
   }
 
   /**
@@ -209,4 +216,7 @@ class ErrorHandler {
 }
 
 // Export singleton instance
-export default new ErrorHandler();
+export { ErrorHandler };
+
+const errorHandlerInstance = new ErrorHandler();
+export default errorHandlerInstance;

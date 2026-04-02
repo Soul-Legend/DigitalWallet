@@ -1,5 +1,6 @@
 import {LogEntry, LogDetails} from '../types';
 import {useAppStore} from '../stores/useAppStore';
+import {Module} from '../utils/constants';
 
 /**
  * LogService - Captures and manages cryptographic events
@@ -67,7 +68,7 @@ class LogService {
   ): void {
     this.captureEvent(
       'credential_issuance',
-      'emissor',
+      Module.ISSUER,
       {
         algorithm,
         parameters,
@@ -88,7 +89,7 @@ class LogService {
   ): void {
     this.captureEvent(
       'presentation_creation',
-      'titular',
+      Module.HOLDER,
       {
         algorithm,
         parameters,
@@ -110,7 +111,7 @@ class LogService {
   ): void {
     this.captureEvent(
       'verification',
-      'verificador',
+      Module.VERIFIER,
       {
         algorithm,
         verification_result: verificationResult,
@@ -262,5 +263,8 @@ class LogService {
   }
 }
 
+export { LogService };
+
 // Export singleton instance
-export default new LogService();
+const logServiceInstance = new LogService();
+export default logServiceInstance;

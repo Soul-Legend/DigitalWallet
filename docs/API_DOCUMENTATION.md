@@ -1,6 +1,6 @@
 # API dos Serviços
 
-Referência das APIs públicas de todos os serviços. Cada serviço é uma classe singleton exportada como instância.
+Referência das APIs públicas de todos os serviços. Cada serviço é uma classe com injeção de dependência via construtor (defaults para instâncias singleton). A composição é centralizada em `src/container.ts`.
 
 ## Índice
 
@@ -9,10 +9,13 @@ Referência das APIs públicas de todos os serviços. Cada serviço é uma class
 - [CredentialService](#credentialservice)
 - [AnonCredsService](#anoncredsservice)
 - [PresentationService](#presentationservice)
+- [PresentationHelpers](#presentationhelpers)
 - [VerificationService](#verificationservice)
+- [VerificationSteps](#verificationsteps)
 - [ZKProofService](#zkproofservice)
 - [EudiTransportService](#euditransportservice)
 - [CryptoService](#cryptoservice)
+- [TrustChainService](#trustchainservice)
 - [StorageService](#storageservice)
 - [LogService](#logservice)
 - [ErrorHandler](#errorhandler)
@@ -22,6 +25,8 @@ Referência das APIs públicas de todos os serviços. Cada serviço é uma class
 ## AgentService
 
 Gerencia o ciclo de vida do agente Credo (Aries Framework JavaScript). Inicializa o agente com os módulos Askar (wallet criptografado) e AnonCreds (credenciais CL-signature). Singleton com inicialização lazy.
+
+**Construtor**: `new AgentService(logger?: ILogService)`
 
 **Tipo interno**: `CredoAgent = Agent<{ askar: AskarModule; anoncreds: AnonCredsModule }>`
 
@@ -44,6 +49,8 @@ Retorna `true` se o agente já foi inicializado.
 ## DIDService
 
 Cria DIDs via agente Credo. Métodos `createDidKey` e `createDidPeer` delegam para `agent.dids.create()`. `createDidWeb` faz formatação local de string (não publica documento DID).
+
+**Construtor**: `new DIDService(logger?: ILogService, storage?: IStorageService, agent?: IAgentService)`
 
 ### Métodos
 
@@ -282,9 +289,39 @@ Serializa e copia a apresentação para o clipboard.
 
 ---
 
+## PresentationHelpers
+
+Funções puras extraídas de `PresentationService` para `src/services/PresentationHelpers.ts`. Funções que necessitam de serviços recebem um `PresentationDeps` como parâmetro.
+
+```typescript
+interface PresentationDeps {
+  crypto: ICryptoService;
+  storage: IStorageService;
+  logger: ILogService;
+  zkProof: IZKProofService;
+}
+```
+
+### Funções
+
+| Função | Assinatura | Descrição |
+|---|---|---|
+| `isDateAttribute` | `(name: string): boolean` | Verifica se é atributo de data |
+| `evaluatePredicate` | `(value: any, predicate: Predicate): boolean` | Avalia predicado numérico/data |
+| `extractDisclosedAttributes` | `(credential, selected): Record<string, any>` | Extrai atributos selecionados |
+| `obfuscateNonDisclosedAttributes` | `(credential, selected, deps?): Promise<Record>` | Ofusca atributos não divulgados com hash |
+| `generateZKPProofs` | `(predicates, attributes, deps?): Promise<ZKPProofData[]>` | Gera provas Groth16 para predicados |
+| `generateNullifier` | `(credential, electionId, deps?): Promise<string>` | Gera nullifier determinístico |
+
+---
+
 ## VerificationService
 
-Valida apresentações recebidas. Despacha verificação por tipo de prova.
+Valida apresentações recebidas usando um pipeline de 7 passos (`VerificationPipeline`). Cada passo é um `IVerificationStep` criado via factory em `VerificationSteps.ts`.
+
+**Construtor**: `new VerificationService(logger?: ILogService, crypto?: ICryptoService, storage?: IStorageService, zkProof?: IZKProofService, anonCreds?: IAnonCredsService, trustChain?: ITrustChainService)`
+
+**Segurança**: A verificação AnonCreds e o fallback ZKP agora lançam `ValidationError` em vez de aceitar silenciosamente (ver DESIGN_DECISIONS.md).
 
 ### Cenários pré-configurados
 
@@ -359,9 +396,42 @@ interface Scenario {
 
 ---
 
+## VerificationSteps
+
+Funções factory extraídas de `VerificationService` para `src/services/VerificationSteps.ts`. Cada factory cria um `IVerificationStep` parametrizado por `IVerificationOperations`.
+
+```typescript
+interface IVerificationOperations {
+  verifyIssuerSignature(presentation, issuerPublicKey?): Promise<boolean>;
+  verifyAnonCredsPresentation(presentation): Promise<boolean>;
+  verifyStructuralIntegrity(presentation, pexRequest): Promise<boolean>;
+  verifyZKPCircuit(presentation): Promise<boolean>;
+  verifyChallenge(presentation, pexRequest): Promise<boolean>;
+  verifyPredicates(presentation, pexRequest): Promise<boolean>;
+  checkNullifier(nullifier, electionId): Promise<boolean>;
+  isTrustedIssuer(did): Promise<boolean> | boolean;
+}
+```
+
+### Factory Functions
+
+| Função | Passo | Descrição |
+|---|---|---|
+| `createSignatureStep` | `signature_verification` | Verifica assinatura Ed25519/CL |
+| `createTrustChainStep` | `trust_chain_validation` | Valida cadeia de confiança PKI |
+| `createIntegrityStep` | `structural_integrity` | Verifica atributos vs requisitos PEX |
+| `createChallengeStep` | `challenge_validation` | Valida challenge/nonce |
+| `createPredicateStep` | `predicate_verification` | Verifica predicados numéricos |
+| `createNullifierStep` | `nullifier_check` | Verifica duplicidade de nullifier |
+| `createAccessControlStep` | `access_control` | Valida controle de acesso |
+
+---
+
 ## ZKProofService
 
 Executa provas zero-knowledge Groth16 via `mopro-ffi` (Circom circuits). Cada circuito requer um arquivo `.zkey` na build do app.
+
+**Construtor**: `new ZKProofService(logger?: ILogService)`
 
 ### Circuitos
 
@@ -406,6 +476,8 @@ Extrai o nullifier dos outputs públicos da prova (se presente).
 ## EudiTransportService
 
 Camada de transporte opcional baseada no `@openwallet-foundation/eudi-wallet-kit-react-native`. Suporta três modos. O módulo EUDI é carregado via `require()` dinâmico — se não estiver disponível, o serviço opera apenas em modo clipboard.
+
+**Construtor**: `new EudiTransportService(logger?: ILogService)`
 
 ### Modos
 
@@ -476,6 +548,8 @@ Remove listener por ID.
 ## TrustChainService
 
 Gerencia uma cadeia de confiança hierárquica (PKI) para emissores de credenciais. Usa Ed25519 para assinatura de certificados.
+
+**Construtor**: `new TrustChainService(crypto?: ICryptoService, storage?: IStorageService, logger?: ILogService)`
 
 ### Tipos
 
@@ -562,6 +636,10 @@ Remove todos os emissores e chaves da cadeia de confiança.
 
 Operações criptográficas de baixo nível. Usa `crypto-js` para SHA-256 e `@noble/ed25519` para assinaturas.
 
+**Construtor**: `new CryptoService(logger?: ILogService)`
+
+**Segurança**: O fallback `Math.random()` para geração de bytes aleatórios foi removido. Se `react-native-get-random-values` não estiver disponível, lança `CryptoError`.
+
 ### Métodos
 
 #### `computeHash(data: string | Buffer, module?: 'emissor' | 'titular' | 'verificador'): Promise<string>`
@@ -589,6 +667,8 @@ Gera nonce aleatório.
 ## StorageService
 
 Armazenamento criptografado via `react-native-encrypted-storage` (AES-256, chaves gerenciadas pelo OS Keystore). Todos os métodos são async.
+
+Chaves de armazenamento são definidas como constantes em `StorageKey` (`utils/constants.ts`). Operações read-modify-write em arrays são protegidas por mutex per-key.
 
 ### Métodos — Chaves e DIDs
 
@@ -689,6 +769,8 @@ interface LogDetails {
 ## ErrorHandler
 
 Tratamento centralizado de erros. Loga via `LogService` e retorna mensagens legíveis.
+
+**Construtor**: `new ErrorHandler(logger?: ILogService)`
 
 ### Classes de erro
 

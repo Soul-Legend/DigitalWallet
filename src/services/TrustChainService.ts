@@ -1,7 +1,9 @@
-import CryptoService from './CryptoService';
-import StorageService from './StorageService';
-import LogService from './LogService';
+import CryptoServiceInstance from './CryptoService';
+import StorageServiceInstance from './StorageService';
+import LogServiceInstance from './LogService';
 import {CryptoError, ValidationError} from './ErrorHandler';
+import {TrustedIssuer} from '../types';
+import type {ICryptoService, IStorageService, ILogService} from '../types';
 import * as ed from '@noble/ed25519';
 
 function toHex(bytes: Uint8Array): string {
@@ -10,36 +12,27 @@ function toHex(bytes: Uint8Array): string {
     .join('');
 }
 
-/**
- * A trusted issuer registered in the trust chain.
- *
- * The chain emulates a PKI hierarchy: a root anchor signs certificates
- * for child issuers, which can in turn sign certificates for their own
- * children.  Verification walks the chain back to the root.
- */
-export interface TrustedIssuer {
-  /** DID of this issuer (e.g. did:web:ufsc.br) */
-  did: string;
-  /** Ed25519 public key hex */
-  publicKey: string;
-  /** Human-readable name */
-  name: string;
-  /** DID of the parent that signed this issuer's certificate. null = root */
-  parentDid: string | null;
-  /**
-   * Signature from the parent over the canonical certificate payload.
-   * For the root issuer this is a self-signature.
-   */
-  certificate: string;
-  /** ISO-8601 creation timestamp */
-  createdAt: string;
-}
+// Re-export TrustedIssuer from types for backwards compatibility
+export type {TrustedIssuer} from '../types';
 
 const STORAGE_KEY = 'trust_chain_issuers';
 
 class TrustChainService {
   private issuers: Map<string, TrustedIssuer> = new Map();
   private loaded = false;
+  private readonly crypto: ICryptoService;
+  private readonly storage: IStorageService;
+  private readonly logger: ILogService;
+
+  constructor(
+    crypto: ICryptoService = CryptoServiceInstance,
+    storage: IStorageService = StorageServiceInstance,
+    logger: ILogService = LogServiceInstance,
+  ) {
+    this.crypto = crypto;
+    this.storage = storage;
+    this.logger = logger;
+  }
 
   // -------------------------------------------------------------------
   // Persistence
@@ -49,7 +42,7 @@ class TrustChainService {
     if (this.loaded) {
       return;
     }
-    const raw = await StorageService.getRawItem(STORAGE_KEY);
+    const raw = await this.storage.getRawItem(STORAGE_KEY);
     if (raw) {
       try {
         const arr: TrustedIssuer[] = JSON.parse(raw);
@@ -65,7 +58,7 @@ class TrustChainService {
 
   private async persist(): Promise<void> {
     const arr = Array.from(this.issuers.values());
-    await StorageService.setRawItem(STORAGE_KEY, JSON.stringify(arr));
+    await this.storage.setRawItem(STORAGE_KEY, JSON.stringify(arr));
   }
 
   // -------------------------------------------------------------------
@@ -127,7 +120,7 @@ class TrustChainService {
     });
 
     // Self-sign
-    const certificate = await CryptoService.signData(payload, privateKeyHex, 'emissor');
+    const certificate = await this.crypto.signData(payload, privateKeyHex, 'emissor');
 
     const root: TrustedIssuer = {
       did,
@@ -142,9 +135,9 @@ class TrustChainService {
     await this.persist();
 
     // Store root private key so it can sign child certificates later
-    await StorageService.setRawItem('trust_root_private_key', privateKeyHex);
+    await this.storage.setRawItem('trust_root_private_key', privateKeyHex);
 
-    LogService.captureEvent('key_generation', 'emissor', {
+    this.logger.captureEvent('key_generation', 'emissor', {
       algorithm: 'Ed25519',
       key_size: 256,
       did_method: 'did:web',
@@ -203,7 +196,7 @@ class TrustChainService {
     });
 
     // Parent signs the child's certificate
-    const certificate = await CryptoService.signData(
+    const certificate = await this.crypto.signData(
       payload,
       parentPrivateKey,
       'emissor',
@@ -222,12 +215,12 @@ class TrustChainService {
     await this.persist();
 
     // Store child private key for potential further delegation
-    await StorageService.setRawItem(
+    await this.storage.setRawItem(
       `trust_issuer_private_key_${childDid}`,
       privateKeyHex,
     );
 
-    LogService.captureEvent('key_generation', 'emissor', {
+    this.logger.captureEvent('key_generation', 'emissor', {
       algorithm: 'Ed25519',
       key_size: 256,
       did_method: 'did:web',
@@ -289,7 +282,7 @@ class TrustChainService {
         };
       }
 
-      const valid = await CryptoService.verifySignature(
+      const valid = await this.crypto.verifySignature(
         payload,
         issuer.certificate,
         signerPublicKey,
@@ -355,9 +348,9 @@ class TrustChainService {
       return null;
     }
     if (issuer.parentDid === null) {
-      return StorageService.getRawItem('trust_root_private_key');
+      return this.storage.getRawItem('trust_root_private_key');
     }
-    return StorageService.getRawItem(`trust_issuer_private_key_${did}`);
+    return this.storage.getRawItem(`trust_issuer_private_key_${did}`);
   }
 
   /**
@@ -378,8 +371,11 @@ class TrustChainService {
   async reset(): Promise<void> {
     this.issuers.clear();
     this.loaded = false;
-    await StorageService.setRawItem(STORAGE_KEY, '[]');
+    await this.storage.setRawItem(STORAGE_KEY, '[]');
   }
 }
 
-export default new TrustChainService();
+export { TrustChainService };
+
+const trustChainServiceInstance = new TrustChainService();
+export default trustChainServiceInstance;

@@ -1,9 +1,10 @@
 import {KeyType} from '@credo-ts/core';
 import * as ed from '@noble/ed25519';
 import {CryptoError} from './ErrorHandler';
-import LogService from './LogService';
-import StorageService from './StorageService';
-import AgentService from './AgentService';
+import LogServiceInstance from './LogService';
+import StorageServiceInstance from './StorageService';
+import AgentServiceInstance from './AgentService';
+import type {ILogService, IStorageService, IAgentService} from '../types';
 
 function toHex(bytes: Uint8Array): string {
   return Array.from(bytes)
@@ -19,13 +20,27 @@ function toHex(bytes: Uint8Array): string {
  * did:web is constructed locally since Credo has no did:web registrar.
  */
 class DIDService {
+  private readonly logger: ILogService;
+  private readonly storage: IStorageService;
+  private readonly agentService: IAgentService;
+
+  constructor(
+    logger: ILogService = LogServiceInstance,
+    storage: IStorageService = StorageServiceInstance,
+    agentService: IAgentService = AgentServiceInstance,
+  ) {
+    this.logger = logger;
+    this.storage = storage;
+    this.agentService = agentService;
+  }
+
   /**
    * Creates a did:key using the Credo agent.
    * The agent generates an Ed25519 key pair and derives the DID from the public key.
    */
   async createDidKey(): Promise<{did: string; verificationMethodId: string}> {
     try {
-      const agent = await AgentService.getAgent();
+      const agent = await this.agentService.getAgent();
 
       const didResult = await agent.dids.create({
         method: 'key',
@@ -63,7 +78,7 @@ class DIDService {
    */
   async createDidPeer(): Promise<{did: string; verificationMethodId: string}> {
     try {
-      const agent = await AgentService.getAgent();
+      const agent = await this.agentService.getAgent();
 
       const didResult = await agent.dids.create({
         method: 'peer',
@@ -139,11 +154,11 @@ class DIDService {
       const publicKeyHex = toHex(publicKeyBytes);
 
       // Persist the DID and keys so the app can find them on next launch
-      await StorageService.storeHolderDID(did);
-      await StorageService.storeHolderPrivateKey(privateKeyHex, did);
-      await StorageService.storeHolderPublicKey(publicKeyHex);
+      await this.storage.storeHolderDID(did);
+      await this.storage.storeHolderPrivateKey(privateKeyHex, did);
+      await this.storage.storeHolderPublicKey(publicKeyHex);
 
-      LogService.logKeyGeneration(
+      this.logger.logKeyGeneration(
         'titular',
         'Ed25519',
         256,
@@ -153,7 +168,7 @@ class DIDService {
 
       return {did, publicKey: publicKeyHex};
     } catch (error) {
-      LogService.logKeyGeneration(
+      this.logger.logKeyGeneration(
         'titular',
         'Ed25519',
         256,
@@ -190,12 +205,12 @@ class DIDService {
       const publicKeyHex = toHex(publicKeyBytes);
 
       // Store the mapping: did:web -> signing did:key, and the issuer keys
-      await StorageService.storeIssuerDID(didWeb);
-      await StorageService.storeIssuerSigningDid(signingDid);
-      await StorageService.storeIssuerPrivateKey(privateKeyHex, didWeb);
-      await StorageService.storeIssuerPublicKey(publicKeyHex);
+      await this.storage.storeIssuerDID(didWeb);
+      await this.storage.storeIssuerSigningDid(signingDid);
+      await this.storage.storeIssuerPrivateKey(privateKeyHex, didWeb);
+      await this.storage.storeIssuerPublicKey(publicKeyHex);
 
-      LogService.logKeyGeneration(
+      this.logger.logKeyGeneration(
         'emissor',
         'Ed25519',
         256,
@@ -205,7 +220,7 @@ class DIDService {
 
       return {did: didWeb, publicKey: publicKeyHex};
     } catch (error) {
-      LogService.logKeyGeneration(
+      this.logger.logKeyGeneration(
         'emissor',
         'Ed25519',
         256,
@@ -222,10 +237,13 @@ class DIDService {
    * Resolves a DID to its DID Document using the Credo agent.
    */
   async resolveDid(did: string) {
-    const agent = await AgentService.getAgent();
+    const agent = await this.agentService.getAgent();
     return agent.dids.resolve(did);
   }
 }
 
 // Export singleton instance
-export default new DIDService();
+export { DIDService };
+
+const didServiceInstance = new DIDService();
+export default didServiceInstance;
