@@ -80,6 +80,84 @@ class ZKProofService {
   }
 
   /**
+   * Copies bundled .zkey assets from the APK into DocumentDirectoryPath/zkeys/
+   * on first launch (or when a circuit is missing).
+   *
+   * On Android, RN ships `react-native-fs` with `copyFileAssets(src, dest)`
+   * which extracts a file from the APK's `assets/` tree. We treat absence of
+   * the asset as a no-op (e.g. dev builds without bundled circuits) so this
+   * call is safe to invoke unconditionally during app bootstrap.
+   *
+   * Idempotent: skips circuits whose target file already exists. Callers
+   * (e.g. an InitializationScreen) should `await` this once before exercising
+   * any proof generation in production.
+   */
+  async provisionBundledZkeys(): Promise<{
+    provisioned: string[];
+    missing: string[];
+  }> {
+    const provisioned: string[] = [];
+    const missing: string[] = [];
+
+    const dirExists = await RNFS.exists(this.zkeyBasePath);
+    if (!dirExists) {
+      await RNFS.mkdir(this.zkeyBasePath);
+    }
+
+    for (const [circuitName, fileName] of Object.entries(CIRCUIT_ZKEYS)) {
+      const targetPath = `${this.zkeyBasePath}/${fileName}`;
+      if (await RNFS.exists(targetPath)) {
+        provisioned.push(circuitName);
+        continue;
+      }
+
+      // `copyFileAssets` is Android-only; on iOS the bundled path differs
+      // (`RNFS.MainBundlePath/zkeys/<fileName>`). Branch only when the API
+      // is available — keeps tests + iOS builds compiling.
+      const copyAssets = (
+        RNFS as unknown as {
+          copyFileAssets?: (src: string, dest: string) => Promise<void>;
+        }
+      ).copyFileAssets;
+
+      try {
+        if (typeof copyAssets === 'function') {
+          await copyAssets(`zkeys/${fileName}`, targetPath);
+          provisioned.push(circuitName);
+          continue;
+        }
+        // iOS fallback — main bundle resource path
+        const bundledIos = `${RNFS.MainBundlePath ?? ''}/zkeys/${fileName}`;
+        if (bundledIos && (await RNFS.exists(bundledIos))) {
+          await RNFS.copyFile(bundledIos, targetPath);
+          provisioned.push(circuitName);
+          continue;
+        }
+        missing.push(circuitName);
+      } catch {
+        // copyFileAssets throws when the asset is absent. Treat as missing —
+        // callers can decide whether to abort or surface a friendly message.
+        missing.push(circuitName);
+      }
+    }
+
+    this.logger.captureEvent(
+      'zkp_generation',
+      'titular',
+      {
+        parameters: {
+          action: 'zkey_provisioning_completed',
+          provisioned: provisioned.join(','),
+          missing: missing.join(','),
+        },
+      },
+      missing.length === 0,
+    );
+
+    return {provisioned, missing};
+  }
+
+  /**
    * Ensures the zkeys directory exists and returns the path for a circuit's zkey
    */
   private async getZkeyPath(circuitName: string): Promise<string> {

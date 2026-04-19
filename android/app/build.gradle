@@ -7,30 +7,40 @@ react {
     root = file("../../")
     reactNativeDir = file("../../node_modules/react-native")
     codegenDir = file("../../node_modules/@react-native/codegen")
-    
+
     /* Variants */
     debuggableVariants = ["debug"]
-    
-    /* Bundling */
-    bundleCommand = "ram-bundle"
-    
+
+    /* Bundling
+     *
+     * Hermes builds emit a pre-compiled .hbc bytecode bundle, so the legacy
+     * `ram-bundle` (Random Access Module bundle) command is no longer
+     * appropriate — it produces a multi-segment JS bundle that Hermes does
+     * not consume. Leaving the default (`bundle`) lets the React Native
+     * Gradle plugin pick the correct strategy per JS engine.
+     */
+
     /* Hermes Commands */
     hermesCommand = "../../node_modules/react-native/sdks/hermesc/%OS-BIN%/hermesc"
-    
+
     /* Code generation */
     codegenJavaPackageName = "com.carteiraidentidadeacademica"
 }
 
-def enableProguardInReleaseBuilds = false
+// SECURITY: ProGuard/R8 minification + obfuscation MUST be enabled for
+// release builds. Disabling it ships the full source-mapped JS bridge layer
+// and inflates APK size by ~30%. Override locally via `-PdisableProguard=true`
+// only if debugging a release-only crash.
+def enableProguardInReleaseBuilds = !project.hasProperty('disableProguard')
 def jscFlavor = 'org.webkit:android-jsc:+'
 
 android {
     ndkVersion rootProject.ext.ndkVersion
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
-    
+
     namespace "com.carteiraidentidadeacademica"
-    
+
     defaultConfig {
         applicationId "com.carteiraidentidadeacademica"
         minSdkVersion rootProject.ext.minSdkVersion
@@ -38,7 +48,43 @@ android {
         versionCode 1
         versionName "1.0"
     }
-    
+
+    /*
+     * ZKP CIRCUIT (.zkey) ASSET BUNDLING — closes the documented gap in
+     * src/services/ZKProofService.ts module doc.
+     *
+     * `.zkey` files placed under `android/app/src/main/assets/zkeys/` will be
+     * packaged into the APK and copied to `RNFS.DocumentDirectoryPath/zkeys/`
+     * by the JS-side `provisionZkeys()` helper on first launch (see
+     * src/services/ZKProofService.ts).
+     *
+     * `noCompress` is critical: assets compressed by aapt2 cannot be
+     * memory-mapped by the native mopro reader, so .zkey lookups would fail
+     * with truncated reads. Excluding them from compression also avoids the
+     * decompression CPU spike on cold start.
+     */
+    androidResources {
+        noCompress += ['zkey']
+    }
+
+    /*
+     * SECURITY: never auto-sign release builds with the debug keystore. The
+     * previous configuration (`release { signingConfig signingConfigs.debug }`)
+     * would have shipped a production APK signed by the committed
+     * `debug.keystore`, allowing anyone with the repo to forge an update.
+     *
+     * Release signing is now opt-in via Gradle properties (typically set in
+     * `~/.gradle/gradle.properties` or via CI secrets — never committed):
+     *
+     *   MYAPP_UPLOAD_STORE_FILE=path/to/release.keystore
+     *   MYAPP_UPLOAD_KEY_ALIAS=upload
+     *   MYAPP_UPLOAD_STORE_PASSWORD=...
+     *   MYAPP_UPLOAD_KEY_PASSWORD=...
+     *
+     * If those properties are absent, the release signingConfig is null and
+     * `assembleRelease` will produce an unsigned APK that Android refuses to
+     * install — which is the safe default.
+     */
     signingConfigs {
         debug {
             storeFile file('debug.keystore')
@@ -46,15 +92,26 @@ android {
             keyAlias 'androiddebugkey'
             keyPassword 'android'
         }
+        if (project.hasProperty('MYAPP_UPLOAD_STORE_FILE')) {
+            release {
+                storeFile file(MYAPP_UPLOAD_STORE_FILE)
+                storePassword MYAPP_UPLOAD_STORE_PASSWORD
+                keyAlias MYAPP_UPLOAD_KEY_ALIAS
+                keyPassword MYAPP_UPLOAD_KEY_PASSWORD
+            }
+        }
     }
-    
+
     buildTypes {
         debug {
             signingConfig signingConfigs.debug
         }
         release {
-            signingConfig signingConfigs.debug
+            // null when MYAPP_UPLOAD_STORE_FILE is not set — produces an
+            // unsigned APK rather than silently using the debug keystore.
+            signingConfig project.hasProperty('MYAPP_UPLOAD_STORE_FILE') ? signingConfigs.release : null
             minifyEnabled enableProguardInReleaseBuilds
+            shrinkResources enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
         }
     }
@@ -62,8 +119,11 @@ android {
 
 dependencies {
     implementation("com.facebook.react:react-android")
-    implementation("com.facebook.react:flipper-integration")
-    
+
+    // NOTE: `com.facebook.react:flipper-integration` was removed in RN 0.74.
+    // Project is on RN 0.76.5, so the dependency would fail to resolve.
+    // For inspection use the React Native DevTools (built into Hermes).
+
     if (hermesEnabled.toBoolean()) {
         implementation("com.facebook.react:hermes-android")
     } else {

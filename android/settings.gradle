@@ -5,7 +5,11 @@ apply from: file("../node_modules/@react-native/gradle-plugin/settings.gradle")
 includeBuild("../node_modules/@react-native/gradle-plugin")
 
 include ':app'
-includeBuild("../node_modules/react-native-gradle-plugin")
+
+// NOTE: the legacy `react-native-gradle-plugin` package was removed in
+// React Native 0.74 and is fully superseded by `@react-native/gradle-plugin`
+// included above. Keeping both was a no-op at best and a duplicate-class
+// failure at worst on RN 0.76.
 
 if (settings.hasProperty("newArchEnabled") && settings.newArchEnabled == "true") {
     include(":ReactAndroid")
