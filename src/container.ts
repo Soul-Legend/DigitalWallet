@@ -14,7 +14,7 @@ import {StorageService} from './services/StorageService';
 import {CryptoService} from './services/CryptoService';
 import {AgentService} from './services/AgentService';
 import {ErrorHandler} from './services/ErrorHandler';
-import {EudiTransportService} from './services/EudiTransportService';
+import {TransportService} from './services/TransportService';
 import {DIDService} from './services/DIDService';
 import {AnonCredsService} from './services/AnonCredsService';
 import {ZKProofService} from './services/ZKProofService';
@@ -31,7 +31,7 @@ const storageService = new StorageService();
 const cryptoService = new CryptoService(logService);
 const agentService = new AgentService(logService);
 const errorHandler = new ErrorHandler(logService);
-const eudiTransportService = new EudiTransportService(logService);
+const transportService = new TransportService(logService);
 
 // ── Level 2: Depend on Level 0–1 ────────────────────────────────────
 const didService = new DIDService(logService, storageService, agentService);
@@ -67,7 +67,6 @@ const verificationService = new VerificationService(
   storageService,
   zkProofService,
   anonCredsService,
-  trustChainService,
 );
 
 export {
@@ -76,7 +75,7 @@ export {
   cryptoService,
   agentService,
   errorHandler,
-  eudiTransportService,
+  transportService,
   didService,
   anonCredsService,
   zkProofService,

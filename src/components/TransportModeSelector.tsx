@@ -1,6 +1,6 @@
 import React from 'react';
 import {View, Text, StyleSheet, TouchableOpacity} from 'react-native';
-import {TransportMode} from '../services/EudiTransportService';
+import {TransportMode} from '../services/TransportService';
 
 interface TransportModeSelectorProps {
   selectedMode: TransportMode;
@@ -20,12 +20,6 @@ const TRANSPORT_OPTIONS: {mode: TransportMode; label: string; icon: string; desc
     label: 'QR Code',
     icon: '📱',
     description: 'Leitura via câmera',
-  },
-  {
-    mode: 'proximity',
-    label: 'BLE/NFC',
-    icon: '📡',
-    description: 'Proximidade (EUDI)',
   },
 ];
 
