@@ -17,7 +17,6 @@ Este projeto foi configurado com React Native 0.76.5 e TypeScript, utilizando a 
 - **@hyperledger/anoncreds-react-native**: Credenciais anônimas
 - **mopro-react-native-package**: Otimização de circuitos ZKP
 - **@sd-jwt/sd-jwt-vc**: Selective Disclosure JWT
-- **eudi-wallet-kit-react-native**: Kit de carteira EUDI
 - **react-native-secure-sign**: Assinatura segura com hardware
 
 ## Configuração do Android

@@ -6,7 +6,7 @@ Desenvolvido como trabalho de conclusão de curso em Ciências da Computação �
 
 ## Escopo
 
-O aplicativo roda em Android (React Native 0.76.5) e implementa os três papéis do modelo SSI (Issuer/Holder/Verifier) em um único app. Credenciais são trocadas via área de transferência — não há protocolos de rede ou ledger distribuído envolvidos. O transporte real (OpenID4VP, BLE) está preparado como camada opcional via `EudiTransportService`.
+O aplicativo roda em Android (React Native 0.76.5) e implementa os três papéis do modelo SSI (Issuer/Holder/Verifier) em um único app. Credenciais são trocadas via área de transferência ou QR code — não há protocolos de rede ou ledger distribuído envolvidos. Modos de transporte por proximidade (BLE/NFC ISO 18013-5) e remoto (OpenID4VP) estão **fora de escopo** nesta versão; veja [docs/DESIGN_DECISIONS.md](docs/DESIGN_DECISIONS.md#transporte-de-apresentações) para a justificativa.
 
 ## Stack técnica
 
@@ -18,7 +18,7 @@ O aplicativo roda em Android (React Native 0.76.5) e implementa os três papéis
 | Provas ZK (Groth16) | mopro-ffi (compilação e execução de circuitos Circom no dispositivo) |
 | Armazenamento | react-native-encrypted-storage (AES-256 via Keystore/Keychain) |
 | Wallet criptográfico | @hyperledger/aries-askar-react-native 0.2.1 (Ed25519, armazenamento de chaves) |
-| Transporte (opcional) | @openwallet-foundation/eudi-wallet-kit-react-native 0.1.3 (BLE, OpenID4VP) |
+| Transporte | Clipboard ou QR code (`react-native-qrcode-svg` 6.3.2) |
 | Estado | Zustand 4.5.0 |
 | Testes | Jest 29.x, fast-check 4.6.0 |
 
@@ -43,7 +43,7 @@ src/
 │   ├── CredentialService.ts     # Emissão SD-JWT e AnonCreds
 │   ├── CryptoService.ts         # SHA-256, Ed25519 (via @noble/ed25519)
 │   ├── DIDService.ts            # did:key, did:peer, did:web (via agente Credo)
-│   ├── EudiTransportService.ts  # Camada de transporte BLE/OpenID4VP (opcional)
+│   ├── TransportService.ts      # Seleção de modo de transporte (clipboard | qrcode)
 │   ├── PresentationService.ts   # Apresentações SD-JWT, Groth16 e AnonCreds
 │   ├── PresentationHelpers.ts   # Funções puras extraídas do PresentationService
 │   ├── StorageService.ts        # Encrypted storage wrapper (mutex per-key)
@@ -53,7 +53,22 @@ src/
 │   ├── VerificationSteps.ts     # 7 factories de passos do pipeline
 │   ├── ZKProofService.ts        # Wrapper mopro-ffi para Groth16
 │   ├── LogService.ts            # Registro de eventos criptográficos
-│   └── ErrorHandler.ts          # Classes de erro tipadas
+│   ├── ErrorHandler.ts          # Classes de erro tipadas
+│   ├── encoding.ts              # Polyfill Hermes (Buffer, TextEncoder, base64url)
+│   ├── presentations/           # Builders por formato (SD-JWT, ZKP, AnonCreds, PEX)
+│   │   ├── PEXValidator.ts
+│   │   ├── SDJWTPresentationBuilder.ts
+│   │   ├── ZKPPresentationBuilder.ts
+│   │   └── AnonCredsPresentationBuilder.ts
+│   └── verification/            # Colaboradores do pipeline de validação
+│       ├── ScenarioCatalog.ts
+│       ├── PresentationFormatValidator.ts
+│       ├── SignatureVerifier.ts
+│       ├── IntegrityVerifier.ts
+│       ├── PredicateChecker.ts
+│       ├── NullifierStore.ts
+│       ├── ResourceAccessChecker.ts
+│       └── PexHelpers.ts
 ├── screens/
 │   ├── HomeScreen.tsx
 │   ├── IssuerScreen.tsx
@@ -85,7 +100,6 @@ src/
     ├── accessibility.ts
     ├── errorMessages.ts
     ├── glossary.ts
-    ├── performanceCache.ts
     └── theme.ts
 ```
 

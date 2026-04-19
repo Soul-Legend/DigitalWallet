@@ -13,7 +13,7 @@ Referência das APIs públicas de todos os serviços. Cada serviço é uma class
 - [VerificationService](#verificationservice)
 - [VerificationSteps](#verificationsteps)
 - [ZKProofService](#zkproofservice)
-- [EudiTransportService](#euditransportservice)
+- [TransportService](#transportservice)
 - [CryptoService](#cryptoservice)
 - [TrustChainService](#trustchainservice)
 - [StorageService](#storageservice)
@@ -64,11 +64,21 @@ Cria um DID usando o método `did:peer` via Credo.
 
 #### `createDidWeb(domain: string, path?: string): string`
 
-Formata uma string `did:web:domain:path`. Não publica documento DID.
+Formata e valida uma string `did:web:domain[:path]`. **Não** publica documento DID; apenas constrói o identificador conforme a spec W3C did:web.
+
+Validações aplicadas:
+
+- O domínio passa por regex RFC-1123 (máx. 253 caracteres, labels 1-63, alphanum + hífen) com porta opcional `:N` (1-5 dígitos).
+- A porta, se presente, é percent-encoded como `%3A` para não colidir com o `:` separador de path.
+- O `path`, se presente, deve casar com `/^[A-Za-z0-9._\-/%]+$/`.
+- Falha em qualquer validação lança `CryptoError` com código `key_generation`.
 
 ```typescript
 DIDService.createDidWeb('ufsc.br', 'identity');
 // "did:web:ufsc.br:identity"
+
+DIDService.createDidWeb('localhost:8443', 'wallet');
+// "did:web:localhost%3A8443:wallet"
 ```
 
 #### `generateHolderIdentity(method?: 'key' | 'peer'): Promise<{ did: string; publicKey: string }>`
@@ -89,6 +99,21 @@ Resolve um DID via `agent.dids.resolve()`.
 
 Emissão de credenciais em dois formatos: SD-JWT e AnonCreds.
 
+**Construtor**:
+
+```typescript
+new CredentialService(
+  didService?: IDIDService,
+  storage?: IStorageService,
+  logger?: ILogService,
+  agentService?: IAgentService,
+  anonCredsService?: IAnonCredsService,
+  credentialTtlSeconds?: number, // default: CREDENTIAL_DEFAULT_TTL_SECONDS = 365 dias
+)
+```
+
+O parâmetro `credentialTtlSeconds` controla o `exp - iat` do JWT emitido. Para reduzir o tempo de vida em testes ou cenários específicos, instancie via container ou diretamente.
+
 ### Métodos
 
 #### `getOrCreateIssuerDID(): Promise<{ did: string; publicKey: string }>`
@@ -99,8 +124,8 @@ Retorna o DID do emissor do StorageService. Se não existir, chama `DIDService.g
 
 Emite uma credencial. O parâmetro `format` tem default `'sd-jwt'`.
 
-- **SD-JWT**: Monta header/payload JSON, assina com `CryptoService.signData()` usando a chave do emissor, retorna token `header.payload.signature`.
-- **AnonCreds**: Delega para `AnonCredsService.issueCredentialFull()`. Retorna JSON stringificado com `{ format: 'anoncreds', credential, schema_id, cred_def_id }`.
+- **SD-JWT**: monta `header` (`{alg: 'EdDSA', typ: 'JWT', kid: <verificationMethodId>}`), `payload` (`{vc, iss, sub, iat, exp}`), e assina com `agent.wallet.sign()` (Aries Askar) usando o DID de assinatura recuperado de `StorageService.getIssuerSigningDid()`. Retorna o token compacto `header.payload.signature`. `iat` e `exp` são derivados do mesmo `nowSeconds`; o intervalo é `credentialTtlSeconds` configurado no construtor.
+- **AnonCreds**: delega para `AnonCredsService.issueCredentialFull()`. Retorna JSON stringificado com `{format: 'anoncreds', credential, schema_id, cred_def_id}`.
 
 ```typescript
 // SD-JWT
@@ -240,7 +265,27 @@ Monta um `presentation_request` JSON com predicados (e.g., `age >= 18`).
 
 ## PresentationService
 
-Gera apresentações verificáveis a partir de credenciais. Três modos: SD-JWT (divulgação seletiva por atributo), ZKP (provas Groth16 via mopro), AnonCreds (CL-signature com predicados).
+Façade fina que gera apresentações verificáveis a partir de credenciais. Três modos: SD-JWT (divulgação seletiva por atributo), ZKP (provas Groth16 via mopro), AnonCreds (CL-signature com predicados).
+
+A implementação real vive em quatro colaboradores em `src/services/presentations/`:
+
+| Colaborador | Métodos da façade que delega |
+|---|---|
+| `PEXValidator` | `validatePEXFormat`, `extractRequestedAttributes`, `processPEXRequest` |
+| `SDJWTPresentationBuilder` | `createPresentation` (também exporta `canonicalPresentationSigningInput` para o verificador) |
+| `ZKPPresentationBuilder` | `createZKPPresentation` |
+| `AnonCredsPresentationBuilder` | `createAnonCredsPresentation` |
+
+**Construtor**:
+
+```typescript
+new PresentationService(
+  logger?: ILogService,
+  crypto?: ICryptoService,
+  storage?: IStorageService,
+  anonCredsService?: IAnonCredsService,
+)
+```
 
 ### Métodos
 
@@ -317,13 +362,39 @@ interface PresentationDeps {
 
 ## VerificationService
 
-Valida apresentações recebidas usando um pipeline de 7 passos (`VerificationPipeline`). Cada passo é um `IVerificationStep` criado via factory em `VerificationSteps.ts`.
+Façade fina que valida apresentações recebidas usando um `VerificationPipeline` (Chain of Responsibility) com sete passos. A implementação real vive em oito colaboradores em `src/services/verification/`:
 
-**Construtor**: `new VerificationService(logger?: ILogService, crypto?: ICryptoService, storage?: IStorageService, zkProof?: IZKProofService, anonCreds?: IAnonCredsService, trustChain?: ITrustChainService)`
+| Colaborador | Responsabilidade |
+|---|---|
+| `ScenarioCatalog` | Catálogo de cenários e geração de `PresentationExchangeRequest` (challenge + predicados). |
+| `PresentationFormatValidator` | Normaliza string → `VerifiablePresentation` antes do pipeline. |
+| `SignatureVerifier` | Dispatch de assinatura por proof type (Groth16Proof, CLSignature2023, JsonWebSignature2020). |
+| `IntegrityVerifier` | Atributos esperados, hashes SHA-256, campos ZKP, verificação AnonCreds. |
+| `PredicateChecker` | Avalia predicados declarativos (`>=`, `<=`, `>`, `<`, `==`). |
+| `NullifierStore` | Anti-replay para o cenário `elections`. |
+| `ResourceAccessChecker` | Controle de acesso a laboratórios/prédios. |
 
-**Segurança**: A verificação AnonCreds e o fallback ZKP agora lançam `ValidationError` em vez de aceitar silenciosamente (ver DESIGN_DECISIONS.md).
+As sete fábricas de passos (`createSignatureStep`, `createTrustChainStep`, `createIntegrityStep`, `createChallengeStep`, `createPredicateStep`, `createNullifierStep`, `createResourceAccessStep`) vivem em `VerificationSteps.ts` e recebem uma interface `IVerificationOperations` para evitar import circular.
+
+**Construtor**:
+
+```typescript
+new VerificationService(
+  logger?: ILogService,
+  crypto?: ICryptoService,
+  storage?: IStorageService,
+  zkProof?: IZKProofService,
+  anonCreds?: IAnonCredsService,
+)
+```
+
+> Nota: o construtor **não** recebe mais `TrustChainService` — o `createTrustChainStep` usa o singleton diretamente.
+
+**Segurança (P0)**: A verificação AnonCreds lança `ValidationError` quando os artefatos do emissor não estão disponíveis (antes retornava `true` silenciosamente). A verificação ZKP rejeita provas Groth16 quando o `.zkey` do circuito não existe ou quando algum dos campos `proof.{a,b,c,publicInputs}` está ausente.
 
 ### Cenários pré-configurados
+
+Os IDs no catálogo do back-end (`ScenarioCatalog`) usam nomes em inglês:
 
 | ID | Tipo |
 |---|---|
@@ -331,6 +402,9 @@ Valida apresentações recebidas usando um pipeline de 7 passos (`VerificationPi
 | `elections` | ZKP eligibility + nullifier |
 | `age_verification` | Range proof (idade >= 18) |
 | `lab_access` | Access control (acesso_laboratorios) |
+
+> **Unificação de IDs**: o `VerifierScreen` usa exatamente os mesmos IDs deste catálogo. Apenas o rótulo em português usado pelo seletor da UI vive em `src/screens/VerifierScreen.tsx` (decisão de display), mas a chave do cenário (`ru`, `elections`, `lab_access`, `age_verification`) é única em todo o sistema.
+
 
 ### Métodos
 
@@ -473,75 +547,36 @@ Extrai o nullifier dos outputs públicos da prova (se presente).
 
 ---
 
-## EudiTransportService
+## TransportService
 
-Camada de transporte opcional baseada no `@openwallet-foundation/eudi-wallet-kit-react-native`. Suporta três modos. O módulo EUDI é carregado via `require()` dinâmico — se não estiver disponível, o serviço opera apenas em modo clipboard.
+Selecao do modo de transporte para a apresentacao. Substitui o antigo `EudiTransportService` (e a dependencia `@openwallet-foundation/eudi-wallet-kit-react-native`, que foi removida do projeto). Apenas dois modos sao suportados.
 
-**Construtor**: `new EudiTransportService(logger?: ILogService)`
-
-### Modos
-
-| Modo | Protocolo | Descrição |
-|---|---|---|
-| `clipboard` | Nenhum | Copia/cola via clipboard do sistema (default) |
-| `proximity` | ISO 18013-5 BLE | Apresentação presencial via Bluetooth |
-| `remote` | OpenID4VP | Apresentação remota via URL |
+**Construtor**: `new TransportService(logger?: ILogService)`
 
 ### Tipos
 
 ```typescript
-type TransportMode = 'clipboard' | 'proximity' | 'remote';
-
-enum TransportEventType {
-  Connecting, Connected, Disconnected, Error,
-  QrReady, RequestReceived, ResponseSent, Redirect
-}
-
-interface TransportEvent { type: TransportEventType; data?: any }
-type TransportEventListener = (event: TransportEvent) => void;
+type TransportMode = 'clipboard' | 'qrcode';
 ```
 
-### Métodos
+### Metodos
 
 #### `getMode(): TransportMode`
 
-Retorna o modo atual.
+Retorna o modo ativo.
 
-#### `isAvailable(): Promise<boolean>`
+#### `setMode(mode: TransportMode): void`
 
-Retorna `true` se o módulo EUDI foi carregado.
+Altera o modo ativo e registra o evento `transport_mode_changed` no `LogService`.
 
-#### `initialize(config?): Promise<void>`
+### Modos
 
-Inicializa o módulo EUDI com certificados de leitores confiáveis e configuração OpenID4VP.
+| Modo | Descricao |
+|---|---|
+| `clipboard` | Default. Copia/cola manual via clipboard do sistema. |
+| `qrcode` | Titular renderiza a apresentacao como QR code (`react-native-qrcode-svg`); o verificador faz a leitura. |
 
-#### `setMode(mode: TransportMode): Promise<void>`
-
-Altera o modo de transporte. Lança erro se `proximity` ou `remote` forem selecionados e o EUDI não estiver disponível.
-
-#### `startProximityPresentation(): Promise<void>`
-
-Inicia apresentação BLE. Emite evento `QrReady` com URI de engajamento.
-
-#### `startRemotePresentation(url: string): Promise<void>`
-
-Inicia apresentação OpenID4VP a partir de uma URL de autorização.
-
-#### `sendResponse(disclosedDocuments): Promise<void>`
-
-Envia documentos selecionados ao verifier.
-
-#### `stopPresentation(): void`
-
-Encerra apresentação em andamento.
-
-#### `addEventListener(listener: TransportEventListener): string`
-
-Registra listener. Retorna ID para remoção posterior.
-
-#### `removeEventListener(listenerId: string): void`
-
-Remove listener por ID.
+> **Fora de escopo**: BLE/NFC (ISO 18013-5 mDoc proximity) e OpenID4VP. Veja [DESIGN_DECISIONS.md](DESIGN_DECISIONS.md#transporte-de-apresentacoes).
 
 ---
 

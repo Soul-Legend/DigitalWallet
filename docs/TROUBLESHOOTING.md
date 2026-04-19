@@ -54,8 +54,9 @@ npm install --legacy-peer-deps
 
 **Dependências que podem causar problemas**:
 - `mopro-ffi` (github:zkmopro/mopro-react-native-package): Requer acesso ao repositório GitHub
-- `@openwallet-foundation/eudi-wallet-kit-react-native`: Pode não estar publicada no npm; o módulo é carregado dinamicamente e o app funciona sem ele
 - `@hyperledger/anoncreds-react-native` e `@hyperledger/aries-askar-react-native`: Dependem de bindings nativos compilados para Android
+
+> Nota: o pacote `@openwallet-foundation/eudi-wallet-kit-react-native` foi removido do projeto. Os modos de transporte BLE/NFC e OpenID4VP estão fora de escopo desta versão; veja [DESIGN_DECISIONS.md](DESIGN_DECISIONS.md#transporte-de-apresentações).
 
 ---
 

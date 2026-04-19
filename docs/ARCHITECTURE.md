@@ -17,20 +17,21 @@ Aplicativo React Native 0.76.5 (Android) que implementa os três papéis do mode
 │              Service Layer (Dependency Injection)         │
 │  AgentService  │ AnonCredsService │ CredentialService    │
 │  DIDService    │ PresentationService │ VerificationService│
-│  ZKProofService│ CryptoService   │ EudiTransportService  │
+│  ZKProofService│ CryptoService   │ TransportService     │
 │  StorageService│ LogService      │ ErrorHandler           │
 │  Helpers: PresentationHelpers, VerificationSteps         │
+│  Subsystems: presentations/ (4 builders), verification/   │
+│             (8 colaboradores), encoding.ts (Hermes shim) │
 │  Composition Root: container.ts                          │
 ├─────────────────────────────────────────────────────────┤
 │                    Utilities                             │
 │  constants.ts (Module, CredentialFormat, StorageKey, etc)│
-│  formatters.ts │ errorMessages.ts │ performanceCache.ts  │
+│  formatters.ts │ errorMessages.ts                       │
 │  accessibility.ts │ glossary.ts │ theme.ts               │
-├─────────────────────────────────────────────────────────┤
+├──────────────────────────────────────────────────────┤
 │                 Native Libraries (JSI/Rust)              │
 │  @credo-ts/core        │ @hyperledger/aries-askar-react-native │
 │  @hyperledger/anoncreds-react-native │ mopro-ffi (Circom/Groth16) │
-│  @openwallet-foundation/eudi-wallet-kit-react-native     │
 ├─────────────────────────────────────────────────────────┤
 │              Encrypted Storage (OS-level)                │
 │  react-native-encrypted-storage (AES-256 via Keystore)  │
@@ -64,49 +65,57 @@ Todos os artefatos (schemas, cred defs, link secrets) são persistidos em `Encry
 
 Emissão de credenciais em dois formatos:
 
-- **SD-JWT** (`'sd-jwt'`): Constrói JWT com header/payload/signature. Assinatura Ed25519 via `agent.wallet.sign()` (Aries Askar). Chave de assinatura resolvida do DID do emissor.
-- **AnonCreds** (`'anoncreds'`): Delega para `AnonCredsService.issueCredentialFull()` que executa o protocolo completo (Schema → CredDef → Offer → Request → Credential → Process). O resultado é um envelope JSON `{format: 'anoncreds', credential, schema_id, cred_def_id}`.
+- **SD-JWT** (`'sd-jwt'`): constrói JWT `header.payload.signature`. A assinatura Ed25519 é feita via `agent.wallet.sign()` (Aries Askar) usando o DID de assinatura recuperado de `StorageService.getIssuerSigningDid()`. O TTL do JWT (`exp - iat`) é parametrizável via construtor (`credentialTtlSeconds`, default `CREDENTIAL_DEFAULT_TTL_SECONDS = 365 * 24 * 60 * 60`). `iat` e `exp` são derivados do mesmo `nowSeconds` para evitar drift.
+- **AnonCreds** (`'anoncreds'`): delega para `AnonCredsService.issueCredentialFull()` que executa o protocolo completo (Schema → CredDef → Offer → Request → Credential → Process). O resultado é um envelope JSON `{format: 'anoncreds', credential, schema_id, cred_def_id}`.
 
-Parsing: `validateAndParseCredential()` utiliza um registro de formatos (`ICredentialFormat[]`) para detectar e processar o token. Formatos padrão (AnonCreds, SD-JWT) são registrados automaticamente. Novos formatos podem ser adicionados via `registerFormat()` sem modificar o código existente (Princípio Aberto/Fechado).
+Parsing: `validateAndParseCredential()` utiliza um registro de formatos (`ICredentialFormat[]`) para detectar e processar o token. Formatos padrão (AnonCreds, SD-JWT) são registrados automaticamente. Novos formatos podem ser adicionados via `registerFormat()` sem modificar o código existente (Princípio Aberto/Fechado). A detecção usa o padrão "first match wins".
 
 ### DIDService
 
 Criação de DIDs via agente Credo:
 - `did:key` — via `agent.dids.create({method: 'key'})`. Usado para titulares.
 - `did:peer` — via `agent.dids.create({method: 'peer'})`.
-- `did:web` — construído localmente (string formatting). Usado para emissores (`did:web:ufsc.br:identidade-academica`).
+- `did:web` — construído localmente com validação estrita: o domínio passa por regex RFC-1123 (`/^(?=.{1,253}$)([a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)(\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*(:\d{1,5})?$/`) e o path por lista branca `/^[A-Za-z0-9._\-/%]+$/`. Portas são percent-encoded (`:8080` → `%3A8080`) conforme W3C did:web. Entrada inválida lança `CryptoError`.
 
 `generateIssuerIdentity()` cria um `did:key` para assinatura e um `did:web` para identidade pública. Ambos são armazenados.
 
-### PresentationService
+### PresentationService (façade)
 
-Gera apresentações verificáveis em três modos:
+Façade fina sobre quatro colaboradores em `src/services/presentations/`. Cada um implementa uma estratégia de construção de apresentação:
 
-1. **SD-JWT** (`createPresentation()`): Extrai atributos selecionados, gera hashes SHA-256 dos não revelados, assina com chave privada do titular via CryptoService.
-2. **Groth16/Circom** (`createZKPPresentation()`): Para cada predicado, gera prova ZK via ZKProofService (mopro-ffi). Circuitos: `age_range`, `status_check`, `nullifier`. Proof type: `Groth16Proof`.
-3. **AnonCreds CL** (`createAnonCredsPresentation()`): Constrói presentation request do AnonCreds, recupera artefatos do storage, executa `AnonCredsService.createPresentation()` com CL-signatures. Proof type: `CLSignature2023`.
+| Colaborador | Responsabilidade |
+|---|---|
+| `PEXValidator` | Valida o envelope `PresentationExchangeRequest` (PEX 1.0.0), extrai atributos requeridos/opcionais e monta o `ConsentData` com base na credencial selecionada. |
+| `SDJWTPresentationBuilder` | Extrai atributos selecionados, calcula hashes SHA-256 dos atributos não revelados e assina a apresentação com chave privada do titular via `CryptoService`. Re-exporta `canonicalPresentationSigningInput` para que o verificador reconstrua exatamente a mesma forma canônica. |
+| `ZKPPresentationBuilder` | Para cada predicado, gera prova ZK Groth16 via `ZKProofService` (mopro-ffi). Circuitos: `age_range`, `status_check`, `nullifier`. Proof type: `Groth16Proof`. |
+| `AnonCredsPresentationBuilder` | Constrói a presentation request AnonCreds, recupera artefatos (schema, credDef, link secret) do storage, executa `AnonCredsService.createPresentation()` com CL-signatures. Proof type: `CLSignature2023`. |
 
-Nullifiers para eleições: tenta usar circuito ZK Circom, fallback para hash SHA-256 composto.
+A façade preserva a API pública (`createPresentation`, `createZKPPresentation`, `createAnonCredsPresentation`, `validatePEXFormat`, `extractRequestedAttributes`, `processPEXRequest`, `copyPresentationToClipboard`) para não quebrar telas e testes existentes.
 
-Funções auxiliares puras foram extraídas para `PresentationHelpers.ts`: `evaluatePredicate()`, `extractDisclosedAttributes()`, `obfuscateNonDisclosedAttributes()`, `generateZKPProofs()`, `generateNullifier()`. Cada helper aceita um parâmetro `PresentationDeps` para injeção de dependências.
+Nullifiers para eleições: o builder ZKP tenta usar o circuito Circom `nullifier`; se indisponível, faz fallback determinístico via `crypto.computeCompositeHash([credentialSubject.cpf, electionId])`.
 
-### VerificationService
+`PresentationHelpers.ts` mantém funções auxiliares puras reusadas pelos builders (`evaluatePredicate`, `extractDisclosedAttributes`, `obfuscateNonDisclosedAttributes`, `generateZKPProofs`, `generateNullifier`).
 
-Valida apresentações recebidas. Entrypoint: `validatePresentation()` que constrói um `VerificationPipeline` com 7 passos independentes (Chain of Responsibility):
+### VerificationService (façade)
 
-1. **SignatureVerification**: Verificação de assinatura do emissor (dispatch por proof type: Groth16Proof, CLSignature2023, JsonWebSignature2020)
-2. **TrustChainVerification**: Validação da cadeia de confiança PKI via `TrustChainService.verifyTrustChain()`
-3. **StructuralIntegrity**: Integridade estrutural (atributos presentes, hashes, ZKP)
-4. **ChallengeVerification**: Challenge PEX corresponde à requisição
-5. **PredicateVerification**: Predicados satisfeitos (age >= 18, status == 'Ativo')
-6. **NullifierVerification**: Anti-replay para cenários de eleição
-7. **ResourceAccessVerification**: Controle de acesso a laboratórios
+Façade fina sobre oito colaboradores em `src/services/verification/`. O entrypoint público `validatePresentation()` constrói um `VerificationPipeline` (Chain of Responsibility) com sete passos independentes:
 
-Cada passo implementa `IVerificationStep` e pode ser adicionado/removido sem alterar o pipeline existente.
+1. **SignatureVerification** (`SignatureVerifier`) — dispatch por proof type: `Groth16Proof`, `CLSignature2023`, `JsonWebSignature2020`. Para AnonCreds, delega ao `IntegrityVerifier.verifyAnonCredsPresentation`.
+2. **TrustChainVerification** — valida a cadeia PKI via `TrustChainService.verifyTrustChain()`. O step usa o singleton diretamente.
+3. **StructuralIntegrity** (`IntegrityVerifier`) — atributos esperados presentes, hashes corretos, formato de campos ZKP.
+4. **ChallengeVerification** — confere o challenge da apresentação contra o emitido pelo PEX.
+5. **PredicateVerification** (`PredicateChecker`) — avalia cada predicado declarativo (`>=`, `<=`, `>`, `<`, `==`).
+6. **NullifierVerification** (`NullifierStore`) — anti-replay para o cenário `elections` (insere o nullifier; rejeita se já visto).
+7. **ResourceAccessVerification** (`ResourceAccessChecker`) — controle de acesso a laboratórios e prédios.
 
-As 7 fábricas de passos foram extraídas para `VerificationSteps.ts`. Cada fábrica recebe uma interface `IVerificationOperations` que abstrai os métodos do serviço, evitando importação circular. Os nomes dos passos são definidos como constantes em `VerificationStepName` (`utils/constants.ts`).
+Colaboradores adicionais que não entram no pipeline:
 
-**Segurança reforçada**: verificação AnonCreds agora lança `ValidationError` quando artefatos do emissor não estão disponíveis (antes retornava `true` silenciosamente). Verificação ZKP rejeita provas quando circuito `.zkey` não está disponível e quando dados Groth16 estão ausentes.
+- `ScenarioCatalog` — catálogo de cenários pré-configurados (`ru`, `elections`, `age_verification`, `lab_access`) e geração de `PresentationExchangeRequest`. O `VerifierScreen` reusa exatamente os mesmos IDs (apenas o rótulo em português para o seletor da UI é mantido localmente).
+- `PresentationFormatValidator` — normaliza string → `VerifiablePresentation` antes do pipeline.
+
+As sete fábricas de passos (`createSignatureStep`, `createTrustChainStep`, `createIntegrityStep`, `createChallengeStep`, `createPredicateStep`, `createNullifierStep`, `createResourceAccessStep`) vivem em `VerificationSteps.ts` e recebem uma interface `IVerificationOperations` para evitar import circular. Os nomes dos passos são constantes em `VerificationStepName` (`utils/constants.ts`).
+
+**Segurança reforçada (P0)**: a verificação AnonCreds lança `ValidationError` quando os artefatos do emissor (schema, credDef) não estão disponíveis. A verificação ZKP rejeita provas Groth16 quando o `.zkey` do circuito não existe e quando algum dos campos `proof.{a,b,c,publicInputs}` está ausente.
 
 ### TrustChainService
 
@@ -152,14 +161,13 @@ Usado pelo PresentationService (SD-JWT hashing/signing) e VerificationService (S
 
 **Segurança**: O fallback para `Math.random()` foi removido. Se `react-native-get-random-values` não estiver disponível, o serviço lança `CryptoError` em vez de gerar bytes previsíveis.
 
-### EudiTransportService
+### TransportService
 
-Camada de transporte opcional que encapsula o `@openwallet-foundation/eudi-wallet-kit-react-native`. Três modos:
-- `clipboard` (default): Sem operação — o transporte é feito manualmente.
-- `proximity`: BLE/NFC via EUDI wallet kit.
-- `remote`: OpenID4VP sobre HTTPS.
+Seleção mínima do modo de transporte usado pela UI do titular/verificador. Dois modos:
+- `clipboard` (default): troca manual via área de transferência.
+- `qrcode`: o titular renderiza a apresentação como QR code (via `react-native-qrcode-svg`) e o verificador faz a leitura.
 
-Carregado via `require()` dinâmico para evitar falha quando o módulo nativo não está disponível. Não está integrado ao fluxo principal da UI.
+O antigo `EudiTransportService`, baseado em `@openwallet-foundation/eudi-wallet-kit-react-native`, foi removido nesta versão. Modos por proximidade BLE (ISO 18013-5 mDoc) e remoto (OpenID4VP) ficaram fora de escopo — sem implementação React Native amplamente adotada como subsitituto. Veja [DESIGN_DECISIONS.md](DESIGN_DECISIONS.md#transporte-de-apresentações) para o registro da decisão.
 
 ### StorageService
 
@@ -177,6 +185,12 @@ Chaves de armazenamento são definidas como constantes em `StorageKey` (`utils/c
 ### LogService
 
 Registro de eventos criptográficos com dados sensíveis ofuscados. Cada entrada contém: operação, módulo (emissor/titular/verificador), algoritmo, resultado, timestamp.
+
+**Buffer circular**: o store mantém no máximo 1000 entradas. Ao adicionar a 1001ª, a mais antiga é descartada. Esse limite vive em `useAppStore.addLog` (não no LogService) para evitar vazamento de memória em sessões longas.
+
+### Encoding shim
+
+`src/services/encoding.ts` é um polyfill mínimo para o engine Hermes do React Native 0.76, que não expõe globais `Buffer` / `TextEncoder` / `TextDecoder` por padrão. O módulo é importado em ponto único e re-exporta utilitários `utf8ToBytes`, `bytesToUtf8`, `stringToBase64Url` e `base64UrlToBytes` para uso pelos serviços criptográficos.
 
 ## Fluxos de dados
 
@@ -293,7 +307,6 @@ Todos os módulos abaixo requerem bindings nativos (Rust/C++ via JSI) e não fun
 - `@hyperledger/aries-askar-react-native`
 - `@hyperledger/anoncreds-react-native`
 - `mopro-ffi`
-- `@openwallet-foundation/eudi-wallet-kit-react-native`
 - `react-native-encrypted-storage`
 
 Mocks para todos estão em `__mocks__/` e `jest.setup.js`.
@@ -313,7 +326,6 @@ Os mocks substituem os módulos nativos durante execução de testes Jest (que r
 | `@credo-ts/anoncreds.ts` | @credo-ts/anoncreds | Stub de `AnonCredsModule` |
 | `@hyperledger/aries-askar-react-native.ts` | @hyperledger/aries-askar-react-native | Stub de `ariesAskar` |
 | `@hyperledger/anoncreds-react-native.ts` | @hyperledger/anoncreds-react-native | Mock completo do protocolo CL-signature: Schema, CredentialDefinition, Credential, Presentation, LinkSecret com métodos create/fromJson/toJson/process/verify |
-| `@openwallet-foundation/eudi-wallet-kit-react-native.ts` | @openwallet-foundation/eudi-wallet-kit-react-native | Stub do EUDI kit |
 
 O `jest.config.js` configura `moduleNameMapper` para redirecionar imports para esses mocks. Mocks adicionais de serviços (AgentService, ZKProofService, AnonCredsService) são definidos em `jest.setup.js` via `jest.mock()`.
 
@@ -344,7 +356,7 @@ Uma **composition root** em `src/container.ts` instancia todos os serviços na o
 
 ```
 Level 0 (folhas):    LogService, StorageService
-Level 1:             CryptoService, AgentService, ErrorHandler, EudiTransportService
+Level 1:             CryptoService, AgentService, ErrorHandler, TransportService
 Level 2:             DIDService, AnonCredsService, ZKProofService, TrustChainService
 Level 3:             CredentialService
 Level 4:             PresentationService
@@ -378,7 +390,7 @@ Cada passo implementa `IVerificationStep` e é independente. Novos passos podem 
 ### Strategy
 Dois pontos de variação via Strategy:
 - **Formato de credencial**: `issueCredential(data, did, 'sd-jwt' | 'anoncreds')` — implementações distintas para SD-JWT (JWT + Ed25519) e AnonCreds (CL-signatures)
-- **Modo de transporte**: `EudiTransportService('clipboard' | 'proximity' | 'remote')`
+- **Modo de transporte**: `TransportService('clipboard' | 'qrcode')`
 
 ### Open/Closed Principle — Registro de Formatos
 `CredentialService` mantém um registro de formatos (`ICredentialFormat[]`) que permite adicionar novos formatos de credencial sem modificar a lógica de parsing:
@@ -435,7 +447,7 @@ graph TD
         CryptoService --> LogService
         AgentService --> LogService
         ErrorHandler --> LogService
-        EudiTransportService --> LogService
+        TransportService --> LogService
         ZKProofService --> LogService
     end
 
@@ -471,7 +483,7 @@ graph TD
         VerificationService --> StorageService
         VerificationService --> ZKProofService
         VerificationService --> AnonCredsService
-        VerificationService --> TrustChainService
+        VerificationService -. "via singleton<br/>(createTrustChainStep)" .-> TrustChainService
     end
 ```
 

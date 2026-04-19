@@ -234,11 +234,19 @@ Ambas coexistem. AnonCreds é usado quando a credencial é emitida nesse formato
 
 ---
 
-### EudiTransportService como camada opcional
+### Transporte de apresentações
 
-`EudiTransportService` encapsula `@openwallet-foundation/eudi-wallet-kit-react-native` para BLE (ISO 18013-5) e OpenID4VP. O módulo EUDI é carregado via `require()` dinâmico — se indisponível, o serviço opera em modo clipboard.
+A versão atual do protótipo expõe **dois** modos de transporte: `clipboard` (default) e `qrcode` (via `react-native-qrcode-svg`). Ambos rodam sem nenhuma camada nativa adicional além das já presentes.
 
-**Status**: Integração parcial. A API está implementada mas não é usada nos cenários atuais da UI. Existe para demonstrar como o protótipo pode evoluir para transporte real.
+A integração anterior com `@openwallet-foundation/eudi-wallet-kit-react-native` (que oferecia `proximity` BLE/NFC ISO 18013-5 e `remote` OpenID4VP) foi **removida**. Razões:
+
+1. O pacote não está publicado no npm de forma estável e o projeto carregava-o via `require()` dinâmico — na prática, os modos BLE/remoto nunca podiam ser exercitados em CI nem reproduzidos por avaliadores.
+2. Não existe hoje uma biblioteca React Native amplamente adotada que implemente ISO 18013-5 mDoc proximity. Substituir a EUDI lib por `react-native-ble-plx` exigiria implementar a stack mDoc inteira (Cose, mDL, sessions, transcript, etc.), o que está fora do escopo do TCC.
+3. O foco do protótipo é a camada criptográfica e o pipeline de verificação, não o transporte.
+
+**Substituto**: `src/services/TransportService.ts` — uma classe trivial que apenas mantém o modo ativo e emite o evento de log. O QR code já era renderizado pelas telas via `react-native-qrcode-svg`, dependência mantida no projeto.
+
+**Trabalho futuro**: BLE proximity poderia ser reintroduzido com uma implementação dedicada de ISO 18013-5 sobre `react-native-ble-plx`; OpenID4VP poderia ser implementado com `react-native-app-auth` + handler de deep link. Ambos ficaram registrados como itens de evolução em [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ---
 

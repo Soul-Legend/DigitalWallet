@@ -43,11 +43,10 @@ Este documento lista o status de cada dependência criptográfica e possíveis a
    - Alternativa: Usar apenas AnonCreds para ZKP
    - Uso: Otimização de circuitos ZKP
 
-7. **eudi-wallet-kit-react-native** (v0.3.0)
-   - Status: Pode não estar publicado para React Native
-   - Repositório: https://github.com/eu-digital-identity-wallet
-   - Alternativa: Implementar parsing PEX manualmente
-   - Uso: Kit de carteira EUDI e parsing PEX
+7. **eudi-wallet-kit-react-native** — REMOVIDO
+   - Status: Pacote `@openwallet-foundation/eudi-wallet-kit-react-native` foi removido do projeto.
+   - Motivo: Sem implementação React Native estável e amplamente adotada de ISO 18013-5 (mDoc proximity) e OpenID4VP. Os modos `proximity`/`remote` foram retirados; o protótipo opera em `clipboard` e `qrcode` apenas.
+   - Substituto: `src/services/TransportService.ts` (modo holder) + `react-native-qrcode-svg` (já era dependência) para o modo QR code.
 
 8. **react-native-secure-sign** (v1.0.0)
    - Status: Pode não existir com este nome

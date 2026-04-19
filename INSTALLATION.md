@@ -119,8 +119,9 @@ npm install
 
 Algumas dependências podem não estar disponíveis publicamente:
 - `mopro-react-native-package`
-- `eudi-wallet-kit-react-native`
 - `react-native-secure-sign`
+
+**Nota:** O pacote `@openwallet-foundation/eudi-wallet-kit-react-native` foi **removido** do projeto. Modos de transporte BLE/NFC e OpenID4VP estão fora de escopo desta versão (apenas clipboard e QR code são suportados).
 
 **Soluções**:
 
