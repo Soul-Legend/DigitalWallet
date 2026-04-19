@@ -1,6 +1,6 @@
 /**
  * SSI Glossary - Termos e definições em português
- * 
+ *
  * Este glossário fornece definições claras dos termos técnicos
  * utilizados no sistema de Identidade Auto-Soberana
  */

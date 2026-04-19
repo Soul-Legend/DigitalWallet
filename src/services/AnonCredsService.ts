@@ -5,11 +5,7 @@ import {
   CredentialRequest,
   Credential,
   Presentation,
-  PresentationRequest,
   LinkSecret,
-  CredentialDefinitionPrivate,
-  KeyCorrectnessProof,
-  CredentialRequestMetadata,
 } from '@hyperledger/anoncreds-react-native';
 import StorageServiceInstance from './StorageService';
 import LogServiceInstance from './LogService';
@@ -199,12 +195,19 @@ class AnonCredsService {
 
   /**
    * Issuer creates a credential offer for the holder.
+   * Throws if the credDefId is malformed (cannot extract schemaId).
    */
   createCredentialOffer(credDefArtifact: CredDefArtifact): Record<string, unknown> {
+    const schemaId = this.extractSchemaIdFromCredDef(credDefArtifact);
+    if (!schemaId) {
+      throw new CryptoError(
+        `Cannot extract schemaId from credDefId: ${credDefArtifact.credDefId}`,
+        'anoncreds',
+        {credDefId: credDefArtifact.credDefId},
+      );
+    }
     const offer = CredentialOffer.create({
-      schemaId: credDefArtifact.credDefId.split(':3:CL:')[1]?.split(':')[0] 
-        ? this.extractSchemaIdFromCredDef(credDefArtifact)
-        : '',
+      schemaId,
       credentialDefinitionId: credDefArtifact.credDefId,
       keyCorrectnessProof: credDefArtifact.keyCorrectnessProof,
     });
@@ -378,7 +381,7 @@ class AnonCredsService {
         name: string;
         p_type: '>=' | '<=' | '>' | '<';
         p_value: number;
-        restrictions?: Array<Record<string, string>>; 
+        restrictions?: Array<Record<string, string>>;
       }
     >,
   ): Record<string, unknown> {

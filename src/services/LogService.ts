@@ -4,7 +4,7 @@ import {Module} from '../utils/constants';
 
 /**
  * LogService - Captures and manages cryptographic events
- * 
+ *
  * This service is responsible for logging all cryptographic operations
  * throughout the application for debugging and auditing purposes.
  */
@@ -20,10 +20,10 @@ class LogService {
     error?: Error
   ): void {
     const {addLog} = useAppStore.getState();
-    
+
     // Obfuscate sensitive data in logs
     const sanitizedDetails = this.sanitizeLogDetails(details);
-    
+
     addLog({
       operation,
       module,
@@ -205,8 +205,8 @@ class LogService {
   filterLogs(operation?: string, module?: string): LogEntry[] {
     const logs = this.getLogs();
     return logs.filter((log) => {
-      if (operation && log.operation !== operation) return false;
-      if (module && log.module !== module) return false;
+      if (operation && log.operation !== operation) {return false;}
+      if (module && log.module !== module) {return false;}
       return true;
     });
   }
@@ -216,24 +216,24 @@ class LogService {
    */
   private sanitizeLogDetails(details: LogDetails): LogDetails {
     const sanitized = {...details};
-    
+
     // Obfuscate sensitive parameters
     if (sanitized.parameters) {
       const params = {...sanitized.parameters};
-      
+
       // Obfuscate CPF
       if (params.cpf) {
         params.cpf = this.obfuscateCPF(params.cpf);
       }
-      
+
       // Obfuscate nome_completo
       if (params.nome_completo) {
         params.nome_completo = this.obfuscateName(params.nome_completo);
       }
-      
+
       sanitized.parameters = params;
     }
-    
+
     return sanitized;
   }
 
@@ -241,7 +241,7 @@ class LogService {
    * Truncates hash output for readability
    */
   private truncateHash(hash: string, length: number = 16): string {
-    if (hash.length <= length) return hash;
+    if (hash.length <= length) {return hash;}
     return `${hash.substring(0, length)}...`;
   }
 
@@ -249,7 +249,7 @@ class LogService {
    * Obfuscates CPF (shows only last 4 digits)
    */
   private obfuscateCPF(cpf: string): string {
-    if (cpf.length < 4) return '***';
+    if (cpf.length < 4) {return '***';}
     return `***${cpf.slice(-4)}`;
   }
 
@@ -258,7 +258,7 @@ class LogService {
    */
   private obfuscateName(name: string): string {
     const parts = name.split(' ');
-    if (parts.length === 0) return '***';
+    if (parts.length === 0) {return '***';}
     return `${parts[0]} ***`;
   }
 }

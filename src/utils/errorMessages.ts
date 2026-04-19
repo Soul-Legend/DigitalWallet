@@ -1,6 +1,6 @@
 /**
  * User-friendly error messages in Portuguese
- * 
+ *
  * Provides clear, actionable error messages for all error scenarios
  */
 
@@ -167,15 +167,15 @@ export const formatError = (
 ): string => {
   const error = getErrorMessage(errorCode);
   let message = `${error.title}: ${error.message}`;
-  
+
   if (error.suggestion) {
     message += `\n\n${error.suggestion}`;
   }
-  
+
   if (additionalContext) {
     message += `\n\nDetalhes: ${additionalContext}`;
   }
-  
+
   return message;
 };
 
@@ -184,30 +184,30 @@ export const formatError = (
  */
 export const mapTechnicalError = (technicalError: Error): ErrorMessage => {
   const message = technicalError.message.toLowerCase();
-  
+
   if (message.includes('key') && message.includes('generat')) {
     return ErrorMessages.KEY_GENERATION_FAILED;
   }
-  
+
   if (message.includes('signature') || message.includes('verify')) {
     return ErrorMessages.SIGNATURE_VERIFICATION_FAILED;
   }
-  
+
   if (message.includes('storage') || message.includes('save')) {
     return ErrorMessages.STORAGE_FAILED;
   }
-  
+
   if (message.includes('format') || message.includes('parse')) {
     return ErrorMessages.INVALID_CREDENTIAL_FORMAT;
   }
-  
+
   if (message.includes('pex')) {
     return ErrorMessages.INVALID_PEX_FORMAT;
   }
-  
+
   if (message.includes('nullifier') && message.includes('duplicate')) {
     return ErrorMessages.NULLIFIER_DUPLICATE;
   }
-  
+
   return ErrorMessages.UNKNOWN_ERROR;
 };

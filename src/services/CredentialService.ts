@@ -7,7 +7,36 @@ import LogServiceInstance from './LogService';
 import AgentServiceInstance from './AgentService';
 import AnonCredsServiceInstance from './AnonCredsService';
 import {CryptoError, ValidationError} from './ErrorHandler';
-import {CredentialFormat, CredentialFormatType} from '../utils/constants';
+import {
+  CredentialFormat,
+  CredentialFormatType,
+  CREDENTIAL_DEFAULT_TTL_SECONDS,
+} from '../utils/constants';
+import {
+  base64UrlToBytes,
+  bytesToBase64Url,
+  stringToBase64Url,
+  utf8ToBytes,
+} from './encoding';
+
+function toUint8Array(value: unknown): Uint8Array {
+  if (value instanceof Uint8Array) {
+    return value;
+  }
+  if (
+    value &&
+    typeof value === 'object' &&
+    typeof (value as {length?: number}).length === 'number'
+  ) {
+    // Buffer (Node) or array-like; copy into Uint8Array
+    return Uint8Array.from(value as ArrayLike<number>);
+  }
+  throw new CryptoError(
+    'Wallet signature returned in unexpected format',
+    'signature',
+    {actualType: typeof value},
+  );
+}
 
 /**
  * CredentialService - Handles credential issuance and management
@@ -30,6 +59,7 @@ class CredentialService {
   private readonly logger: ILogService;
   private readonly agentService: IAgentService;
   private readonly anonCredsService: IAnonCredsService;
+  private readonly credentialTtlSeconds: number;
 
   constructor(
     didService: IDIDService = DIDServiceInstance,
@@ -37,12 +67,14 @@ class CredentialService {
     logger: ILogService = LogServiceInstance,
     agentService: IAgentService = AgentServiceInstance,
     anonCredsService: IAnonCredsService = AnonCredsServiceInstance,
+    credentialTtlSeconds: number = CREDENTIAL_DEFAULT_TTL_SECONDS,
   ) {
     this.didService = didService;
     this.storage = storage;
     this.logger = logger;
     this.agentService = agentService;
     this.anonCredsService = anonCredsService;
+    this.credentialTtlSeconds = credentialTtlSeconds;
     // Register default formats (order matters — first match wins)
     this.registerFormat({
       name: 'AnonCreds',
@@ -246,12 +278,13 @@ class CredentialService {
       }
 
       // Build JWT payload
+      const nowSeconds = Math.floor(Date.now() / 1000);
       const payload = {
         vc: credential,
         iss: issuerDID,
         sub: credential.credentialSubject.id,
-        iat: Math.floor(Date.now() / 1000),
-        exp: Math.floor(Date.now() / 1000) + 365 * 24 * 60 * 60,
+        iat: nowSeconds,
+        exp: nowSeconds + this.credentialTtlSeconds,
       };
 
       const header = {
@@ -260,22 +293,37 @@ class CredentialService {
         kid: verificationMethod.id,
       };
 
-      const headerBase64 = Buffer.from(JSON.stringify(header)).toString(
-        'base64url',
-      );
-      const payloadBase64 = Buffer.from(JSON.stringify(payload)).toString(
-        'base64url',
-      );
+      const headerBase64 = stringToBase64Url(JSON.stringify(header));
+      const payloadBase64 = stringToBase64Url(JSON.stringify(payload));
 
-      const dataToSign = Buffer.from(`${headerBase64}.${payloadBase64}`);
+      const dataToSign = utf8ToBytes(`${headerBase64}.${payloadBase64}`);
 
-      // Sign using the Credo agent wallet
-      const {signature} = await (agent.wallet as any).sign({
+      // Resolve wallet via either the public (`agent.wallet`) or context
+      // (`agent.context.wallet`) surface depending on the Credo version /
+      // mock in use. The signing key is the verification method's public
+      // key reference; the wallet looks up the matching private key.
+      const wallet =
+        (agent as {wallet?: {sign?: Function}}).wallet ??
+        (agent as {context?: {wallet?: {sign?: Function}}}).context?.wallet;
+      if (!wallet || typeof wallet.sign !== 'function') {
+        throw new CryptoError(
+          'Credo wallet sign API unavailable',
+          'signature',
+          {},
+        );
+      }
+
+      const signResult = await wallet.sign({
         data: dataToSign,
-        key: (verificationMethod as any).publicKey,
+        key: (verificationMethod as {publicKey?: unknown}).publicKey,
       });
+      const signatureBytes = toUint8Array(
+        signResult && typeof signResult === 'object' && 'signature' in signResult
+          ? (signResult as {signature: unknown}).signature
+          : signResult,
+      );
 
-      const signatureBase64 = Buffer.from(signature).toString('base64url');
+      const signatureBase64 = bytesToBase64Url(signatureBytes);
       return `${headerBase64}.${payloadBase64}.${signatureBase64}`;
     } catch (error) {
       throw new CryptoError(
@@ -427,7 +475,7 @@ class CredentialService {
     try {
       // Split JWT into parts
       const parts = jwt.split('.');
-      
+
       if (parts.length !== 3) {
         throw new ValidationError(
           'JWT deve conter 3 partes (header.payload.signature)',
@@ -438,7 +486,9 @@ class CredentialService {
 
       // Decode payload
       const payloadBase64 = parts[1];
-      const payloadJson = Buffer.from(payloadBase64, 'base64url').toString('utf-8');
+      const payloadJson = new TextDecoder().decode(
+        base64UrlToBytes(payloadBase64),
+      );
       const payload = JSON.parse(payloadJson);
 
       // Extract credential from payload

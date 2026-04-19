@@ -1,10 +1,11 @@
 import CryptoServiceInstance from './CryptoService';
 import StorageServiceInstance from './StorageService';
 import LogServiceInstance from './LogService';
-import {CryptoError, ValidationError} from './ErrorHandler';
+import {ValidationError} from './ErrorHandler';
 import {TrustedIssuer} from '../types';
 import type {ICryptoService, IStorageService, ILogService} from '../types';
 import * as ed from '@noble/ed25519';
+import {canonicalize} from './encoding';
 
 function toHex(bytes: Uint8Array): string {
   return Array.from(bytes)
@@ -68,6 +69,11 @@ class TrustChainService {
   /**
    * Canonical string that the parent signs when issuing a certificate
    * for a child issuer.
+   *
+   * SECURITY: must be deterministic across engines/devices. Uses RFC-8785
+   * style canonical JSON (sorted keys, no whitespace) — plain
+   * `JSON.stringify` is NOT canonical and would allow two semantically
+   * identical certificates to produce different signature inputs.
    */
   private certificatePayload(issuer: {
     did: string;
@@ -75,11 +81,11 @@ class TrustChainService {
     name: string;
     parentDid: string | null;
   }): string {
-    return JSON.stringify({
+    return canonicalize({
       did: issuer.did,
-      publicKey: issuer.publicKey,
       name: issuer.name,
       parentDid: issuer.parentDid,
+      publicKey: issuer.publicKey,
     });
   }
 

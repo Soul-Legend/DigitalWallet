@@ -5,9 +5,11 @@ import {
   ProofLib,
 } from 'mopro-ffi';
 import RNFS from 'react-native-fs';
+import {sha256} from '@noble/hashes/sha256';
 import LogServiceInstance from './LogService';
 import {CryptoError} from './ErrorHandler';
 import type {ILogService} from '../types';
+import {utf8ToBytes} from './encoding';
 
 /**
  * ZKProofService - Handles Zero-Knowledge Proof operations using mopro-ffi
@@ -98,7 +100,21 @@ class ZKProofService {
 
       // Convert birthdate to circuit inputs
       // The circuit expects: birthYear, birthMonth, birthDay, currentYear, currentMonth, currentDay, threshold
+      // SECURITY TODO: the comparison `age >= threshold` MUST be performed
+      // inside the Circom circuit (it already receives birth + current
+      // date components and threshold as inputs). The age is NOT computed
+      // in JS here — we only forward raw date components. If the deployed
+      // .zkey ever stops binding the threshold to a circuit-side age
+      // computation, this code becomes vulnerable to a malicious holder
+      // forging the age. See docs/DESIGN_DECISIONS.md.
       const birthDate = new Date(birthdate);
+      if (Number.isNaN(birthDate.getTime())) {
+        throw new CryptoError(
+          `Data de nascimento inválida: ${birthdate}`,
+          'zkp',
+          {birthdate},
+        );
+      }
       const now = new Date();
 
       const circuitInputs = {
@@ -430,17 +446,26 @@ class ZKProofService {
   }
 
   /**
-   * Converts a string to a numeric string suitable for circuit input
-   * Uses a simple but deterministic hash that produces a numeric string
+   * Converts an arbitrary string to a deterministic numeric input suitable
+   * for the Circom circuits.
+   *
+   * SECURITY: previously used a 32-bit DJBX33A hash which is trivially
+   * collidable across small input domains (e.g. status values like 'Ativo'
+   * vs 'Inativo'); two distinct values could produce the same circuit
+   * input and forge a positive predicate proof. We now use SHA-256
+   * truncated to 248 bits (31 bytes) so the result fits inside the
+   * Bn254/Pasta scalar field used by Groth16, while preserving collision
+   * resistance.
    */
   private stringToNumericHash(input: string): string {
-    let hash = 0;
-    for (let i = 0; i < input.length; i++) {
-      const char = input.charCodeAt(i);
-      hash = ((hash << 5) - hash + char) | 0; // Force 32-bit integer
+    const digest = sha256(utf8ToBytes(input));
+    // Truncate to 31 bytes (248 bits) so the value is < the curve scalar
+    // field modulus (~254 bits) and safe to feed as a single field element.
+    let n = 0n;
+    for (let i = 0; i < 31; i++) {
+      n = (n << 8n) | BigInt(digest[i]);
     }
-    // Ensure positive value
-    return Math.abs(hash).toString();
+    return n.toString();
   }
 
   /**

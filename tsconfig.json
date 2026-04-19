@@ -2,14 +2,15 @@
   "extends": "@react-native/typescript-config/tsconfig.json",
   "compilerOptions": {
     "target": "esnext",
-    "module": "commonjs",
+    "module": "esnext",
+    "moduleResolution": "bundler",
     "lib": ["es2017"],
-    "allowJs": true,
+    "allowJs": false,
     "jsx": "react-native",
     "noEmit": true,
     "isolatedModules": true,
     "strict": true,
-    "moduleResolution": "node",
+    "noFallthroughCasesInSwitch": true,
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
@@ -19,10 +20,19 @@
       "@/*": ["src/*"]
     }
   },
+  "include": [
+    "src/**/*"
+  ],
   "exclude": [
     "node_modules",
+    "docs",
+    "android",
+    "ios",
+    "src/**/__tests__/**",
+    "src/__tests__/**",
     "babel.config.js",
     "metro.config.js",
-    "jest.config.js"
+    "jest.config.js",
+    "jest.setup.js"
   ]
 }

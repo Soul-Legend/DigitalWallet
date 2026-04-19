@@ -13,6 +13,27 @@ function toHex(bytes: Uint8Array): string {
 }
 
 /**
+ * Generates an Ed25519 keypair used for SD-JWT signing.
+ *
+ * Credo's wallet keys are scoped to the Aries-Askar-backed DID (used by
+ * AnonCreds and DIDComm), but SD-JWT signing happens through CryptoService
+ * outside the wallet — so we explicitly mint a parallel keypair here.
+ * Both flows (holder + issuer) need exactly the same key shape, so this
+ * helper exists to avoid the previous copy-paste duplication.
+ */
+async function createSigningKeyPair(): Promise<{
+  privateKeyHex: string;
+  publicKeyHex: string;
+}> {
+  const privateKeyBytes = ed.utils.randomSecretKey();
+  const publicKeyBytes = await ed.getPublicKeyAsync(privateKeyBytes);
+  return {
+    privateKeyHex: toHex(privateKeyBytes),
+    publicKeyHex: toHex(publicKeyBytes),
+  };
+}
+
+/**
  * DIDService - Manages DID creation and key generation using Credo agent
  *
  * Uses the Credo agent's DID module (agent.dids) to create DIDs via
@@ -114,18 +135,48 @@ class DIDService {
   /**
    * Creates a did:web for web-based DID resolution.
    * Credo has no did:web registrar, so we construct it locally per spec.
+   *
+   * Validates the domain so we never produce an unresolvable identifier.
+   * The W3C did:web spec requires the host portion to be a valid DNS name;
+   * we reject empty input, schemes, ports, paths embedded in the domain,
+   * and characters that aren't valid in a hostname label.
    */
   createDidWeb(domain: string, path?: string): string {
     try {
-      const cleanDomain = domain.replace(/^https?:\/\//, '');
+      const cleanDomain = domain.replace(/^https?:\/\//, '').trim();
+      // RFC 1123 hostname: 1\u201363 chars per label, alphanumerics + hyphen,
+      // labels separated by dots. We additionally allow an optional :port
+      // suffix because did:web encodes ports with %3A on resolution.
+      const hostnameRegex =
+        /^(?=.{1,253}$)([a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)(\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*(:\d{1,5})?$/;
+      if (!cleanDomain || !hostnameRegex.test(cleanDomain)) {
+        throw new CryptoError(
+          `Invalid did:web domain: ${JSON.stringify(domain)}`,
+          'key_generation',
+          {domain},
+        );
+      }
+      // Per W3C did:web spec, the `:port` colon must be percent-encoded as
+      // `%3A` so it doesn't collide with the `:` path separator.
+      const encodedDomain = cleanDomain.replace(/:(\d{1,5})$/, '%3A$1');
 
       if (path) {
-        const cleanPath = path.replace(/^\//, '');
-        return `did:web:${cleanDomain}:${cleanPath.replace(/\//g, ':')}`;
+        const cleanPath = path.replace(/^\//, '').replace(/\/+$/, '');
+        if (!/^[A-Za-z0-9._\-/%]+$/.test(cleanPath)) {
+          throw new CryptoError(
+            `Invalid did:web path segment: ${JSON.stringify(path)}`,
+            'key_generation',
+            {path},
+          );
+        }
+        return `did:web:${encodedDomain}:${cleanPath.replace(/\//g, ':')}`;
       }
 
-      return `did:web:${cleanDomain}`;
+      return `did:web:${encodedDomain}`;
     } catch (error) {
+      if (error instanceof CryptoError) {
+        throw error;
+      }
       throw new CryptoError('Failed to create did:web', 'key_generation', {
         error,
       });
@@ -146,12 +197,7 @@ class DIDService {
           ? await this.createDidKey()
           : await this.createDidPeer();
 
-      // Generate an Ed25519 key pair for SD-JWT signing via CryptoService
-      // (Credo wallet keys are used internally by AnonCreds; SD-JWT needs explicit keys)
-      const privateKeyBytes = ed.utils.randomSecretKey();
-      const publicKeyBytes = await ed.getPublicKeyAsync(privateKeyBytes);
-      const privateKeyHex = toHex(privateKeyBytes);
-      const publicKeyHex = toHex(publicKeyBytes);
+      const {privateKeyHex, publicKeyHex} = await createSigningKeyPair();
 
       // Persist the DID and keys so the app can find them on next launch
       await this.storage.storeHolderDID(did);
@@ -198,11 +244,7 @@ class DIDService {
       // Build the public did:web identifier
       const didWeb = this.createDidWeb(domain, path);
 
-      // Generate an Ed25519 key pair for SD-JWT credential signing
-      const privateKeyBytes = ed.utils.randomSecretKey();
-      const publicKeyBytes = await ed.getPublicKeyAsync(privateKeyBytes);
-      const privateKeyHex = toHex(privateKeyBytes);
-      const publicKeyHex = toHex(publicKeyBytes);
+      const {privateKeyHex, publicKeyHex} = await createSigningKeyPair();
 
       // Store the mapping: did:web -> signing did:key, and the issuer keys
       await this.storage.storeIssuerDID(didWeb);

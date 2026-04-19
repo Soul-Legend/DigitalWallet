@@ -3,7 +3,7 @@
  * Respects system font size settings
  */
 
-import {Platform, PixelRatio} from 'react-native';
+import {PixelRatio} from 'react-native';
 
 export interface Theme {
   colors: {
@@ -163,11 +163,18 @@ export const scaleFontSize = (baseSize: number, maxScale: number = 2.0): number 
 };
 
 /**
- * Gets responsive spacing based on screen size
+ * Scales spacing modestly with the device's pixel density.
+ *
+ * The previous implementation rounded `baseSpacing * scale` and then divided
+ * by `scale`, which collapsed back to the input on every density. We now
+ * apply a gentle multiplier that grows from 1× on standard 160dpi screens
+ * up to ~1.25× on the densest devices, keeping spacing legible without
+ * blowing up layout proportions.
  */
 export const getResponsiveSpacing = (baseSpacing: number): number => {
-  const scale = PixelRatio.get();
-  return Math.round(baseSpacing * scale) / scale;
+  const density = PixelRatio.get();
+  const multiplier = 1 + Math.min(Math.max(density - 1, 0), 1) * 0.25;
+  return Math.round(baseSpacing * multiplier);
 };
 
 /**
@@ -192,15 +199,15 @@ export const accessibleColors = {
   // Text on light backgrounds
   textOnLight: '#000000',
   secondaryTextOnLight: '#333333',
-  
+
   // Text on dark backgrounds
   textOnDark: '#ffffff',
   secondaryTextOnDark: '#cccccc',
-  
+
   // Interactive elements
   linkColor: '#0066cc',
   linkColorVisited: '#551a8b',
-  
+
   // Status colors with sufficient contrast
   errorText: '#990000',
   successText: '#006600',
@@ -209,14 +216,35 @@ export const accessibleColors = {
 };
 
 /**
- * Gets accessible text color for a given background
+ * Picks the WCAG-friendly text color (light vs dark) for a given background.
+ * Uses real relative luminance instead of an allow-list, so both theme
+ * tokens and ad-hoc literals resolve correctly.
  */
 export const getAccessibleTextColor = (backgroundColor: string): string => {
-  // Simplified - in production, calculate luminance
-  const darkBackgrounds = ['#003366', '#001a33', '#004d99', '#000066'];
-  return darkBackgrounds.includes(backgroundColor)
-    ? accessibleColors.textOnDark
-    : accessibleColors.textOnLight;
+  const rgb = backgroundColor.trim().match(/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/);
+  if (!rgb) {
+    return accessibleColors.textOnLight;
+  }
+  let hex = rgb[1];
+  if (hex.length === 3) {
+    hex = hex.split('').map(c => c + c).join('');
+  }
+  const r = parseInt(hex.substring(0, 2), 16);
+  const g = parseInt(hex.substring(2, 4), 16);
+  const b = parseInt(hex.substring(4, 6), 16);
+  const channel = (c: number) => {
+    const v = c / 255;
+    return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+  };
+  const luminance =
+    0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
+  // W3C-recommended pivot \u2014 minimises the worst-case contrast ratio.
+  // luminance > 0.179 means black text wins; otherwise white text wins.
+  // (See https://www.w3.org/TR/AERT/#color-contrast and the derivation
+  // sqrt(1.05 * 0.05) - 0.05 \u2248 0.179.)
+  return luminance > 0.179
+    ? accessibleColors.textOnLight
+    : accessibleColors.textOnDark;
 };
 
 /**

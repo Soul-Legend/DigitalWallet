@@ -5,6 +5,7 @@ import LogServiceInstance from './LogService';
 import CryptoServiceInstance from './CryptoService';
 import StorageServiceInstance from './StorageService';
 import ZKProofServiceInstance from './ZKProofService';
+import {canonicalAttributeHashInput} from './encoding';
 import type {CircomProofResult} from 'mopro-ffi';
 
 export interface PresentationDeps {
@@ -44,11 +45,25 @@ export function evaluatePredicate(
   if (typeof attributeValue === 'string' && attributeValue.match(/^\d{4}-\d{2}-\d{2}$/)) {
     if (typeof predicateValue === 'number') {
       const birthDate = new Date(attributeValue);
+      if (Number.isNaN(birthDate.getTime())) {
+        throw new ValidationError(
+          `Data de nascimento inválida: ${attributeValue}`,
+          'attributeValue',
+          attributeValue,
+        );
+      }
       const today = new Date();
       let age = today.getFullYear() - birthDate.getFullYear();
       const monthDiff = today.getMonth() - birthDate.getMonth();
       if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
         age--;
+      }
+      if (age < 0 || !Number.isFinite(age)) {
+        throw new ValidationError(
+          `Idade calculada inválida: ${age}`,
+          'age',
+          age,
+        );
       }
       attrVal = age;
     }
@@ -110,10 +125,10 @@ export async function obfuscateNonDisclosedAttributes(
   for (const attr of allAttributes) {
     if (!selectedAttributes.includes(attr)) {
       const value = (credential.credentialSubject as any)[attr];
-      const valueString = typeof value === 'object'
-        ? JSON.stringify(value)
-        : String(value);
-      const hashInput = `${attr}:${valueString}`;
+      // SECURITY: canonical (length-prefixed JSON-array) encoding so that
+      // values containing the previous `:` separator cannot collide with
+      // another (attribute, value) pair.
+      const hashInput = canonicalAttributeHashInput(attr, value);
       const hash = await deps.crypto.computeHash(hashInput, 'titular');
       obfuscated[attr] = hash;
 

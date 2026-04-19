@@ -64,3 +64,10 @@ export const HOLDER_KEY_PREFIX = 'holder_';
 export const ISSUER_KEY_PREFIX = 'issuer_';
 /** Prefix for nullifier storage keys (followed by electionId). */
 export const NULLIFIER_KEY_PREFIX = 'nullifiers_';
+
+/**
+ * Default credential validity in seconds.
+ * One year matches the academic-year cadence used by UFSC and keeps the
+ * issued JWT short-lived enough for the demo.
+ */
+export const CREDENTIAL_DEFAULT_TTL_SECONDS = 365 * 24 * 60 * 60;

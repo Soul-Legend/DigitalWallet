@@ -1,10 +1,10 @@
 import EncryptedStorage from 'react-native-encrypted-storage';
-import {CryptoError, StorageError} from './ErrorHandler';
+import {StorageError} from './ErrorHandler';
 import {StorageKey, HOLDER_KEY_PREFIX, ISSUER_KEY_PREFIX, NULLIFIER_KEY_PREFIX} from '../utils/constants';
 
 /**
  * StorageService - Manages encrypted storage of sensitive data
- * 
+ *
  * This service provides secure storage for private keys, DIDs, and credentials
  * using the device's encrypted storage capabilities.
  */
@@ -42,7 +42,7 @@ class StorageService {
       }
     }
   }
-  
+
   /**
    * Stores holder's private key in encrypted storage
    */
@@ -64,7 +64,7 @@ class StorageService {
       );
     }
   }
-  
+
   /**
    * Retrieves holder's private key from encrypted storage
    */
@@ -79,7 +79,7 @@ class StorageService {
       );
     }
   }
-  
+
   /**
    * Retrieves holder's DID from encrypted storage
    */
@@ -151,7 +151,7 @@ class StorageService {
       );
     }
   }
-  
+
   /**
    * Stores issuer's private key in encrypted storage
    */
@@ -173,7 +173,7 @@ class StorageService {
       );
     }
   }
-  
+
   /**
    * Retrieves issuer's private key from encrypted storage
    */
@@ -188,7 +188,7 @@ class StorageService {
       );
     }
   }
-  
+
   /**
    * Retrieves issuer's DID from encrypted storage
    */
@@ -203,7 +203,7 @@ class StorageService {
       );
     }
   }
-  
+
   /**
    * Stores a credential in encrypted storage
    */
@@ -212,10 +212,10 @@ class StorageService {
       try {
         // Get existing credentials
         const credentials = await this.getCredentials();
-        
+
         // Add new credential
         credentials.push(credential);
-        
+
         // Store updated credentials array
         await EncryptedStorage.setItem(
           StorageKey.HOLDER_CREDENTIALS,
@@ -230,18 +230,18 @@ class StorageService {
       }
     });
   }
-  
+
   /**
    * Retrieves all stored credentials
    */
   async getCredentials(): Promise<string[]> {
     try {
       const credentialsJson = await EncryptedStorage.getItem(StorageKey.HOLDER_CREDENTIALS);
-      
+
       if (!credentialsJson) {
         return [];
       }
-      
+
       return JSON.parse(credentialsJson);
     } catch (error) {
       throw new StorageError(
@@ -251,7 +251,7 @@ class StorageService {
       );
     }
   }
-  
+
   /**
    * Deletes a credential at the specified index
    */
@@ -259,7 +259,7 @@ class StorageService {
     return this.withLock(StorageKey.HOLDER_CREDENTIALS, async () => {
       try {
         const credentials = await this.getCredentials();
-        
+
         if (index < 0 || index >= credentials.length) {
           throw new StorageError(
             'Invalid credential index',
@@ -267,9 +267,9 @@ class StorageService {
             {index}
           );
         }
-        
+
         credentials.splice(index, 1);
-        
+
         await EncryptedStorage.setItem(
           StorageKey.HOLDER_CREDENTIALS,
           JSON.stringify(credentials)
@@ -286,7 +286,7 @@ class StorageService {
       }
     });
   }
-  
+
   /**
    * Stores holder's public key in encrypted storage
    */
@@ -304,7 +304,7 @@ class StorageService {
       );
     }
   }
-  
+
   /**
    * Retrieves holder's public key from encrypted storage
    */
@@ -319,7 +319,7 @@ class StorageService {
       );
     }
   }
-  
+
   /**
    * Stores issuer's public key in encrypted storage
    */
@@ -337,7 +337,7 @@ class StorageService {
       );
     }
   }
-  
+
   /**
    * Retrieves issuer's public key from encrypted storage
    */
@@ -352,18 +352,18 @@ class StorageService {
       );
     }
   }
-  
+
   /**
    * Retrieves nullifiers for a specific election
    */
   async getNullifiers(electionId: string): Promise<string[]> {
     try {
       const nullifiersJson = await EncryptedStorage.getItem(`${NULLIFIER_KEY_PREFIX}${electionId}`);
-      
+
       if (!nullifiersJson) {
         return [];
       }
-      
+
       return JSON.parse(nullifiersJson);
     } catch (error) {
       throw new StorageError(
@@ -373,7 +373,7 @@ class StorageService {
       );
     }
   }
-  
+
   /**
    * Stores a nullifier for a specific election
    */
@@ -382,11 +382,11 @@ class StorageService {
     return this.withLock(lockKey, async () => {
       try {
         const nullifiers = await this.getNullifiers(electionId);
-        
+
         // Add new nullifier if not already present
         if (!nullifiers.includes(nullifier)) {
           nullifiers.push(nullifier);
-          
+
           await EncryptedStorage.setItem(
             `${NULLIFIER_KEY_PREFIX}${electionId}`,
             JSON.stringify(nullifiers)
@@ -401,7 +401,7 @@ class StorageService {
       }
     });
   }
-  
+
   /**
    * Generic key-value storage for AnonCreds artifacts and other data.
    */

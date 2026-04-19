@@ -1,6 +1,6 @@
 /**
  * Accessibility utilities for the SSI Academic Identity Wallet
- * 
+ *
  * Provides helpers for:
  * - Screen reader support
  * - Touch target sizing
@@ -56,12 +56,12 @@ export const AccessibilityLabels = {
   homeButton: 'Ir para tela inicial',
   backButton: 'Voltar para tela anterior',
   menuButton: 'Abrir menu de navegação',
-  
+
   // Issuer Module
   issuerForm: 'Formulário de emissão de credencial',
   issueButton: 'Emitir credencial acadêmica',
   formField: (fieldName: string) => `Campo ${fieldName}`,
-  
+
   // Holder Module
   credentialInput: 'Campo para colar credencial',
   storeButton: 'Armazenar credencial',
@@ -71,24 +71,24 @@ export const AccessibilityLabels = {
   previousButton: 'Credencial anterior',
   nextButton: 'Próxima credencial',
   deleteButton: 'Excluir credencial atual',
-  
+
   // Verifier Module
   scenarioCard: (name: string) => `Cenário ${name}`,
   challengeDisplay: 'Requisição PEX gerada',
   copyButton: 'Copiar para área de transferência',
   presentationInput: 'Campo para colar apresentação',
   validateButton: 'Validar apresentação',
-  
+
   // Logs Module
   logEntry: (operation: string) => `Entrada de log: ${operation}`,
   clearLogsButton: 'Limpar histórico de logs',
-  
+
   // Consent Modal
   consentModal: 'Modal de consentimento para compartilhamento de dados',
   attributeToggle: (attr: string) => `Alternar seleção de ${attr}`,
   approveButton: 'Aprovar compartilhamento',
   cancelButton: 'Cancelar compartilhamento',
-  
+
   // Status messages
   loading: (message: string) => `Carregando: ${message}`,
   error: (message: string) => `Erro: ${message}`,
@@ -132,7 +132,7 @@ export const getRoleDescription = (componentType: string): string => {
     consentModal: 'Diálogo de consentimento',
     attributeSelector: 'Seletor de atributos',
   };
-  
+
   return roles[componentType] || componentType;
 };
 
@@ -143,27 +143,77 @@ export const isHighContrastEnabled = async (): Promise<boolean> => {
   if (Platform.OS !== 'android') {
     return false;
   }
-  
-  try {
-    // This would require native module implementation
-    // For now, return false as placeholder
-    return false;
-  } catch (error) {
-    return false;
-  }
+  // Detecting Android's "Color Inversion" / "High Contrast Text" requires a
+  // native module bridge that the wallet doesn't ship. Until that lands, we
+  // treat high contrast as opt-in via `setHighContrastMode()` from theme.ts.
+  return false;
 };
 
 /**
- * Gets contrast ratio between two colors
- * Used to ensure WCAG AA compliance (4.5:1 for normal text)
+ * Parses a `#rgb` / `#rrggbb` string into an `[r, g, b]` triple in 0–255.
+ * Returns `null` if the string isn't a recognised hex color (rgb()/named
+ * colors are out of scope for now).
+ */
+function parseHexColor(hex: string): [number, number, number] | null {
+  if (typeof hex !== 'string') {
+    return null;
+  }
+  const match = hex.trim().match(/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/);
+  if (!match) {
+    return null;
+  }
+  let value = match[1];
+  if (value.length === 3) {
+    value = value
+      .split('')
+      .map(c => c + c)
+      .join('');
+  }
+  const r = parseInt(value.substring(0, 2), 16);
+  const g = parseInt(value.substring(2, 4), 16);
+  const b = parseInt(value.substring(4, 6), 16);
+  return [r, g, b];
+}
+
+/** Per-channel sRGB gamma expansion (WCAG 2.1, 1.4.3). */
+function channelLuminance(channel: number): number {
+  const c = channel / 255;
+  return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+}
+
+/**
+ * Relative luminance of a color, per WCAG 2.1.
+ * Returns `null` for unparseable inputs.
+ */
+function relativeLuminance(hex: string): number | null {
+  const rgb = parseHexColor(hex);
+  if (!rgb) {
+    return null;
+  }
+  const [r, g, b] = rgb;
+  return (
+    0.2126 * channelLuminance(r) +
+    0.7152 * channelLuminance(g) +
+    0.0722 * channelLuminance(b)
+  );
+}
+
+/**
+ * Gets contrast ratio between two colors as defined by WCAG 2.1.
+ * Returns 1.0 (worst) when either color cannot be parsed.
  */
 export const getContrastRatio = (
   foreground: string,
-  background: string
+  background: string,
 ): number => {
-  // Simplified implementation - in production, use a proper color library
-  // This is a placeholder that returns a safe value
-  return 7.0; // Assumes good contrast
+  const lf = relativeLuminance(foreground);
+  const lb = relativeLuminance(background);
+  if (lf === null || lb === null) {
+    return 1;
+  }
+  const lighter = Math.max(lf, lb);
+  const darker = Math.min(lf, lb);
+  return (lighter + 0.05) / (darker + 0.05);
 };
 
 /**

@@ -52,7 +52,7 @@ export class StorageError extends Error {
 
 /**
  * ErrorHandler - Centralized error handling service
- * 
+ *
  * This service provides methods to handle different categories of errors
  * and integrates with LogService for error logging.
  */
@@ -72,7 +72,7 @@ class ErrorHandler {
   ): string {
     // Log the error
     this.logger.logError(module, error, error.stack);
-    
+
     // Return user-friendly message in Portuguese
     return this.getCryptoErrorMessage(error);
   }
@@ -86,7 +86,7 @@ class ErrorHandler {
   ): string {
     // Log the error
     this.logger.logError(module, error, error.stack);
-    
+
     // Return user-friendly message in Portuguese
     return this.getValidationErrorMessage(error);
   }
@@ -100,7 +100,7 @@ class ErrorHandler {
   ): string {
     // Log the error
     this.logger.logError(module, error, error.stack);
-    
+
     // Return user-friendly message in Portuguese
     return this.getStorageErrorMessage(error);
   }
@@ -114,7 +114,7 @@ class ErrorHandler {
   ): string {
     // Log the error
     this.logger.logError(module, error, error.stack);
-    
+
     // Return generic user-friendly message
     return 'Ocorreu um erro inesperado. Por favor, tente novamente.';
   }
@@ -125,7 +125,7 @@ class ErrorHandler {
   logError(
     error: Error,
     module: 'emissor' | 'titular' | 'verificador',
-    context?: string
+    _context?: string
   ): void {
     this.logger.logError(module, error, error.stack);
   }
@@ -210,7 +210,7 @@ class ErrorHandler {
       acesso_laboratorios: 'Acesso a Laboratórios',
       acesso_predios: 'Acesso a Prédios',
     };
-    
+
     return translations[field] || field;
   }
 }
