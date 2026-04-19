@@ -3,17 +3,34 @@
  *
  * Simulates the AnonCreds shared API classes (Schema, CredentialDefinition,
  * Credential, Presentation, etc.) used by AnonCredsService.
+ *
+ * SHAPE FIDELITY:
+ * The real wrapper exposes each native object via `instance.handle`, which is
+ * itself an `ObjectHandle` carrying a numeric `handle` plus a `clear()` method
+ * that calls `objectFree()` on the Rust side. Production code (e.g.
+ * AnonCredsService.getOrCreateSchema's try/finally) calls
+ * `instance.handle.clear()` to release native memory. To avoid silently
+ * masking that contract, this mock mirrors the shape: `instance.handle` is an
+ * object with both `handle: number` and `clear: jest.Mock`.
  */
 
 let handleCounter = 0;
-const nextHandle = () => ({handle: ++handleCounter, clear: jest.fn()});
+
+class MockObjectHandle {
+  handle: number;
+  clear: jest.Mock;
+  constructor() {
+    this.handle = ++handleCounter;
+    this.clear = jest.fn();
+  }
+}
 
 class MockAnoncredsObject {
-  handle: number;
+  handle: MockObjectHandle;
   private _json: Record<string, unknown>;
 
   constructor(json: Record<string, unknown> = {}) {
-    this.handle = ++handleCounter;
+    this.handle = new MockObjectHandle();
     this._json = json;
   }
 

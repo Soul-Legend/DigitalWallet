@@ -359,6 +359,8 @@ export interface IAnonCredsService {
   buildSelectiveDisclosureRequest(name: string, nonce: string, revealedAttributes: Record<string, {name: string; restrictions?: Array<Record<string, string>>}>): Record<string, unknown>;
   createPresentation(presentationRequestJson: Record<string, unknown>, credentials: Array<{credential: Record<string, unknown>}>, credentialsProve: Array<{entryIndex: number; referent: string; isPredicate: boolean; reveal: boolean}>, linkSecret: string, schemas: Record<string, Record<string, unknown>>, credentialDefinitions: Record<string, Record<string, unknown>>): Record<string, unknown>;
   buildPredicateRequest(name: string, nonce: string, revealedAttributes: Record<string, {name: string; restrictions?: Array<Record<string, string>>}>, predicates: Record<string, {name: string; p_type: '>=' | '<=' | '>' | '<'; p_value: number; restrictions?: Array<Record<string, string>>}>): Record<string, unknown>;
+  /** Cryptographically random AnonCreds nonce (decimal-string, ~80 bits). See AnonCredsService.generateNonce. */
+  generateNonce(): string;
 }
 
 export interface IZKProofService {

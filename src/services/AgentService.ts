@@ -15,6 +15,18 @@ import LogServiceInstance from './LogService';
 import type {ILogService} from '../types';
 
 /**
+ * Local structural alias for an AnonCreds registry. We intentionally avoid
+ * importing the upstream `AnonCredsRegistry` type directly because the test
+ * mock for `@credo-ts/anoncreds` is intentionally minimal and does not
+ * re-export it. The shape captured here is the documented public contract
+ * (the module accepts an empty list when no on-ledger resolver is wired up).
+ */
+type AnonCredsRegistryLike = {
+  methodName: string;
+  supportedIdentifier: RegExp;
+};
+
+/**
  * AgentService - Manages the Credo agent lifecycle
  *
  * This service is responsible for:
@@ -79,6 +91,11 @@ class AgentService {
   private async initialize(): Promise<CredoAgent> {
     try {
       const walletKey = await this.getOrCreateWalletKey();
+      // SECURITY/OPS: log level is env-driven so production builds stay quiet
+      // (`warn`) while development surfaces full agent telemetry (`debug`).
+      // `__DEV__` is the React Native global injected by Metro at build time.
+      const logLevel =
+        typeof __DEV__ !== 'undefined' && __DEV__ ? LogLevel.debug : LogLevel.warn;
       const config: InitConfig = {
         label: 'CarteiraIdentidadeAcademica',
         walletConfig: {
@@ -86,18 +103,28 @@ class AgentService {
           key: walletKey,
           keyDerivationMethod: KeyDerivationMethod.Argon2IMod,
         },
-        logger: new ConsoleLogger(LogLevel.warn),
+        logger: new ConsoleLogger(logLevel),
         autoUpdateStorageOnStartup: true,
       };
 
+      // Type assertions explained:
+      //  - `anoncreds as unknown as never` is required because `@credo-ts/anoncreds`
+      //    expects an `Anoncreds` shape from `@hyperledger/anoncreds-shared`,
+      //    but the React Native build re-exports it under a structurally
+      //    compatible but nominally distinct symbol. The double-cast keeps
+      //    type-safety honest (instead of swallowing it with `as any`).
+      //  - `registries: ([] as AnonCredsRegistryLike[])` is intentional: this
+      //    wallet is fully self-contained and does not resolve credentials
+      //    against an on-ledger registry. See ARCHITECTURE.md § "Cadeia de
+      //    confiança" for the rationale.
       const agent = new Agent({
         config,
         dependencies: agentDependencies,
         modules: {
           askar: new AskarModule({ariesAskar}),
           anoncreds: new AnonCredsModule({
-            anoncreds: anoncreds as any,
-            registries: [] as any,
+            anoncreds: anoncreds as unknown as never,
+            registries: [] as AnonCredsRegistryLike[] as never,
           }),
         },
       }) as unknown as CredoAgent;
@@ -140,10 +167,20 @@ class AgentService {
 
   /**
    * Shuts down the Credo agent and releases resources.
+   *
+   * Wraps the underlying `agent.shutdown()` in try/finally so that even if
+   * the native side throws (e.g. wallet locked, Askar lock contention), the
+   * service state (`this.agent`, `this.initPromise`) is reset and the next
+   * `getAgent()` call performs a clean re-initialisation rather than
+   * returning a half-dead instance.
    */
   async shutdown(): Promise<void> {
-    if (this.agent) {
+    if (!this.agent) {
+      return;
+    }
+    try {
       await this.agent.shutdown();
+    } finally {
       this.agent = null;
       this.initPromise = null;
     }

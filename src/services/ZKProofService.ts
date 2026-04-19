@@ -21,6 +21,44 @@ import {utf8ToBytes} from './encoding';
  * - age_range: Proves age >= threshold without revealing birthdate
  * - status_check: Proves status == expected value without revealing it
  * - nullifier: Generates a deterministic nullifier for double-spend prevention
+ *
+ * ─────────────────────────────────────────────────────────────────────────────
+ * .zkey PROVISIONING — IMPORTANT GAP (tracked, not fixed)
+ * ─────────────────────────────────────────────────────────────────────────────
+ * `getZkeyPath(circuit)` looks for the proving key under
+ *   `${RNFS.DocumentDirectoryPath}/zkeys/<circuit>_final.zkey`
+ *
+ * Currently the build pipeline does NOT bundle these `.zkey` files into the
+ * APK/IPA, nor does any code path download them on first launch. As a
+ * consequence:
+ *   • In tests:        the mopro-ffi mock returns hardcoded "valid" proofs,
+ *                      so suites pass without any real proving key.
+ *   • In production:   `RNFS.exists(zkeyPath)` returns false and every ZKP
+ *                      generation throws `CryptoError("Arquivo zkey não
+ *                      encontrado")`. The wallet is therefore not yet
+ *                      end-to-end runnable on a physical device.
+ *
+ * Production deployment requires ONE of the following provisioning strategies
+ * (pick one, document it, and add a build step):
+ *
+ *   1. Bundle as Android `assets/` + iOS `Resources/`, then on first launch
+ *      copy from `RNFS.MainBundlePath` (iOS) /
+ *      `RNFS.readFileAssets(...)` (Android) to `DocumentDirectoryPath/zkeys/`.
+ *      Pro: deterministic, reproducible. Con: increases binary size by the
+ *      total zkey footprint (often 5–50 MB per circuit).
+ *
+ *   2. Lazy download from a pinned, version-locked HTTPS URL with SHA-256
+ *      verification. Pro: keeps binary small. Con: requires network on first
+ *      use; integrity hash MUST be embedded in the binary, not fetched.
+ *
+ *   3. Pre-load via a one-shot `react-native-fs` upload step (developer-only
+ *      sideloading for the TCC demo). Pro: trivial. Con: not user-deployable.
+ *
+ * Whichever path is chosen, the `.zkey` MUST be the one that matches the
+ * `.r1cs/.wasm` artefacts the circuit was compiled from — a mismatch
+ * silently produces unverifiable proofs. Pin both the circuit source SHA
+ * and the trusted-setup transcript hash in version control.
+ * ─────────────────────────────────────────────────────────────────────────────
  */
 
 // Circuit zkey file names (must be placed in the app's assets or downloaded)

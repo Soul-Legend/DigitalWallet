@@ -75,7 +75,10 @@ export class AnonCredsPresentationBuilder {
       const credDef = JSON.parse(credDefArtifact);
       const {linkSecret} = await this.anonCredsService.getOrCreateLinkSecret();
 
-      const nonce = String(Date.now());
+      // SECURITY (P0 C1 / AnonCreds): nonces must be cryptographically
+      // random — a predictable nonce (e.g. Date.now()) lets a verifier
+      // correlate presentations across time and breaks unlinkability.
+      const nonce = this.anonCredsService.generateNonce();
       const requestedAttributes: Record<string, {name: string}> = {};
       revealedAttrs.forEach((attr, i) => {
         requestedAttributes[`attr_${i}`] = {name: attr};

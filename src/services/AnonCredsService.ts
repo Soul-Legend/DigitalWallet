@@ -9,7 +9,7 @@ import {
 } from '@hyperledger/anoncreds-react-native';
 import StorageServiceInstance from './StorageService';
 import LogServiceInstance from './LogService';
-import {CryptoError} from './ErrorHandler';
+import {CryptoError, ValidationError} from './ErrorHandler';
 import type {ILogService, IStorageService} from '../types';
 
 /**
@@ -80,12 +80,24 @@ class AnonCredsService {
       attributeNames,
     });
 
-    const artifact: SchemaArtifact = {
-      schemaId,
-      schema: schema.toJson(),
-    };
-
-    await this.saveArtifact(`schema_${schemaId}`, artifact);
+    // SECURITY/MEMORY: Schema is a native handle backed by Rust-allocated
+    // memory. We must call `.handle.clear()` after extracting the JSON or
+    // the native side will leak per-issuance. The try/finally ensures the
+    // handle is freed even if `toJson()` or `saveArtifact` throws.
+    let artifact: SchemaArtifact;
+    try {
+      artifact = {
+        schemaId,
+        schema: schema.toJson(),
+      };
+      await this.saveArtifact(`schema_${schemaId}`, artifact);
+    } finally {
+      try {
+        (schema as unknown as {handle?: {clear: () => void}}).handle?.clear();
+      } catch {
+        // best-effort — a clear() failure must not mask the real error path
+      }
+    }
 
     this.logger.captureEvent(
       'credential_issuance',
@@ -129,14 +141,31 @@ class AnonCredsService {
       supportRevocation: false,
     });
 
-    const artifact: CredDefArtifact = {
-      credDefId,
-      credDef: result.credentialDefinition.toJson(),
-      credDefPrivate: result.credentialDefinitionPrivate.toJson(),
-      keyCorrectnessProof: result.keyCorrectnessProof.toJson(),
-    };
-
-    await this.saveArtifact(`creddef_${credDefId}`, artifact);
+    // See SECURITY/MEMORY note in getOrCreateSchema. CredentialDefinition.create
+    // returns three native handles — all must be released after JSON extraction.
+    let artifact: CredDefArtifact;
+    try {
+      artifact = {
+        credDefId,
+        credDef: result.credentialDefinition.toJson(),
+        credDefPrivate: result.credentialDefinitionPrivate.toJson(),
+        keyCorrectnessProof: result.keyCorrectnessProof.toJson(),
+      };
+      await this.saveArtifact(`creddef_${credDefId}`, artifact);
+    } finally {
+      const handles = [
+        result.credentialDefinition,
+        result.credentialDefinitionPrivate,
+        result.keyCorrectnessProof,
+      ];
+      for (const h of handles) {
+        try {
+          (h as unknown as {handle?: {clear: () => void}}).handle?.clear();
+        } catch {
+          // best-effort cleanup
+        }
+      }
+    }
 
     this.logger.captureEvent(
       'credential_issuance',
@@ -346,6 +375,38 @@ class AnonCredsService {
   // ------------------------------------------------------------------
 
   /**
+   * Generates a cryptographically random AnonCreds nonce.
+   *
+   * SECURITY: Per the AnonCreds spec, presentation-request nonces must be
+   * unpredictable to preserve unlinkability — a verifier (or an observer) who
+   * can predict the nonce can trivially correlate presentations across time.
+   *
+   * The previous implementation used `String(Date.now())`, which is
+   * sub-millisecond predictable and identical to the C1 weakness fixed in
+   * `CryptoService`. We pull 10 cryptographically random bytes (~80 bits,
+   * matching the AnonCreds reference implementation) via `crypto.getRandomValues`
+   * and emit them as a decimal-digit string (the format expected by the
+   * underlying CL-signature library).
+   */
+  generateNonce(): string {
+    const bytes = new Uint8Array(10);
+    if (typeof globalThis.crypto?.getRandomValues !== 'function') {
+      throw new CryptoError(
+        'Secure random number generator unavailable. ' +
+          'Ensure react-native-get-random-values is imported before using AnonCredsService.',
+        'nonce_generation',
+      );
+    }
+    globalThis.crypto.getRandomValues(bytes);
+    // Convert to BigInt then to decimal string. AnonCreds expects digits only.
+    let value = 0n;
+    for (const b of bytes) {
+      value = (value << 8n) | BigInt(b);
+    }
+    return value.toString(10);
+  }
+
+  /**
    * Builds a presentation request for selective disclosure of specific attributes.
    */
   buildSelectiveDisclosureRequest(
@@ -489,14 +550,36 @@ class AnonCredsService {
   // ------------------------------------------------------------------
 
   private extractSchemaIdFromCredDef(credDefArtifact: CredDefArtifact): string {
-    // credDefId format: issuerId:3:CL:schemaId:tag
-    const parts = credDefArtifact.credDefId.split(':3:CL:');
-    if (parts.length >= 2) {
-      const remainder = parts[1];
-      const tagSep = remainder.lastIndexOf(':');
-      return tagSep > 0 ? remainder.substring(0, tagSep) : remainder;
+    // credDefId format per AnonCreds spec: <issuerId>:3:CL:<schemaId>:<tag>
+    // We must validate the shape — silently returning '' on a malformed
+    // input would propagate as an empty-string lookup against the schemas
+    // map and surface as a confusing "verification failed" downstream.
+    const credDefId = credDefArtifact.credDefId;
+    if (typeof credDefId !== 'string' || credDefId.length === 0) {
+      throw new ValidationError(
+        'CredDef artifact has missing/invalid credDefId',
+        'credDefId',
+        credDefId,
+      );
     }
-    return '';
+    const parts = credDefId.split(':3:CL:');
+    if (parts.length < 2 || parts[0].length === 0) {
+      throw new ValidationError(
+        'CredDefId does not match AnonCreds spec format `<issuer>:3:CL:<schemaId>:<tag>`',
+        'credDefId',
+        credDefId,
+      );
+    }
+    const remainder = parts[1];
+    const tagSep = remainder.lastIndexOf(':');
+    if (tagSep <= 0) {
+      throw new ValidationError(
+        'CredDefId is missing the required `:<tag>` suffix',
+        'credDefId',
+        credDefId,
+      );
+    }
+    return remainder.substring(0, tagSep);
   }
 
   private async saveArtifact<T>(key: string, artifact: T): Promise<void> {

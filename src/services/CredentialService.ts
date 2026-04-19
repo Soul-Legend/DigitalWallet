@@ -302,9 +302,13 @@ class CredentialService {
       // (`agent.context.wallet`) surface depending on the Credo version /
       // mock in use. The signing key is the verification method's public
       // key reference; the wallet looks up the matching private key.
-      const wallet =
-        (agent as {wallet?: {sign?: Function}}).wallet ??
-        (agent as {context?: {wallet?: {sign?: Function}}}).context?.wallet;
+      type WalletSignArg = {data: Uint8Array; key: unknown};
+      type WalletLike = {
+        sign: (arg: WalletSignArg) => Promise<{signature: Uint8Array}>;
+      };
+      const wallet: WalletLike | undefined =
+        (agent as {wallet?: WalletLike}).wallet ??
+        (agent as {context?: {wallet?: WalletLike}}).context?.wallet;
       if (!wallet || typeof wallet.sign !== 'function') {
         throw new CryptoError(
           'Credo wallet sign API unavailable',
@@ -313,15 +317,23 @@ class CredentialService {
         );
       }
 
+      // Credo's wallet always returns `{signature: Uint8Array}` — the previous
+      // implementation had a defensive `?? signResult` fallback for raw-bytes
+      // returns, but no version of Credo (>= 0.4) emits that shape. Keeping it
+      // would silently mask a future API drift, so we now assert the
+      // documented contract directly.
       const signResult = await wallet.sign({
         data: dataToSign,
         key: (verificationMethod as {publicKey?: unknown}).publicKey,
       });
-      const signatureBytes = toUint8Array(
-        signResult && typeof signResult === 'object' && 'signature' in signResult
-          ? (signResult as {signature: unknown}).signature
-          : signResult,
-      );
+      if (!signResult || !('signature' in signResult)) {
+        throw new CryptoError(
+          'Credo wallet.sign() returned an unexpected shape (missing `signature`)',
+          'signature',
+          {got: typeof signResult},
+        );
+      }
+      const signatureBytes = toUint8Array(signResult.signature);
 
       const signatureBase64 = bytesToBase64Url(signatureBytes);
       return `${headerBase64}.${payloadBase64}.${signatureBase64}`;
