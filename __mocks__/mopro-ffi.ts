@@ -1,6 +1,27 @@
 /**
  * Mock for mopro-ffi package
  * Provides test implementations of Circom proof generation and verification
+ *
+ * ⚠ TEST-ONLY MOCK — DOES NOT GENERATE REAL PROOFS ⚠
+ *
+ * `generateCircomProof` here returns a hardcoded Groth16 proof shape with the
+ * caller's inputs echoed back as public inputs. `verifyCircomProof` always
+ * returns `true`. This means:
+ *
+ *   • Tests pass without any real `.zkey` proving key.
+ *   • Tests CANNOT detect malformed circuit inputs, mismatched proving keys,
+ *     or runtime mopro errors (e.g. missing native module).
+ *   • Any test asserting on cryptographic soundness MUST instead exercise
+ *     the real `mopro-ffi` on a real device — which currently isn't possible
+ *     because the .zkey provisioning pipeline doesn't exist yet
+ *     (see ZKProofService module doc).
+ *
+ * Shape note: the real `generateCircomProof` is SYNCHRONOUS
+ * (`(zkey, inputs, lib) => CircomProofResult`). This mock returns a Promise
+ * because production code uses `await` on the call — which is a JS no-op for
+ * sync values, so awaiting a Promise here behaves identically. If we ever
+ * remove the `await` in callers, this mock should drop the `async` to keep
+ * the contract honest.
  */
 
 export enum ProofLib {

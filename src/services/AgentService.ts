@@ -46,6 +46,16 @@ type CredoAgent = Agent<{
 
 class AgentService {
   private static readonly WALLET_KEY_STORAGE = 'credo_wallet_master_key';
+  /**
+   * Sidecar key storing the version of the derivation scheme that produced
+   * the master key currently in EncryptedStorage. We start at v1 (32 random
+   * bytes via @noble/ed25519's CSPRNG, hex-encoded). Any future scheme change
+   * (e.g. moving to a memory-hard KDF over a user-supplied passphrase) MUST
+   * bump this version and migrate stored material atomically. Without this
+   * sentinel, key rotation is irrecoverable on existing devices.
+   */
+  private static readonly WALLET_KEY_VERSION_STORAGE = 'credo_wallet_master_key_version';
+  private static readonly CURRENT_WALLET_KEY_VERSION = '1';
   private agent: CredoAgent | null = null;
   private initPromise: Promise<CredoAgent> | null = null;
   private readonly logger: ILogService;
@@ -58,16 +68,43 @@ class AgentService {
    * Retrieves or generates the Credo wallet master key.
    * On first launch, a 32-byte random key is generated and stored in
    * EncryptedStorage so subsequent launches reuse the same key.
+   *
+   * Stores a parallel version sentinel so future migrations can detect
+   * legacy material and re-derive without losing the wallet.
    */
   private async getOrCreateWalletKey(): Promise<string> {
     const existing = await EncryptedStorage.getItem(AgentService.WALLET_KEY_STORAGE);
     if (existing) {
+      const storedVersion = await EncryptedStorage.getItem(
+        AgentService.WALLET_KEY_VERSION_STORAGE,
+      );
+      if (storedVersion && storedVersion !== AgentService.CURRENT_WALLET_KEY_VERSION) {
+        // No migration path is implemented yet — surfacing this loudly is
+        // intentional. Adding a new derivation scheme requires a paired
+        // migration routine that re-encrypts all wallet records.
+        this.logger.captureEvent(
+          'error',
+          'titular',
+          {
+            parameters: {
+              action: 'wallet_key_version_mismatch',
+              stored: storedVersion,
+              expected: AgentService.CURRENT_WALLET_KEY_VERSION,
+            },
+          },
+          false,
+        );
+      }
       return existing;
     }
     const ed = await import('@noble/ed25519');
     const bytes = ed.etc.randomBytes(32);
     const key = Array.from(bytes as Uint8Array, (b: number) => b.toString(16).padStart(2, '0')).join('');
     await EncryptedStorage.setItem(AgentService.WALLET_KEY_STORAGE, key);
+    await EncryptedStorage.setItem(
+      AgentService.WALLET_KEY_VERSION_STORAGE,
+      AgentService.CURRENT_WALLET_KEY_VERSION,
+    );
     return key;
   }
 
@@ -117,6 +154,12 @@ class AgentService {
       //    wallet is fully self-contained and does not resolve credentials
       //    against an on-ledger registry. See ARCHITECTURE.md § "Cadeia de
       //    confiança" for the rationale.
+      // INTENTIONAL: no DIDComm transports (HTTP, WebSocket, BLE) are
+      // registered. This wallet uses a clipboard-based credential exchange
+      // flow; registering transports would open the agent's network surface
+      // and require trust-store / endpoint provisioning that is out of scope
+      // for the current TCC. Future work: add `httpInbound` / `httpOutbound`
+      // modules + a connection-invitation UI before enabling.
       const agent = new Agent({
         config,
         dependencies: agentDependencies,
