@@ -1,10 +1,10 @@
 /**
  * E2E Integration Test: RU Scenario with Selective Disclosure
- * 
+ *
  * Tests the Restaurant Universitário (RU) access scenario using SD-JWT
  * for selective disclosure of only required attributes (status_matricula, isencao_ru).
- * 
- * Flow: Identity → Credential → RU Request → SD-JWT Presentation → 
+ *
+ * Flow: Identity → Credential → RU Request → SD-JWT Presentation →
  *       Hash Verification → Access Control
  */
 
@@ -503,7 +503,7 @@ describe('E2E: RU Scenario with Selective Disclosure', () => {
 
     expect(validationResult.valid).toBe(false);
     expect(validationResult.errors).toBeDefined();
-    expect(validationResult.errors!.some(err => 
+    expect(validationResult.errors!.some(err =>
       err.includes('hash') || err.includes('integridade') || err.includes('assinatura')
     )).toBe(true);
   });

@@ -7,7 +7,6 @@ import {
   TextInput,
   TouchableOpacity,
   Switch,
-  Clipboard,
 } from 'react-native';
 import LoadingIndicator from '../components/LoadingIndicator';
 import SuccessMessage from '../components/SuccessMessage';
@@ -18,7 +17,7 @@ import {useIssuerState} from './hooks/useIssuerState';
 const IssuerScreen: React.FC = () => {
   const {
     formData,
-    setFormData,
+    updateField,
     errors,
     isLoading,
     successMessage,
@@ -131,7 +130,7 @@ const IssuerScreen: React.FC = () => {
               style={[styles.input, errors.nome_completo && styles.inputError]}
               value={formData.nome_completo}
               onChangeText={text =>
-                setFormData({...formData, nome_completo: text})
+                updateField('nome_completo', text)
               }
               placeholder="Digite o nome completo"
               editable={!isLoading}
@@ -146,7 +145,7 @@ const IssuerScreen: React.FC = () => {
             <TextInput
               style={[styles.input, errors.cpf && styles.inputError]}
               value={formData.cpf}
-              onChangeText={text => setFormData({...formData, cpf: text})}
+              onChangeText={text => updateField('cpf', text)}
               placeholder="Digite o CPF (11 dígitos)"
               keyboardType="numeric"
               editable={!isLoading}
@@ -160,7 +159,7 @@ const IssuerScreen: React.FC = () => {
               style={[styles.input, errors.matricula && styles.inputError]}
               value={formData.matricula}
               onChangeText={text =>
-                setFormData({...formData, matricula: text})
+                updateField('matricula', text)
               }
               placeholder="Digite a matrícula"
               editable={!isLoading}
@@ -175,7 +174,7 @@ const IssuerScreen: React.FC = () => {
             <TextInput
               style={[styles.input, errors.curso && styles.inputError]}
               value={formData.curso}
-              onChangeText={text => setFormData({...formData, curso: text})}
+              onChangeText={text => updateField('curso', text)}
               placeholder="Digite o curso"
               editable={!isLoading}
             />
@@ -194,7 +193,7 @@ const IssuerScreen: React.FC = () => {
                     styles.statusButtonActive,
                 ]}
                 onPress={() =>
-                  setFormData({...formData, status_matricula: 'Ativo'})
+                  updateField('status_matricula', 'Ativo')
                 }
                 disabled={isLoading}>
                 <Text
@@ -213,7 +212,7 @@ const IssuerScreen: React.FC = () => {
                     styles.statusButtonActive,
                 ]}
                 onPress={() =>
-                  setFormData({...formData, status_matricula: 'Inativo'})
+                  updateField('status_matricula', 'Inativo')
                 }
                 disabled={isLoading}>
                 <Text
@@ -240,7 +239,7 @@ const IssuerScreen: React.FC = () => {
               ]}
               value={formData.data_nascimento}
               onChangeText={text =>
-                setFormData({...formData, data_nascimento: text})
+                updateField('data_nascimento', text)
               }
               placeholder="AAAA-MM-DD"
               editable={!isLoading}
@@ -260,7 +259,7 @@ const IssuerScreen: React.FC = () => {
             <Switch
               value={formData.alojamento_indigena}
               onValueChange={value =>
-                setFormData({...formData, alojamento_indigena: value})
+                updateField('alojamento_indigena', value)
               }
               disabled={isLoading}
             />
@@ -271,7 +270,7 @@ const IssuerScreen: React.FC = () => {
             <Switch
               value={formData.auxilio_creche}
               onValueChange={value =>
-                setFormData({...formData, auxilio_creche: value})
+                updateField('auxilio_creche', value)
               }
               disabled={isLoading}
             />
@@ -282,7 +281,7 @@ const IssuerScreen: React.FC = () => {
             <Switch
               value={formData.auxilio_moradia}
               onValueChange={value =>
-                setFormData({...formData, auxilio_moradia: value})
+                updateField('auxilio_moradia', value)
               }
               disabled={isLoading}
             />
@@ -293,7 +292,7 @@ const IssuerScreen: React.FC = () => {
             <Switch
               value={formData.bolsa_estudantil}
               onValueChange={value =>
-                setFormData({...formData, bolsa_estudantil: value})
+                updateField('bolsa_estudantil', value)
               }
               disabled={isLoading}
             />
@@ -304,7 +303,7 @@ const IssuerScreen: React.FC = () => {
             <Switch
               value={formData.bolsa_permanencia_mec}
               onValueChange={value =>
-                setFormData({...formData, bolsa_permanencia_mec: value})
+                updateField('bolsa_permanencia_mec', value)
               }
               disabled={isLoading}
             />
@@ -314,7 +313,7 @@ const IssuerScreen: React.FC = () => {
             <Text style={styles.switchLabel}>PAIQ</Text>
             <Switch
               value={formData.paiq}
-              onValueChange={value => setFormData({...formData, paiq: value})}
+              onValueChange={value => updateField('paiq', value)}
               disabled={isLoading}
             />
           </View>
@@ -324,7 +323,7 @@ const IssuerScreen: React.FC = () => {
             <Switch
               value={formData.moradia_estudantil}
               onValueChange={value =>
-                setFormData({...formData, moradia_estudantil: value})
+                updateField('moradia_estudantil', value)
               }
               disabled={isLoading}
             />
@@ -335,7 +334,7 @@ const IssuerScreen: React.FC = () => {
             <Switch
               value={formData.isencao_ru}
               onValueChange={value =>
-                setFormData({...formData, isencao_ru: value})
+                updateField('isencao_ru', value)
               }
               disabled={isLoading}
             />
@@ -346,7 +345,7 @@ const IssuerScreen: React.FC = () => {
             <Switch
               value={formData.isencao_esporte}
               onValueChange={value =>
-                setFormData({...formData, isencao_esporte: value})
+                updateField('isencao_esporte', value)
               }
               disabled={isLoading}
             />
@@ -357,7 +356,7 @@ const IssuerScreen: React.FC = () => {
             <Switch
               value={formData.isencao_idiomas}
               onValueChange={value =>
-                setFormData({...formData, isencao_idiomas: value})
+                updateField('isencao_idiomas', value)
               }
               disabled={isLoading}
             />

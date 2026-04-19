@@ -1,14 +1,15 @@
-import React, {useEffect} from 'react';
+import React, {useEffect, useMemo, useCallback} from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
+  FlatList,
   TouchableOpacity,
   Alert,
 } from 'react-native';
 import {useAppStore} from '../stores/useAppStore';
 import LogEntry from '../components/LogEntry';
+import type {LogEntry as LogEntryType} from '../types';
 
 const LogsScreen: React.FC = () => {
   const setCurrentModule = useAppStore(state => state.setCurrentModule);
@@ -19,28 +20,33 @@ const LogsScreen: React.FC = () => {
     setCurrentModule('logs');
   }, [setCurrentModule]);
 
-  const handleClearLogs = () => {
+  const handleClearLogs = useCallback(() => {
     Alert.alert(
       'Limpar Histórico',
       'Tem certeza que deseja limpar todos os logs? Esta ação não pode ser desfeita.',
       [
-        {
-          text: 'Cancelar',
-          style: 'cancel',
-        },
-        {
-          text: 'Limpar',
-          style: 'destructive',
-          onPress: () => clearLogs(),
-        },
-      ]
+        {text: 'Cancelar', style: 'cancel'},
+        {text: 'Limpar', style: 'destructive', onPress: () => clearLogs()},
+      ],
     );
-  };
+  }, [clearLogs]);
 
-  // Sort logs in reverse chronological order (newest first)
-  const sortedLogs = [...logs].sort(
-    (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+  // Sort logs in reverse chronological order (newest first). Memoised so we
+  // don't re-allocate the array on every parent re-render.
+  const sortedLogs = useMemo<LogEntryType[]>(
+    () =>
+      [...logs].sort(
+        (a, b) =>
+          new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
+      ),
+    [logs],
   );
+
+  const renderItem = useCallback(
+    ({item}: {item: LogEntryType}) => <LogEntry log={item} />,
+    [],
+  );
+  const keyExtractor = useCallback((item: LogEntryType) => item.id, []);
 
   return (
     <View style={styles.container}>
@@ -71,13 +77,17 @@ const LogsScreen: React.FC = () => {
           </Text>
         </View>
       ) : (
-        <ScrollView
+        <FlatList
           style={styles.logsList}
-          contentContainerStyle={styles.logsListContent}>
-          {sortedLogs.map(log => (
-            <LogEntry key={log.id} log={log} />
-          ))}
-        </ScrollView>
+          contentContainerStyle={styles.logsListContent}
+          data={sortedLogs}
+          renderItem={renderItem}
+          keyExtractor={keyExtractor}
+          initialNumToRender={20}
+          maxToRenderPerBatch={20}
+          windowSize={10}
+          removeClippedSubviews
+        />
       )}
     </View>
   );

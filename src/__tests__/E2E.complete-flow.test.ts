@@ -1,9 +1,9 @@
 /**
  * E2E Integration Test: Complete Credential Flow
- * 
+ *
  * Tests the complete flow from identity generation through credential issuance,
  * storage, presentation creation, and verification.
- * 
+ *
  * Flow: Identity Generation → Issuance → Storage → Presentation → Verification
  */
 
@@ -24,9 +24,9 @@ beforeEach(async () => {
 describe('E2E: Complete Credential Flow', () => {
   it('should complete full flow: identity → issuance → storage → presentation → verification', async () => {
     // ========== STEP 1: Generate Holder Identity ==========
-    const {did: holderDID, publicKey: holderPublicKey} = 
+    const {did: holderDID, publicKey: holderPublicKey} =
       await DIDService.generateHolderIdentity('key');
-    
+
     expect(holderDID).toBeDefined();
     expect(holderDID).toMatch(/^did:key:/);
     expect(holderPublicKey).toBeDefined();
@@ -37,7 +37,7 @@ describe('E2E: Complete Credential Flow', () => {
 
     // ========== STEP 2: Generate Issuer Identity ==========
     const {did: issuerDID} = await DIDService.generateIssuerIdentity('ufsc.br');
-    
+
     expect(issuerDID).toBeDefined();
     expect(issuerDID).toMatch(/^did:web:ufsc\.br/);
 
@@ -163,13 +163,13 @@ describe('E2E: Complete Credential Flow', () => {
 
     // ========== STEP 9: Verify Logs Were Created ==========
     const logs = useAppStore.getState().logs;
-    
+
     // Should have logs for key generation, credential issuance, and verification
     expect(logs.length).toBeGreaterThan(0);
-    
+
     const keyGenLogs = logs.filter(log => log.operation === 'key_generation');
     expect(keyGenLogs.length).toBeGreaterThan(0);
-    
+
     const credentialLogs = logs.filter(log => log.operation === 'credential_issuance');
     expect(credentialLogs.length).toBeGreaterThan(0);
   });

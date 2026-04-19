@@ -1,10 +1,10 @@
 /**
  * E2E Integration Test: Age Verification with Range Proof
- * 
+ *
  * Tests the age verification scenario using Range Proofs to prove
  * age >= 18 without revealing the exact birthdate.
- * 
- * Flow: Identity → Credential → Age Request → Range Proof → 
+ *
+ * Flow: Identity → Credential → Age Request → Range Proof →
  *       Privacy-Preserving Verification
  */
 
@@ -226,7 +226,7 @@ describe('E2E: Age Verification with Range Proof', () => {
     expect(validationResult.valid).toBe(false);
     expect(validationResult.predicates_satisfied).toBe(false);
     expect(validationResult.errors).toBeDefined();
-    expect(validationResult.errors!.some(err => 
+    expect(validationResult.errors!.some(err =>
       err.includes('idade') || err.includes('predicado') || err.includes('18')
     )).toBe(true);
   });

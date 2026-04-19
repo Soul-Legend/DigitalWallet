@@ -1,4 +1,4 @@
-import {useEffect, useState, useCallback} from 'react';
+import {useEffect, useState, useCallback, useReducer} from 'react';
 import {Clipboard} from 'react-native';
 import {useAppStore} from '../../stores/useAppStore';
 import {StudentData, TrustedIssuer} from '../../types';
@@ -37,14 +37,47 @@ const INITIAL_FORM_DATA: Partial<StudentData> = {
   acesso_predios: [],
 };
 
+type FormState = Partial<StudentData>;
+type FormAction =
+  | {type: 'updateField'; key: keyof StudentData; value: StudentData[keyof StudentData]}
+  | {type: 'reset'}
+  | {type: 'replace'; payload: FormState};
+
+function formReducer(state: FormState, action: FormAction): FormState {
+  switch (action.type) {
+    case 'updateField':
+      return {...state, [action.key]: action.value};
+    case 'reset':
+      return {...INITIAL_FORM_DATA};
+    case 'replace':
+      return {...action.payload};
+    default:
+      return state;
+  }
+}
+
 export function useIssuerState() {
   const setCurrentModule = useAppStore(state => state.setCurrentModule);
   const addLog = useAppStore(state => state.addLog);
   const holderDID = useAppStore(state => state.holderDID);
   const setIssuerDID = useAppStore(state => state.setIssuerDID);
 
-  // Form state
-  const [formData, setFormData] = useState<Partial<StudentData>>({...INITIAL_FORM_DATA});
+  // Form state — useReducer keeps callbacks stable and avoids the
+  // setFormData({...formData, key: value}) pattern that re-creates the
+  // updater closure on every render and forces a stale-state hazard.
+  const [formData, dispatchForm] = useReducer(formReducer, INITIAL_FORM_DATA, init => ({
+    ...init,
+  }));
+  const updateField = useCallback(
+    <K extends keyof StudentData>(key: K, value: StudentData[K]) =>
+      dispatchForm({type: 'updateField', key, value}),
+    [],
+  );
+  const setFormData = useCallback(
+    (payload: FormState) => dispatchForm({type: 'replace', payload}),
+    [],
+  );
+  const resetForm = useCallback(() => dispatchForm({type: 'reset'}), []);
   const [errors, setErrors] = useState<FormErrors>({});
   const [isLoading, setIsLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -227,7 +260,7 @@ export function useIssuerState() {
       setSuccessMessage(
         `Credencial ${credentialFormat.toUpperCase()} emitida com sucesso! Token copiado para a área de transferência.`,
       );
-      setFormData({...INITIAL_FORM_DATA});
+      resetForm();
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Erro desconhecido';
@@ -246,7 +279,7 @@ export function useIssuerState() {
     } finally {
       setIsLoading(false);
     }
-  }, [formData, holderDID, credentialFormat, validateForm, addLog, setIssuerDID]);
+  }, [formData, holderDID, credentialFormat, validateForm, addLog, setIssuerDID, resetForm]);
 
   const handleCopyCredential = useCallback(() => {
     if (issuedCredential) {
@@ -263,6 +296,8 @@ export function useIssuerState() {
     // Form state
     formData,
     setFormData,
+    updateField,
+    resetForm,
     errors,
     isLoading,
     successMessage,

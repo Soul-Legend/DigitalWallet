@@ -1,10 +1,10 @@
 /**
  * E2E Integration Test: Elections Scenario with Nullifier Prevention
- * 
+ *
  * Tests the complete elections flow with ZKP eligibility proofs and
  * nullifier-based duplicate vote prevention.
- * 
- * Flow: Identity → Credential → Election Request → ZKP Presentation → 
+ *
+ * Flow: Identity → Credential → Election Request → ZKP Presentation →
  *       Nullifier Check → Duplicate Prevention
  */
 
@@ -61,7 +61,7 @@ describe('E2E: Elections Scenario with Nullifier Prevention', () => {
 
     // ========== STEP 2: Generate Election Request with Election ID ==========
     const electionId = `eleicao_reitoria_2024_${Date.now()}`;
-    
+
     const electionRequest: PresentationExchangeRequest = {
       type: 'PresentationExchange',
       version: '1.0.0',

@@ -28,6 +28,8 @@ const LogEntry: React.FC<LogEntryProps> = ({log}) => {
       verification: 'Verificação',
       hash_computation: 'Computação de Hash',
       zkp_generation: 'Geração de ZKP',
+      trust_chain_init: 'Inicialização da Cadeia de Confiança',
+      trust_chain_register: 'Registro de Emissor na Cadeia',
       error: 'Erro',
     };
     return labels[operation];
@@ -43,18 +45,18 @@ const LogEntry: React.FC<LogEntryProps> = ({log}) => {
   };
 
   const truncateHash = (hash: string, length: number = 16): string => {
-    if (hash.length <= length) return hash;
+    if (hash.length <= length) {return hash;}
     return `${hash.substring(0, length)}...`;
   };
 
   const obfuscateCPF = (cpf: string): string => {
-    if (cpf.length < 4) return '***';
+    if (cpf.length < 4) {return '***';}
     return `***${cpf.slice(-4)}`;
   };
 
   const obfuscateName = (name: string): string => {
     const parts = name.split(' ');
-    if (parts.length === 0) return '***';
+    if (parts.length === 0) {return '***';}
     return `${parts[0]} ***`;
   };
 

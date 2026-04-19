@@ -8,7 +8,7 @@ interface SuccessMessageProps {
 
 const SuccessMessage: React.FC<SuccessMessageProps> = ({message, details}) => {
   return (
-    <View 
+    <View
       style={styles.container}
       accessible={true}
       accessibilityLabel={`Sucesso: ${message}${details ? '. ' + details : ''}`}

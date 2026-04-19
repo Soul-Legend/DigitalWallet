@@ -1,10 +1,10 @@
 /**
  * E2E Integration Test: Laboratory Access Control
- * 
+ *
  * Tests the laboratory/building access control scenario with array-based
  * permission verification.
- * 
- * Flow: Identity → Credential → Lab Request → Permission Check → 
+ *
+ * Flow: Identity → Credential → Lab Request → Permission Check →
  *       Access Grant/Deny
  */
 
@@ -207,7 +207,7 @@ describe('E2E: Laboratory Access Control', () => {
     // Should fail because requested lab is not in the array
     expect(validationResult.valid).toBe(false);
     expect(validationResult.errors).toBeDefined();
-    expect(validationResult.errors!.some(err => 
+    expect(validationResult.errors!.some(err =>
       err.includes('permissão') || err.includes('acesso') || err.includes('laboratório')
     )).toBe(true);
   });

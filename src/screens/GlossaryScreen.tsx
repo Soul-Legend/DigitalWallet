@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useState, useMemo} from 'react';
 import {
   View,
   Text,
@@ -13,52 +13,47 @@ import {
   getTermsByCategory,
   GlossaryTerm,
 } from '../utils/glossary';
-import {
-  AccessibilityLabels,
-  AccessibilityHints,
-  MIN_TOUCH_TARGET_SIZE,
-} from '../utils/accessibility';
+import {MIN_TOUCH_TARGET_SIZE} from '../utils/accessibility';
 import {getTheme, scaleFontSize} from '../utils/theme';
+
+// Hoisted out of the component body — these never change between renders.
+const CATEGORIES = [
+  {id: 'all', label: 'Todos', value: null},
+  {id: 'identity', label: 'Identidade', value: 'identity'},
+  {id: 'cryptography', label: 'Criptografia', value: 'cryptography'},
+  {id: 'credential', label: 'Credenciais', value: 'credential'},
+  {id: 'protocol', label: 'Protocolos', value: 'protocol'},
+] as const;
+
+const CATEGORY_COLORS: Record<string, string> = {
+  identity: '#2196f3',
+  cryptography: '#9c27b0',
+  credential: '#4caf50',
+  protocol: '#ff9800',
+};
 
 const GlossaryScreen: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const theme = getTheme();
 
-  const categories = [
-    {id: 'all', label: 'Todos', value: null},
-    {id: 'identity', label: 'Identidade', value: 'identity'},
-    {id: 'cryptography', label: 'Criptografia', value: 'cryptography'},
-    {id: 'credential', label: 'Credenciais', value: 'credential'},
-    {id: 'protocol', label: 'Protocolos', value: 'protocol'},
-  ];
+  const categories = CATEGORIES;
 
-  // Filter terms based on search and category
-  const getFilteredTerms = (): GlossaryTerm[] => {
-    let terms = glossary;
-
+  // Filter terms based on search and category. Memoised so we don't sort
+  // and reallocate on every keystroke when the query hasn't changed.
+  const filteredTerms = useMemo<GlossaryTerm[]>(() => {
+    let terms: GlossaryTerm[] = glossary;
     if (selectedCategory) {
       terms = getTermsByCategory(selectedCategory as any);
     }
-
     if (searchQuery.trim()) {
       terms = searchGlossary(searchQuery);
     }
+    return [...terms].sort((a, b) => a.term.localeCompare(b.term));
+  }, [searchQuery, selectedCategory]);
 
-    return terms.sort((a, b) => a.term.localeCompare(b.term));
-  };
-
-  const filteredTerms = getFilteredTerms();
-
-  const getCategoryColor = (category: string): string => {
-    const colors: Record<string, string> = {
-      identity: '#2196f3',
-      cryptography: '#9c27b0',
-      credential: '#4caf50',
-      protocol: '#ff9800',
-    };
-    return colors[category] || theme.colors.textSecondary;
-  };
+  const getCategoryColor = (category: string): string =>
+    CATEGORY_COLORS[category] || theme.colors.textSecondary;
 
   const getCategoryLabel = (category: string): string => {
     const labels: Record<string, string> = {

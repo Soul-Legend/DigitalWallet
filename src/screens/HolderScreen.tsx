@@ -141,13 +141,6 @@ const HolderScreen: React.FC = () => {
                       Escaneie com o módulo Verificador
                     </Text>
                   </View>
-                ) : transportMode === 'proximity' ? (
-                  <View style={styles.proximityInfo}>
-                    <Text style={styles.proximityIcon}>📡</Text>
-                    <Text style={styles.proximityText}>
-                      Modo BLE/NFC ativo. Aproxime os dispositivos.
-                    </Text>
-                  </View>
                 ) : null}
                 <TouchableOpacity
                   style={styles.copyOutputButton}
@@ -419,24 +412,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
     marginTop: 12,
-    textAlign: 'center',
-  },
-  proximityInfo: {
-    alignItems: 'center',
-    padding: 20,
-    backgroundColor: '#e8f5e9',
-    borderRadius: 8,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#a5d6a7',
-  },
-  proximityIcon: {
-    fontSize: 48,
-    marginBottom: 12,
-  },
-  proximityText: {
-    fontSize: 14,
-    color: '#2e7d32',
     textAlign: 'center',
   },
   copyOutputButton: {

@@ -11,7 +11,7 @@ const LoadingIndicator: React.FC<LoadingIndicatorProps> = ({
   size = 'large',
 }) => {
   return (
-    <View 
+    <View
       style={styles.container}
       accessible={true}
       accessibilityLabel={`Carregando: ${message}`}

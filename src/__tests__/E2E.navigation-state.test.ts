@@ -1,9 +1,9 @@
 /**
  * E2E Integration Test: Navigation and State Preservation
- * 
+ *
  * Tests the navigation between modules and state preservation across
  * module transitions.
- * 
+ *
  * Flow: Module Navigation → State Preservation → Multi-Module Workflow
  */
 

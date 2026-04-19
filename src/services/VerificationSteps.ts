@@ -6,8 +6,6 @@ import {
   Predicate,
 } from '../types';
 import TrustChainService from './TrustChainService';
-import {evaluatePredicate} from './PresentationHelpers';
-import LogService from './LogService';
 import {VerificationStepName} from '../utils/constants';
 
 /**

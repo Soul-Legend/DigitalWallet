@@ -18,6 +18,7 @@ import PresentationService from '../services/PresentationService';
 import CryptoService from '../services/CryptoService';
 import StorageService from '../services/StorageService';
 import TrustChainService from '../services/TrustChainService';
+import {canonicalize, canonicalAttributeHashInput} from '../services/encoding';
 import {useAppStore} from '../stores/useAppStore';
 import {StudentData, PresentationExchangeRequest} from '../types';
 
@@ -90,14 +91,16 @@ describe('E2E: Crypto Round-Trip Verification', () => {
       expect(typeof presentation.proof.jws).toBe('string');
       expect(presentation.proof.jws!.length).toBeGreaterThan(0);
 
-      // Reconstruct the signed payload (same as PresentationService does)
-      const signedPayload = JSON.stringify({
+      // Reconstruct the signed payload using the canonical encoding the
+      // holder uses (see services/PresentationService.canonicalPresentationSigningInput).
+      const signedPayload = canonicalize({
         '@context': presentation['@context'],
-        type: presentation.type,
+        challenge: presentation.proof.challenge ?? null,
+        disclosed_attributes: presentation.disclosed_attributes ?? {},
+        hashed_attributes: (presentation as any).hashed_attributes ?? {},
         holder: presentation.holder,
+        type: presentation.type,
         verifiableCredential: presentation.verifiableCredential,
-        disclosed_attributes: presentation.disclosed_attributes,
-        hashed_attributes: (presentation as any).hashed_attributes,
       });
 
       // Get holder's public key
@@ -232,9 +235,10 @@ describe('E2E: Crypto Round-Trip Verification', () => {
       // The CPF should be hashed (not disclosed)
       expect(hashedAttrs.cpf).toBeDefined();
 
-      // Independently compute the hash of the CPF value
+      // Independently compute the hash of the CPF value using the canonical
+      // (length-prefixed JSON-array) encoding shared by holder + verifier.
       const expectedHash = await CryptoService.computeHash(
-        `cpf:${studentData.cpf}`,
+        canonicalAttributeHashInput('cpf', studentData.cpf),
         'titular',
       );
       expect(hashedAttrs.cpf).toBe(expectedHash);
@@ -250,12 +254,13 @@ describe('E2E: Crypto Round-Trip Verification', () => {
       );
       expect(root.certificate).toBeDefined();
 
-      // Verify root self-signature independently
-      const rootPayload = JSON.stringify({
+      // Verify root self-signature independently using the canonical payload
+      // produced by TrustChainService.
+      const rootPayload = canonicalize({
         did: root.did,
-        publicKey: root.publicKey,
         name: root.name,
         parentDid: root.parentDid,
+        publicKey: root.publicKey,
       });
       const rootSelfValid = await CryptoService.verifySignature(
         rootPayload,
@@ -274,11 +279,11 @@ describe('E2E: Crypto Round-Trip Verification', () => {
       );
 
       // Verify child certificate independently using ROOT public key
-      const childPayload = JSON.stringify({
+      const childPayload = canonicalize({
         did: child.did,
-        publicKey: child.publicKey,
         name: child.name,
         parentDid: child.parentDid,
+        publicKey: child.publicKey,
       });
       const childCertValid = await CryptoService.verifySignature(
         childPayload,

@@ -2,7 +2,7 @@ import {useEffect, useState, useCallback} from 'react';
 import {Alert, Clipboard} from 'react-native';
 import {useAppStore} from '../../stores/useAppStore';
 import {VerifiableCredential, ConsentData, PresentationExchangeRequest} from '../../types';
-import {TransportMode} from '../../services/EudiTransportService';
+import {TransportMode} from '../../services/TransportService';
 import CredentialService from '../../services/CredentialService';
 import StorageService from '../../services/StorageService';
 import LogService from '../../services/LogService';
@@ -195,8 +195,8 @@ export function useHolderState() {
   }, [requestInput, credentials, currentIndex]);
 
   const handleAttributeToggle = useCallback((attribute: string) => {
-    if (!consentData) return;
-    if (consentData.required_attributes.includes(attribute)) return;
+    if (!consentData) {return;}
+    if (consentData.required_attributes.includes(attribute)) {return;}
 
     setSelectedAttributes(prev => {
       if (prev.includes(attribute)) {
@@ -243,11 +243,8 @@ export function useHolderState() {
       if (transportMode === 'clipboard') {
         Clipboard.setString(presentationJson);
         setSuccess('Apresentação criada e copiada para área de transferência!');
-      } else if (transportMode === 'qrcode') {
-        setSuccess('Apresentação criada! Escaneie o QR Code abaixo com o verificador.');
       } else {
-        Clipboard.setString(presentationJson);
-        setSuccess('Apresentação criada! Modo BLE/NFC requer EUDI wallet-kit.');
+        setSuccess('Apresentação criada! Escaneie o QR Code abaixo com o verificador.');
       }
       setRequestInput('');
       setCurrentRequest(null);
