@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  verify:
+    name: Typecheck · Lint · Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: TypeScript typecheck
+        run: npm run typecheck
+
+      - name: ESLint (errors fail build, warnings allowed)
+        # `--max-warnings 100` lets the intentional bitwise/encoding warnings pass
+        # while still failing on any new ESLint *error*.
+        run: npm run lint
+
+      - name: Jest test suite
+        run: npm test

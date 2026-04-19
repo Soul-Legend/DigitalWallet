@@ -9,7 +9,6 @@ import fc from 'fast-check';
 import CredentialService from '../CredentialService';
 import DIDService from '../DIDService';
 import StorageService from '../StorageService';
-import CryptoService from '../CryptoService';
 import LogService from '../LogService';
 import {useAppStore} from '../../stores/useAppStore';
 import {StudentData} from '../../types';
@@ -77,9 +76,8 @@ describe('CredentialService Property-Based Tests', () => {
             'key',
           );
 
-          // Generate issuer identity
-          const {did: issuerDID, publicKey: issuerPublicKey} =
-            await DIDService.generateIssuerIdentity('ufsc.br');
+          // Generate issuer identity (registered for the chain test setup)
+          await DIDService.generateIssuerIdentity('ufsc.br');
 
           // Issue credential
           const credential = await CredentialService.issueCredential(

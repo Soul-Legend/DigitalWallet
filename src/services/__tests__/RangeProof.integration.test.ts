@@ -2,9 +2,7 @@ import PresentationService from '../PresentationService';
 import VerificationService from '../VerificationService';
 import CryptoService from '../CryptoService';
 import StorageService from '../StorageService';
-import LogService from '../LogService';
 import {
-  PresentationExchangeRequest,
   VerifiableCredential,
 } from '../../types';
 import {useAppStore} from '../../stores/useAppStore';
@@ -138,7 +136,7 @@ describe('Range Proof Integration Tests', () => {
 
       expect(validationResult.valid).toBe(true);
       expect(validationResult.predicates_satisfied).toBe(true);
-      
+
       // Verify birthdate was not accessed during validation
       if (validationResult.verified_attributes) {
         expect(validationResult.verified_attributes.data_nascimento).toBeUndefined();

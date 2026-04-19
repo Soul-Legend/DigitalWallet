@@ -7,10 +7,8 @@
 import {VerificationPipeline} from '../VerificationPipeline';
 import {
   IVerificationStep,
-  VerificationContext,
   VerifiablePresentation,
   PresentationExchangeRequest,
-  StepResult,
   ICredentialFormat,
 } from '../../types';
 import CredentialService from '../CredentialService';

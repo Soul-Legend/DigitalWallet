@@ -1,6 +1,6 @@
 .kiro/
 docs/libs_Docs
-.github/
+.github/agents/
 
 # OSX
 .DS_Store

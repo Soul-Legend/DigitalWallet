@@ -3,11 +3,9 @@ import PresentationService from '../PresentationService';
 import VerificationService from '../VerificationService';
 import CryptoService from '../CryptoService';
 import StorageService from '../StorageService';
-import LogService from '../LogService';
+import {canonicalAttributeHashInput} from '../encoding';
 import {
-  PresentationExchangeRequest,
   VerifiableCredential,
-  VerifiablePresentation,
   StudentData,
 } from '../../types';
 import {useAppStore} from '../../stores/useAppStore';
@@ -48,7 +46,7 @@ describe('Restaurante Universitário - Property-Based Tests', () => {
 
     // Mock CryptoService.computeHash for attribute hashing
     (CryptoService.computeHash as jest.Mock).mockImplementation(
-      async (data: string, module?: string) => {
+      async (data: string, _module?: string) => {
         // Deterministic hash based on input
         let hash = 0;
         for (let i = 0; i < data.length; i++) {
@@ -181,13 +179,12 @@ describe('Restaurante Universitário - Property-Based Tests', () => {
               expect(hashedAttributes[attr].length).toBeGreaterThan(0);
             }
 
-            // Verify the hashes match the expected values
+            // Verify the hashes match the expected values (canonical form
+            // shared between holder + verifier — see encoding.ts).
             for (const attr of nonDisclosedAttributes) {
               const value = (credential.credentialSubject as any)[attr];
-              const valueString =
-                typeof value === 'object' ? JSON.stringify(value) : String(value);
               const expectedHash = await CryptoService.computeHash(
-                `${attr}:${valueString}`,
+                canonicalAttributeHashInput(attr, value),
                 'titular',
               );
               expect(hashedAttributes[attr]).toBe(expectedHash);
@@ -252,7 +249,7 @@ describe('Restaurante Universitário - Property-Based Tests', () => {
             // Tamper with a hashed attribute
             const hashedAttributes = (presentation as any).hashed_attributes;
             const attributeKeys = Object.keys(hashedAttributes);
-            
+
             // Skip if no hashed attributes (edge case)
             fc.pre(attributeKeys.length > 0);
 
@@ -335,9 +332,6 @@ describe('Restaurante Universitário - Property-Based Tests', () => {
               pexRequest,
               selectedAttributes,
             );
-
-            // Serialize presentation to check what's exposed
-            const presentationString = JSON.stringify(presentation);
 
             // Verify sensitive attributes are not in plain text
             const sensitiveAttributes = [

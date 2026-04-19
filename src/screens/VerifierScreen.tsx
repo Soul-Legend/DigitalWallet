@@ -11,8 +11,50 @@ import {
 import {useAppStore} from '../stores/useAppStore';
 import {LoadingIndicator, ErrorMessage, SuccessMessage, TransportModeSelector} from '../components';
 import {Scenario, PresentationExchangeRequest, ValidationResult} from '../types';
-import {TransportMode} from '../services/EudiTransportService';
+import {TransportMode} from '../services/TransportService';
+import CryptoService from '../services/CryptoService';
 import QRCode from 'react-native-qrcode-svg';
+
+// Hoisted: scenarios are immutable presets. The election_id for the
+// `elections` scenario is generated freshly when the user selects it (see
+// `handleSelectScenario`) so it doesn't get frozen at module load.
+//
+// IDs are aligned with `src/services/verification/ScenarioCatalog.ts` so the
+// UI catalogue and the back-end pipeline share a single naming scheme. The
+// human-readable Portuguese labels live here because they are display-only
+// concerns (the catalogue would otherwise need an i18n field).
+const SCENARIOS: readonly Scenario[] = [
+  {
+    id: 'ru',
+    name: 'Restaurante Universitário',
+    description: 'Validar vínculo e isenção tarifária com divulgação seletiva (SD-JWT)',
+    type: 'selective_disclosure',
+    requested_attributes: ['status_matricula', 'isencao_ru'],
+  },
+  {
+    id: 'elections',
+    name: 'Eleições',
+    description: 'Validar elegibilidade com prevenção de voto duplicado (ZKP + Nullifier)',
+    type: 'zkp_eligibility',
+    requested_attributes: ['status_matricula'],
+  },
+  {
+    id: 'lab_access',
+    name: 'Laboratórios',
+    description: 'Validar permissões de acesso físico específicas',
+    type: 'access_control',
+    requested_attributes: ['acesso_laboratorios', 'acesso_predios'],
+  },
+  {
+    id: 'age_verification',
+    name: 'Maioridade',
+    description: 'Validar maioridade civil sem revelar data de nascimento (Range Proof)',
+    type: 'range_proof',
+    predicates: [
+      {attribute: 'data_nascimento', p_type: '>=', value: 18},
+    ],
+  },
+];
 
 const VerifierScreen: React.FC = () => {
   const setCurrentModule = useAppStore(state => state.setCurrentModule);
@@ -32,52 +74,23 @@ const VerifierScreen: React.FC = () => {
     setCurrentModule('verificador');
   }, [setCurrentModule]);
 
-  // Pre-configured scenarios
-  const scenarios: Scenario[] = [
-    {
-      id: 'ru',
-      name: 'Restaurante Universitário',
-      description: 'Validar vínculo e isenção tarifária com divulgação seletiva (SD-JWT)',
-      type: 'selective_disclosure',
-      requested_attributes: ['status_matricula', 'isencao_ru'],
-    },
-    {
-      id: 'eleicoes',
-      name: 'Eleições',
-      description: 'Validar elegibilidade com prevenção de voto duplicado (ZKP + Nullifier)',
-      type: 'zkp_eligibility',
-      requested_attributes: ['status_matricula'],
-      challenge_data: {
-        election_id: `eleicao_${Date.now()}`,
-      },
-    },
-    {
-      id: 'laboratorios',
-      name: 'Laboratórios',
-      description: 'Validar permissões de acesso físico específicas',
-      type: 'access_control',
-      requested_attributes: ['acesso_laboratorios', 'acesso_predios'],
-    },
-    {
-      id: 'maioridade',
-      name: 'Maioridade',
-      description: 'Validar maioridade civil sem revelar data de nascimento (Range Proof)',
-      type: 'range_proof',
-      predicates: [
-        {
-          attribute: 'data_nascimento',
-          p_type: '>=',
-          value: 18,
-        },
-      ],
-    },
-  ];
+  // Pre-configured scenarios are hoisted to module scope (see SCENARIOS).
+  const scenarios = SCENARIOS;
 
   /**
    * Handles scenario selection and generates PEX request
    */
   const handleSelectScenario = async (scenario: Scenario) => {
-    setSelectedScenario(scenario);
+    // Inject a fresh election_id for the elections scenario so each PEX
+    // request gets a unique nullifier scope.
+    const liveScenario: Scenario =
+      scenario.id === 'elections'
+        ? {
+            ...scenario,
+            challenge_data: {election_id: `eleicao_${Date.now()}`},
+          }
+        : scenario;
+    setSelectedScenario(liveScenario);
     setGeneratedRequest(null);
     setValidationResult(null);
     setPresentationInput('');
@@ -87,7 +100,7 @@ const VerifierScreen: React.FC = () => {
 
     try {
       // Generate PEX request based on scenario
-      const request = generatePEXRequest(scenario);
+      const request = generatePEXRequest(liveScenario);
       const requestJson = JSON.stringify(request, null, 2);
       setGeneratedRequest(requestJson);
       setSuccess('Requisição gerada com sucesso!');
@@ -103,7 +116,10 @@ const VerifierScreen: React.FC = () => {
    * Generates a PEX request for the selected scenario
    */
   const generatePEXRequest = (scenario: Scenario): PresentationExchangeRequest => {
-    const challenge = `challenge_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+    // SECURITY: PEX challenges must be unpredictable to prevent replay
+    // attacks. Use the CSPRNG-backed CryptoService.generateNonce() instead
+    // of Math.random (P0 C1 hardening, enforced by ESLint).
+    const challenge = `challenge_${Date.now()}_${CryptoService.generateNonce().slice(0, 16)}`;
 
     const baseRequest: PresentationExchangeRequest = {
       type: 'PresentationExchange',
@@ -129,11 +145,11 @@ const VerifierScreen: React.FC = () => {
     };
 
     // Add scenario-specific data
-    if (scenario.id === 'eleicoes' && scenario.challenge_data?.election_id) {
+    if (scenario.id === 'elections' && scenario.challenge_data?.election_id) {
       baseRequest.election_id = scenario.challenge_data.election_id;
     }
 
-    if (scenario.id === 'laboratorios' && labInput.trim()) {
+    if (scenario.id === 'lab_access' && labInput.trim()) {
       baseRequest.resource_id = labInput.trim();
     }
 
@@ -294,8 +310,8 @@ const VerifierScreen: React.FC = () => {
               </TouchableOpacity>
             </View>
 
-            {/* Lab Input for Laboratorios scenario */}
-            {selectedScenario.id === 'laboratorios' && !generatedRequest && (
+            {/* Lab Input for the access-control scenario */}
+            {selectedScenario.id === 'lab_access' && !generatedRequest && (
               <View style={styles.labInputSection}>
                 <Text style={styles.sectionTitle}>
                   Especifique o Laboratório ou Prédio
@@ -343,19 +359,6 @@ const VerifierScreen: React.FC = () => {
                     />
                     <Text style={styles.qrHint}>
                       Escaneie com o módulo Titular
-                    </Text>
-                  </View>
-                )}
-
-                {/* BLE/NFC Proximity Info */}
-                {transportMode === 'proximity' && (
-                  <View style={styles.proximityInfo}>
-                    <Text style={styles.proximityIcon}>📡</Text>
-                    <Text style={styles.proximityText}>
-                      Modo BLE/NFC ativo. Aproxime os dispositivos para transferir a requisição.
-                    </Text>
-                    <Text style={styles.proximityNote}>
-                      Requer EUDI wallet-kit instalado no dispositivo.
                     </Text>
                   </View>
                 )}
@@ -733,31 +736,6 @@ const styles = StyleSheet.create({
     color: '#666',
     marginTop: 12,
     textAlign: 'center',
-  },
-  proximityInfo: {
-    alignItems: 'center',
-    padding: 20,
-    backgroundColor: '#e8f5e9',
-    borderRadius: 8,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#a5d6a7',
-  },
-  proximityIcon: {
-    fontSize: 48,
-    marginBottom: 12,
-  },
-  proximityText: {
-    fontSize: 14,
-    color: '#2e7d32',
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-  proximityNote: {
-    fontSize: 12,
-    color: '#689f38',
-    textAlign: 'center',
-    fontStyle: 'italic',
   },
 });
 

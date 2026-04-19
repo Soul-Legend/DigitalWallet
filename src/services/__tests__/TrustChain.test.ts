@@ -44,7 +44,7 @@ describe('TrustChainService', () => {
     });
 
     it('should verify the root self-signature', async () => {
-      const root = await TrustChainService.initializeRootIssuer(
+      await TrustChainService.initializeRootIssuer(
         'did:web:ufsc.br',
         'UFSC - Root CA',
       );
@@ -72,7 +72,7 @@ describe('TrustChainService', () => {
 
   describe('Child Issuer Registration', () => {
     it('should register a child issuer signed by the root', async () => {
-      const root = await TrustChainService.initializeRootIssuer(
+      await TrustChainService.initializeRootIssuer(
         'did:web:ufsc.br',
         'UFSC - Root CA',
       );

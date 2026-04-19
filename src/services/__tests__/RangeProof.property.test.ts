@@ -3,7 +3,6 @@ import PresentationService from '../PresentationService';
 import VerificationService from '../VerificationService';
 import CryptoService from '../CryptoService';
 import StorageService from '../StorageService';
-import LogService from '../LogService';
 import {
   PresentationExchangeRequest,
   VerifiableCredential,
@@ -215,7 +214,6 @@ describe('Range Proof Property-Based Tests', () => {
             expect(proofDataString).not.toContain(birthdate);
 
             // Verify birthdate is not in presentation JSON
-            const presentationString = JSON.stringify(presentation);
             // The birthdate might be in the embedded credential, but not in the proof
             const proofSection = JSON.stringify(presentation.zkp_proofs);
             expect(proofSection).not.toContain(birthdate);
@@ -448,7 +446,7 @@ describe('Range Proof Property-Based Tests', () => {
             // Verify validation completed (may be valid or invalid depending on age)
             expect(validationResult).toBeDefined();
             expect(typeof validationResult.valid).toBe('boolean');
-            
+
             // Verify that validation did not require accessing the exact birthdate
             // The birthdate should not be in verified_attributes
             if (validationResult.verified_attributes) {
@@ -504,10 +502,6 @@ describe('Range Proof Property-Based Tests', () => {
             expect(validationResult.valid).toBe(expectedValid);
 
             // Verify no birthdate in validation result
-            const resultString = JSON.stringify(validationResult);
-            const birthdate = credential.credentialSubject.data_nascimento;
-            
-            // The birthdate should not appear in the validation result
             // (it might be in the embedded credential, but not in the verification logic)
             if (validationResult.verified_attributes) {
               expect(validationResult.verified_attributes.data_nascimento).toBeUndefined();

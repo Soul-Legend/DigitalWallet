@@ -153,14 +153,14 @@ describe('DIDService Property-Based Tests', () => {
           fc.option(fc.constantFrom('identity', 'did', 'users/123'), {nil: null}),
           (domain, path) => {
             const did = DIDService.createDidWeb(domain, path ?? undefined);
-            
+
             // Verify did:web format
             expect(did.startsWith('did:web:')).toBe(true);
-            
+
             // Verify no protocol in DID
             expect(did).not.toContain('http://');
             expect(did).not.toContain('https://');
-            
+
             // Verify path is properly encoded with colons
             if (path) {
               expect(did).toContain(':');
@@ -168,7 +168,7 @@ describe('DIDService Property-Based Tests', () => {
               const expectedPath = path.replace(/\//g, ':');
               expect(did).toContain(expectedPath);
             }
-            
+
             return true;
           }
         ),
@@ -184,18 +184,18 @@ describe('DIDService Property-Based Tests', () => {
             const {did, publicKey} = await DIDService.generateHolderIdentity(
               method as 'key' | 'peer'
             );
-            
+
             // Verify DID format based on method
             if (method === 'key') {
               expect(did).toMatch(/^did:key:z/);
             } else {
               expect(did).toMatch(/^did:peer:/);
             }
-            
+
             // publicKey is now the verification method ID (a string)
             expect(typeof publicKey).toBe('string');
             expect(publicKey.length).toBeGreaterThan(0);
-            
+
             return true;
           }
         ),
@@ -213,15 +213,15 @@ describe('DIDService Property-Based Tests', () => {
               domain,
               path ?? undefined
             );
-            
+
             // Verify did:web format
             expect(did.startsWith('did:web:')).toBe(true);
             expect(did).toContain(domain);
-            
+
             // publicKey is now the verification method ID (a string)
             expect(typeof publicKey).toBe('string');
             expect(publicKey.length).toBeGreaterThan(0);
-            
+
             return true;
           }
         ),
@@ -344,31 +344,31 @@ describe('DIDService Property-Based Tests', () => {
           async (method) => {
             // Clear logs
             useAppStore.getState().clearLogs();
-            
+
             // Generate identity
             await DIDService.generateHolderIdentity(method as 'key' | 'peer');
-            
+
             // Get logs
             const logs = LogService.getLogs();
             const keyGenLog = logs.find(log => log.operation === 'key_generation');
-            
+
             // Verify log exists
             expect(keyGenLog).toBeDefined();
-            
+
             // Verify required fields
             expect(keyGenLog?.id).toBeDefined();
             expect(keyGenLog?.timestamp).toBeInstanceOf(Date);
             expect(keyGenLog?.operation).toBe('key_generation');
             expect(keyGenLog?.module).toBe('titular');
             expect(keyGenLog?.success).toBe(true);
-            
+
             // Verify technical details
             expect(keyGenLog?.details.algorithm).toBe('Ed25519');
             expect(keyGenLog?.details.key_size).toBe(256);
             expect(keyGenLog?.details.did_method).toBe(
               method === 'key' ? 'did:key' : 'did:peer'
             );
-            
+
             return true;
           }
         ),
@@ -383,29 +383,29 @@ describe('DIDService Property-Based Tests', () => {
           async (domain) => {
             // Clear logs
             useAppStore.getState().clearLogs();
-            
+
             // Generate identity
             await DIDService.generateIssuerIdentity(domain);
-            
+
             // Get logs
             const logs = LogService.getLogs();
             const keyGenLog = logs.find(log => log.operation === 'key_generation');
-            
+
             // Verify log exists
             expect(keyGenLog).toBeDefined();
-            
+
             // Verify required fields
             expect(keyGenLog?.id).toBeDefined();
             expect(keyGenLog?.timestamp).toBeInstanceOf(Date);
             expect(keyGenLog?.operation).toBe('key_generation');
             expect(keyGenLog?.module).toBe('emissor');
             expect(keyGenLog?.success).toBe(true);
-            
+
             // Verify technical details
             expect(keyGenLog?.details.algorithm).toBe('Ed25519');
             expect(keyGenLog?.details.key_size).toBe(256);
             expect(keyGenLog?.details.did_method).toBe('did:web');
-            
+
             return true;
           }
         ),
@@ -424,10 +424,10 @@ describe('DIDService Property-Based Tests', () => {
           (module, algorithm, keySize, didMethod) => {
             // Clear logs
             useAppStore.getState().clearLogs();
-            
+
             // Create a test error
             const testError = new Error('Test key generation failure');
-            
+
             // Log the error
             LogService.logKeyGeneration(
               module as 'emissor' | 'titular' | 'verificador',
@@ -437,24 +437,24 @@ describe('DIDService Property-Based Tests', () => {
               false,
               testError
             );
-            
+
             // Get logs
             const logs = LogService.getLogs();
             const keyGenLog = logs.find(log => log.operation === 'key_generation');
-            
+
             // Verify log exists
             expect(keyGenLog).toBeDefined();
-            
+
             // Verify error is logged
             expect(keyGenLog?.success).toBe(false);
             expect(keyGenLog?.error).toBeDefined();
             expect(keyGenLog?.error?.message).toBe('Test key generation failure');
-            
+
             // Verify technical details are still present
             expect(keyGenLog?.details.algorithm).toBe(algorithm);
             expect(keyGenLog?.details.key_size).toBe(keySize);
             expect(keyGenLog?.details.did_method).toBe(didMethod);
-            
+
             return true;
           }
         ),
@@ -469,7 +469,7 @@ describe('DIDService Property-Based Tests', () => {
           async (numGenerations) => {
             // Clear logs
             useAppStore.getState().clearLogs();
-            
+
             // Generate multiple identities
             for (let i = 0; i < numGenerations; i++) {
               if (i % 2 === 0) {
@@ -477,25 +477,25 @@ describe('DIDService Property-Based Tests', () => {
               } else {
                 await DIDService.generateIssuerIdentity('ufsc.br');
               }
-              
+
               // Small delay to ensure different timestamps
               await new Promise(resolve => setTimeout(resolve, 2));
             }
-            
+
             // Get logs
             const logs = LogService.getLogs();
             const keyGenLogs = logs.filter(log => log.operation === 'key_generation');
-            
+
             // Verify we have the correct number of logs
             expect(keyGenLogs.length).toBe(numGenerations);
-            
+
             // Verify chronological ordering
             for (let i = 1; i < keyGenLogs.length; i++) {
               const prevTimestamp = keyGenLogs[i - 1].timestamp.getTime();
               const currTimestamp = keyGenLogs[i].timestamp.getTime();
               expect(currTimestamp).toBeGreaterThanOrEqual(prevTimestamp);
             }
-            
+
             return true;
           }
         ),

@@ -4,7 +4,7 @@ import CredentialService from '../CredentialService';
 import PresentationService from '../PresentationService';
 import DIDService from '../DIDService';
 import StorageService from '../StorageService';
-import {StudentData, PresentationExchangeRequest} from '../../types';
+import {StudentData} from '../../types';
 
 // Arbitraries for property-based testing
 const arbitraryStudentData = (): fc.Arbitrary<StudentData> =>
@@ -201,7 +201,7 @@ describe('VerificationService Property Tests', () => {
       await fc.assert(
         fc.asyncProperty(arbitraryStudentData(), async studentData => {
           // Generate issuer identity
-          const {did: issuerDID, publicKey: issuerPublicKey} =
+          const {publicKey: issuerPublicKey} =
             await DIDService.generateIssuerIdentity('ufsc.br', 'identidade-academica');
 
           // Generate holder identity

@@ -383,7 +383,7 @@ describe('LogService Property-Based Tests', () => {
             useAppStore.getState().clearLogs();
 
             // Capture events with small delays to ensure different timestamps
-            events.forEach((event, index) => {
+            events.forEach((event, _index) => {
               // Add a tiny delay to ensure timestamps are different
               const startTime = Date.now();
               while (Date.now() - startTime < 1) {

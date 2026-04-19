@@ -5,7 +5,6 @@ import CryptoService from '../CryptoService';
 import StorageService from '../StorageService';
 import LogService from '../LogService';
 import {
-  PresentationExchangeRequest,
   VerifiableCredential,
   StudentData,
 } from '../../types';
@@ -77,13 +76,13 @@ describe('Elections - Property-Based Tests', () => {
 
     // Mock StorageService nullifier methods with proper implementation
     const nullifierRegistry: Record<string, string[]> = {};
-    
+
     (StorageService.getNullifiers as jest.Mock).mockImplementation(
       async (electionId: string) => {
         return nullifierRegistry[electionId] || [];
       },
     );
-    
+
     (StorageService.storeNullifier as jest.Mock).mockImplementation(
       async (nullifier: string, electionId: string) => {
         if (!nullifierRegistry[electionId]) {
@@ -158,9 +157,9 @@ describe('Elections - Property-Based Tests', () => {
     fc.string({minLength: 10, maxLength: 50}).filter(s => {
       // Filter out problematic strings that could cause issues
       const problematic = [
-        'constructor', 'prototype', '__proto__', 'toString', 'valueOf', 
+        'constructor', 'prototype', '__proto__', 'toString', 'valueOf',
         'toLocaleString', 'hasOwnProperty', 'isPrototypeOf', 'propertyIsEnumerable',
-        '__defineGetter__', '__defineSetter__', '__lookupGetter__', '__lookupSetter__'
+        '__defineGetter__', '__defineSetter__', '__lookupGetter__', '__lookupSetter__',
       ];
       return !problematic.includes(s) && s.trim().length > 0;
     });
@@ -469,10 +468,6 @@ describe('Elections - Property-Based Tests', () => {
             );
 
             // Verify status value is not revealed in proof
-            const proofString = JSON.stringify(presentation.zkp_proofs);
-            const actualStatus = credential.credentialSubject.status_matricula;
-
-            // The actual status value should not appear in the proof data
             // (only the predicate result should be visible)
             expect(presentation.zkp_proofs![0].revealed_attrs).toHaveLength(0);
 

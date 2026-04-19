@@ -108,7 +108,12 @@ describe('PresentationService - PEX Request Processing Properties', () => {
       '@context': fc.constant(['https://www.w3.org/2018/credentials/v1']),
       type: fc.constant(['VerifiableCredential', 'AcademicIDCredential']),
       issuer: fc.constant('did:web:ufsc.br'),
-      issuanceDate: fc.date({min: new Date('2000-01-01'), max: new Date('2030-12-31')}).map(d => d.toISOString()),
+      issuanceDate: fc
+        .integer({
+          min: new Date('2000-01-01').getTime(),
+          max: new Date('2030-12-31').getTime(),
+        })
+        .map(ts => new Date(ts).toISOString()),
       credentialSubject: fc.record({
         id: fc.constant('did:key:z6Mk...'),
         nome_completo: fc.string({minLength: 3, maxLength: 100}),
