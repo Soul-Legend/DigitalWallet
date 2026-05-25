@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+
+<html lang="pt-BR"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Início - Carteira Digital SSI</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;600;700&amp;family=Raleway:wght@400;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "inverse-on-surface": "#f3f0ef",
+                        "on-secondary-container": "#6e5700",
+                        "surface-container-high": "#eae7e7",
+                        "on-primary-fixed-variant": "#00429c",
+                        "inverse-surface": "#303030",
+                        "surface-dim": "#dcd9d9",
+                        "surface-bright": "#fcf9f8",
+                        "on-tertiary-fixed-variant": "#00530c",
+                        "tertiary-fixed": "#8ffb85",
+                        "on-tertiary-fixed": "#002202",
+                        "on-tertiary": "#ffffff",
+                        "outline": "#737784",
+                        "background": "#fcf9f8",
+                        "secondary-fixed": "#ffe089",
+                        "on-background": "#1b1b1c",
+                        "outline-variant": "#c3c6d5",
+                        "tertiary-fixed-dim": "#73dd6b",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-container-low": "#f6f3f2",
+                        "primary": "#003a8c",
+                        "secondary": "#745b00",
+                        "on-primary-fixed": "#001945",
+                        "error-container": "#ffdad6",
+                        "error": "#ba1a1a",
+                        "surface-container-highest": "#e5e2e1",
+                        "on-secondary-fixed-variant": "#574400",
+                        "on-primary-container": "#b8cbff",
+                        "on-surface": "#1b1b1c",
+                        "on-error": "#ffffff",
+                        "surface-variant": "#e5e2e1",
+                        "surface": "#fcf9f8",
+                        "secondary-fixed-dim": "#f0c100",
+                        "primary-container": "#1351b4",
+                        "primary-fixed-dim": "#b0c6ff",
+                        "surface-tint": "#225abd",
+                        "inverse-primary": "#b0c6ff",
+                        "on-surface-variant": "#434653",
+                        "on-primary": "#ffffff",
+                        "on-tertiary-container": "#79e370",
+                        "on-secondary": "#ffffff",
+                        "primary-fixed": "#d9e2ff",
+                        "secondary-container": "#fecc03",
+                        "on-error-container": "#93000a",
+                        "surface-container": "#f0eded",
+                        "on-secondary-fixed": "#241a00",
+                        "tertiary": "#004a09",
+                        "tertiary-container": "#006511"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "fontFamily": {
+                        "headline": ["Raleway", "sans-serif"],
+                        "body": ["Public Sans", "sans-serif"],
+                        "label": ["Public Sans", "sans-serif"]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-surface font-body text-on-surface antialiased flex flex-col min-h-screen">
+<!-- TopAppBar -->
+<header class="bg-[#1351B4] backdrop-blur-xl bg-opacity-90 dark:bg-slate-900/90 text-white dark:text-blue-400 font-['Raleway'] font-bold tracking-tight text-lg docked full-width top-0 shadow-lg shadow-blue-900/20 fixed top-0 w-full z-50 flex items-center justify-between px-6 h-16 no-border bg-gradient-to-br from-white/10 to-transparent">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full bg-surface-container-low flex items-center justify-center overflow-hidden border border-outline-variant/20 shadow-sm">
+<img alt="User Profile Portrait" class="w-full h-full object-cover" data-alt="professional portrait of a smiling man with neat hair wearing a dark blue suit jacket against a clean gray background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC5hy2r-AAKPpuPw2b-f91eBNwxjIV9Lfqh6wXNX5q8Bi8cUnGgyEyIkbBRuUdmN7NRHwFkCc7sNAxJ2GpdwXTq2kwJOCNMREAq2hC-ETfLIda2qwVUfE1pfYwfqzoQNvdT50etUEJqxjAt5_ihG9V2gsWDprf1wwKMXpxeGH9sAt3qBaOYOEnmL7CQcHP-ik-p2tQfFrnrA8FU3XiCkdpYtZQ8I8lzxXLrgaf1ZpQ7jEOhTCbgBT62WpWwIns6Hf92WxmWe7FA-mg"/>
+</div>
+<span class="text-white font-bold tracking-tight text-xl">Identidade Universitária</span>
+</div>
+<button class="hover:bg-white/10 transition-colors rounded-full p-2 scale-95 active:scale-90 transition-transform">
+<span class="material-symbols-outlined text-white/80" data-icon="settings" style="font-variation-settings: 'FILL' 1;">settings</span>
+</button>
+</header>
+<!-- Main Canvas -->
+<main class="flex-grow pt-24 pb-24 px-6 md:px-12 max-w-7xl mx-auto w-full">
+<!-- Hero Section -->
+<section class="mb-12 relative overflow-hidden rounded-xl bg-primary-container p-8 md:p-12 shadow-lg">
+<div class="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent pointer-events-none"></div>
+<div class="relative z-10">
+<h1 class="font-headline text-display-lg font-bold tracking-tight text-on-primary mb-2">Olá, Estudante</h1>
+<p class="font-body text-on-primary-container text-lg md:text-xl max-w-2xl">Bem-vindo à sua Carteira Digital SSI. Gerencie suas credenciais verificáveis de forma segura e soberana.</p>
+</div>
+</section>
+<!-- Bento Grid / Feature Cards -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+<!-- Minha Carteira -->
+<a class="group block p-6 bg-surface-container-lowest rounded-xl shadow-[0_4px_24px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_32px_rgba(0,0,0,0.08)] transition-all duration-300" href="#">
+<div class="w-12 h-12 mb-4 rounded-full bg-primary-fixed flex items-center justify-center text-primary group-hover:scale-110 transition-transform duration-300">
+<span class="material-symbols-outlined text-2xl" data-icon="account_balance_wallet" style="font-variation-settings: 'FILL' 1;">account_balance_wallet</span>
+</div>
+<h2 class="font-headline text-xl font-bold text-on-surface mb-2">Minha Carteira</h2>
+<p class="font-body text-on-surface-variant text-sm">Acesse e gerencie suas credenciais digitais armazenadas com segurança.</p>
+</a>
+<!-- Emitir Credencial -->
+<a class="group block p-6 bg-surface-container-lowest rounded-xl shadow-[0_4px_24px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_32px_rgba(0,0,0,0.08)] transition-all duration-300" href="#">
+<div class="w-12 h-12 mb-4 rounded-full bg-secondary-fixed flex items-center justify-center text-on-secondary-container group-hover:scale-110 transition-transform duration-300">
+<span class="material-symbols-outlined text-2xl" data-icon="add_moderator" style="font-variation-settings: 'FILL' 1;">add_moderator</span>
+</div>
+<h2 class="font-headline text-xl font-bold text-on-surface mb-2">Emitir Credencial</h2>
+<p class="font-body text-on-surface-variant text-sm">Emita novas credenciais verificáveis para outros estudantes ou entidades.</p>
+</a>
+<!-- Validar -->
+<a class="group block p-6 bg-surface-container-lowest rounded-xl shadow-[0_4px_24px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_32px_rgba(0,0,0,0.08)] transition-all duration-300" href="#">
+<div class="w-12 h-12 mb-4 rounded-full bg-tertiary-fixed flex items-center justify-center text-on-tertiary-container group-hover:scale-110 transition-transform duration-300">
+<span class="material-symbols-outlined text-2xl" data-icon="verified_user" style="font-variation-settings: 'FILL' 1;">verified_user</span>
+</div>
+<h2 class="font-headline text-xl font-bold text-on-surface mb-2">Validar</h2>
+<p class="font-body text-on-surface-variant text-sm">Verifique a autenticidade de credenciais apresentadas a você.</p>
+</a>
+<!-- Eventos -->
+<a class="group block p-6 bg-surface-container-lowest rounded-xl shadow-[0_4px_24px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_32px_rgba(0,0,0,0.08)] transition-all duration-300" href="#">
+<div class="w-12 h-12 mb-4 rounded-full bg-surface-container-highest flex items-center justify-center text-on-surface group-hover:scale-110 transition-transform duration-300">
+<span class="material-symbols-outlined text-2xl" data-icon="history_edu" style="font-variation-settings: 'FILL' 1;">history_edu</span>
+</div>
+<h2 class="font-headline text-xl font-bold text-on-surface mb-2">Eventos</h2>
+<p class="font-body text-on-surface-variant text-sm">Consulte o histórico de atividades e logs de suas credenciais.</p>
+</a>
+<!-- Glossário -->
+<a class="group block p-6 bg-surface-container-lowest rounded-xl shadow-[0_4px_24px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_32px_rgba(0,0,0,0.08)] transition-all duration-300" href="#">
+<div class="w-12 h-12 mb-4 rounded-full bg-surface-container-highest flex items-center justify-center text-on-surface group-hover:scale-110 transition-transform duration-300">
+<span class="material-symbols-outlined text-2xl" data-icon="menu_book" style="font-variation-settings: 'FILL' 1;">menu_book</span>
+</div>
+<h2 class="font-headline text-xl font-bold text-on-surface mb-2">Glossário</h2>
+<p class="font-body text-on-surface-variant text-sm">Aprenda os termos técnicos e conceitos do ecossistema SSI.</p>
+</a>
+</div>
+</main>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="bg-[#fcf9f8] dark:bg-slate-950 font-['Public_Sans'] text-[10px] font-semibold uppercase tracking-wider docked full-width bottom-0 rounded-t-none border-t border-[#e5e2e1]/20 dark:border-slate-800 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-2 py-3 bg-opacity-95 md:hidden">
+<a class="flex flex-col items-center justify-center text-[#1351B4] dark:text-blue-400 font-bold scale-110 hover:bg-[#f6f3f2] dark:hover:bg-slate-900 rounded-xl transition-all duration-300 ease-in-out p-2" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="account_balance_wallet" style="font-variation-settings: 'FILL' 1;">account_balance_wallet</span>
+<span>Vault</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-600 opacity-70 hover:bg-[#f6f3f2] dark:hover:bg-slate-900 rounded-xl transition-all duration-300 ease-in-out p-2" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="add_moderator" style="font-variation-settings: 'FILL' 1;">add_moderator</span>
+<span>Issue</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-600 opacity-70 hover:bg-[#f6f3f2] dark:hover:bg-slate-900 rounded-xl transition-all duration-300 ease-in-out p-2" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="verified_user" style="font-variation-settings: 'FILL' 1;">verified_user</span>
+<span>Verify</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-600 opacity-70 hover:bg-[#f6f3f2] dark:hover:bg-slate-900 rounded-xl transition-all duration-300 ease-in-out p-2" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="history_edu" style="font-variation-settings: 'FILL' 1;">history_edu</span>
+<span>Logs</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-600 opacity-70 hover:bg-[#f6f3f2] dark:hover:bg-slate-900 rounded-xl transition-all duration-300 ease-in-out p-2" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="menu_book" style="font-variation-settings: 'FILL' 1;">menu_book</span>
+<span>Glossary</span>
+</a>
+</nav>
+</body></html>

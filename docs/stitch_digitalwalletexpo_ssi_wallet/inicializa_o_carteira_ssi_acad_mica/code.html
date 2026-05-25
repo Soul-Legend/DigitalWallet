@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+
+<html lang="pt-BR"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Identidade Acadêmica Criada - SSI Universitário</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;600;700&amp;family=Raleway:wght@400;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "inverse-on-surface": "#f3f0ef",
+                      "on-secondary-container": "#6e5700",
+                      "surface-container-high": "#eae7e7",
+                      "on-primary-fixed-variant": "#00429c",
+                      "inverse-surface": "#303030",
+                      "surface-dim": "#dcd9d9",
+                      "surface-bright": "#fcf9f8",
+                      "on-tertiary-fixed-variant": "#00530c",
+                      "tertiary-fixed": "#8ffb85",
+                      "on-tertiary-fixed": "#002202",
+                      "on-tertiary": "#ffffff",
+                      "outline": "#737784",
+                      "background": "#fcf9f8",
+                      "secondary-fixed": "#ffe089",
+                      "on-background": "#1b1b1c",
+                      "outline-variant": "#c3c6d5",
+                      "tertiary-fixed-dim": "#73dd6b",
+                      "surface-container-lowest": "#ffffff",
+                      "surface-container-low": "#f6f3f2",
+                      "primary": "#003a8c",
+                      "secondary": "#745b00",
+                      "on-primary-fixed": "#001945",
+                      "error-container": "#ffdad6",
+                      "error": "#ba1a1a",
+                      "surface-container-highest": "#e5e2e1",
+                      "on-secondary-fixed-variant": "#574400",
+                      "on-primary-container": "#b8cbff",
+                      "on-surface": "#1b1b1c",
+                      "on-error": "#ffffff",
+                      "surface-variant": "#e5e2e1",
+                      "surface": "#fcf9f8",
+                      "secondary-fixed-dim": "#f0c100",
+                      "primary-container": "#1351b4",
+                      "primary-fixed-dim": "#b0c6ff",
+                      "surface-tint": "#225abd",
+                      "inverse-primary": "#b0c6ff",
+                      "on-surface-variant": "#434653",
+                      "on-primary": "#ffffff",
+                      "on-tertiary-container": "#79e370",
+                      "on-secondary": "#ffffff",
+                      "primary-fixed": "#d9e2ff",
+                      "secondary-container": "#fecc03",
+                      "on-error-container": "#93000a",
+                      "surface-container": "#f0eded",
+                      "on-secondary-fixed": "#241a00",
+                      "tertiary": "#004a09",
+                      "tertiary-container": "#006511"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {},
+              "fontFamily": {
+                      "headline": [
+                              "Raleway", "sans-serif"
+                      ],
+                      "body": [
+                              "Public Sans", "sans-serif"
+                      ],
+                      "label": [
+                              "Public Sans", "sans-serif"
+                      ],
+                      "mono": [
+                              "ui-monospace", "SFMono-Regular", "Menlo", "Monaco", "Consolas", "Liberation Mono", "Courier New", "monospace"
+                      ]
+              }
+      },
+          },
+        }
+      </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-surface text-on-surface font-body antialiased min-h-screen flex flex-col items-center justify-center p-6 md:p-12 lg:p-24 selection:bg-primary-container selection:text-on-primary-container">
+<!-- Top Navigation Omitted for Transactional Initialization Screen as per Intent Rule -->
+<header class="w-full flex items-center justify-center py-6 absolute top-0">
+<div class="flex items-center space-x-2 text-primary">
+<span class="material-symbols-outlined text-3xl">school</span>
+<span class="font-headline font-bold text-xl tracking-wide">SSI Universitário</span>
+</div>
+</header>
+<!-- Bottom Navigation Omitted for Transactional Initialization Screen as per Intent Rule -->
+<main class="w-full max-w-md mx-auto flex flex-col flex-grow items-center justify-center space-y-12 animate-fade-in mt-16">
+<!-- Success Icon Section -->
+<div class="flex flex-col items-center space-y-6">
+<div class="w-24 h-24 rounded-full bg-tertiary-fixed flex items-center justify-center shadow-lg shadow-tertiary-fixed-dim/20">
+<span class="material-symbols-outlined text-on-tertiary-fixed text-6xl" style="font-variation-settings: 'FILL' 1;">
+                    check_circle
+                </span>
+</div>
+<div class="text-center space-y-4">
+<h1 class="font-headline font-bold text-4xl text-on-surface tracking-tight">Identidade Acadêmica Criada</h1>
+<p class="font-body text-on-surface-variant text-lg max-w-sm mx-auto leading-relaxed">
+                    Seu DID (Decentralized Identifier) foi gerado e armazenado com segurança no seu dispositivo.
+                </p>
+</div>
+</div>
+<!-- DID Display Area -->
+<div class="w-full bg-surface-container-low p-6 rounded-xl border-l-4 border-primary">
+<div class="flex items-center space-x-2 mb-3">
+<span class="material-symbols-outlined text-on-surface-variant text-sm">
+                    fingerprint
+                </span>
+<span class="font-label text-sm font-semibold text-on-surface uppercase tracking-wider">Seu Identificador Descentralizado</span>
+</div>
+<div class="bg-surface-container-highest p-4 rounded-lg overflow-x-auto">
+<code class="font-mono text-sm text-on-surface-variant break-all selection:bg-primary-container selection:text-on-primary-container block">
+                    did:key:z6MkhaXgBZDvotDkL5257faiztiCEsJUTCvkRc5D9SGBRxo3
+                </code>
+</div>
+<div class="mt-3 flex items-center justify-between text-xs text-on-surface-variant">
+<span>Armazenado localmente</span>
+<span class="material-symbols-outlined text-tertiary-fixed-dim text-sm" style="font-variation-settings: 'FILL' 1;">
+                    shield
+                </span>
+</div>
+</div>
+<!-- Action Area -->
+<div class="w-full pt-8 pb-4">
+<button class="w-full bg-primary hover:bg-primary-fixed-dim hover:text-on-primary-fixed text-on-primary font-label font-bold text-lg py-4 px-6 rounded-xl transition-colors duration-200 shadow-md shadow-primary/20 flex items-center justify-center space-x-2" type="button">
+<span>Continuar</span>
+<span class="material-symbols-outlined text-xl">
+                    arrow_forward
+                </span>
+</button>
+</div>
+</main>
+<!-- Decorative background elements (subtle gradients) -->
+<div class="fixed top-0 left-0 w-full h-1/2 bg-gradient-to-b from-primary/5 to-transparent -z-10 pointer-events-none"></div>
+</body></html>

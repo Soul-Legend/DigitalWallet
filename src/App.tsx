@@ -32,12 +32,13 @@ function App(): React.JSX.Element {
           initialRouteName="Initialization"
           screenOptions={{
             headerStyle: {
-              backgroundColor: '#003366',
+              backgroundColor: '#1351b4',
             },
-            headerTintColor: '#fff',
+            headerTintColor: '#ffffff',
             headerTitleStyle: {
               fontWeight: 'bold',
             },
+            headerShadowVisible: false,
           }}>
           <Stack.Screen
             name="Initialization"

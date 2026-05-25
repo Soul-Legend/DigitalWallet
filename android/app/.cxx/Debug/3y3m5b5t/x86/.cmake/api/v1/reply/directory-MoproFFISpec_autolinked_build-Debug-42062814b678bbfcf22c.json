@@ -1,0 +1,14 @@
+{
+	"backtraceGraph" : 
+	{
+		"commands" : [],
+		"files" : [],
+		"nodes" : []
+	},
+	"installers" : [],
+	"paths" : 
+	{
+		"build" : "MoproFFISpec_autolinked_build",
+		"source" : "S:/Sandbox/DigitalWallet/DigitalWallet/node_modules/mopro-ffi/android/build/generated/source/codegen/jni"
+	}
+}

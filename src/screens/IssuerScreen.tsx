@@ -41,13 +41,79 @@ const IssuerScreen: React.FC = () => {
     toggleChainExpanded,
   } = useIssuerState();
 
+  const benefits = [
+    {
+      key: 'isencao_ru',
+      label: 'Restaurante Universitário',
+      subtitle: 'Acesso subsidiado (RU)',
+      value: formData.isencao_ru,
+    },
+    {
+      key: 'moradia_estudantil',
+      label: 'Moradia Estudantil',
+      subtitle: 'Acesso aos blocos',
+      value: formData.moradia_estudantil,
+    },
+    {
+      key: 'bolsa_estudantil',
+      label: 'Biblioteca Universitária',
+      subtitle: 'Empréstimos (BU)',
+      value: formData.bolsa_estudantil,
+    },
+    {
+      key: 'alojamento_indigena',
+      label: 'Alojamento Indígena',
+      subtitle: 'Programa de apoio',
+      value: formData.alojamento_indigena,
+    },
+    {
+      key: 'auxilio_creche',
+      label: 'Auxílio Creche',
+      subtitle: 'Programa assistencial',
+      value: formData.auxilio_creche,
+    },
+    {
+      key: 'auxilio_moradia',
+      label: 'Auxílio Moradia',
+      subtitle: 'Programa habitacional',
+      value: formData.auxilio_moradia,
+    },
+    {
+      key: 'bolsa_permanencia_mec',
+      label: 'Bolsa Permanência MEC',
+      subtitle: 'Programa federal',
+      value: formData.bolsa_permanencia_mec,
+    },
+    {
+      key: 'paiq',
+      label: 'PAIQ',
+      subtitle: 'Programa institucional',
+      value: formData.paiq,
+    },
+    {
+      key: 'isencao_esporte',
+      label: 'Isenção Esporte',
+      subtitle: 'Centro desportivo',
+      value: formData.isencao_esporte,
+    },
+    {
+      key: 'isencao_idiomas',
+      label: 'Isenção Idiomas',
+      subtitle: 'Programa de idiomas',
+      value: formData.isencao_idiomas,
+    },
+  ];
+
   return (
     <ScrollView style={styles.container}>
       <View style={styles.content}>
-        <Text style={styles.title}>Módulo Emissor</Text>
-        <Text style={styles.subtitle}>
-          Simula a emissão de credenciais pela UFSC
+        {/* Institution Label */}
+        <Text style={styles.institutionLabel}>
+          UNIVERSIDADE FEDERAL DE SANTA CATARINA
         </Text>
+
+        {/* Title */}
+        <Text style={styles.title}>Nova Credencial Acadêmica</Text>
 
         {generalError && <ErrorMessage message={generalError} />}
         {successMessage && <SuccessMessage message={successMessage} />}
@@ -71,33 +137,35 @@ const IssuerScreen: React.FC = () => {
         {/* Credential Format Selector */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Formato da Credencial</Text>
-          <View style={styles.statusContainer}>
+          <View style={styles.formatContainer}>
             <TouchableOpacity
               style={[
-                styles.statusButton,
-                credentialFormat === 'sd-jwt' && styles.statusButtonActive,
+                styles.formatButton,
+                credentialFormat === 'sd-jwt' && styles.formatButtonActive,
               ]}
               onPress={() => setCredentialFormat('sd-jwt')}
               disabled={isLoading}>
               <Text
                 style={[
-                  styles.statusButtonText,
-                  credentialFormat === 'sd-jwt' && styles.statusButtonTextActive,
+                  styles.formatButtonText,
+                  credentialFormat === 'sd-jwt' &&
+                    styles.formatButtonTextActive,
                 ]}>
                 SD-JWT
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[
-                styles.statusButton,
-                credentialFormat === 'anoncreds' && styles.statusButtonActive,
+                styles.formatButton,
+                credentialFormat === 'anoncreds' && styles.formatButtonActive,
               ]}
               onPress={() => setCredentialFormat('anoncreds')}
               disabled={isLoading}>
               <Text
                 style={[
-                  styles.statusButtonText,
-                  credentialFormat === 'anoncreds' && styles.statusButtonTextActive,
+                  styles.formatButtonText,
+                  credentialFormat === 'anoncreds' &&
+                    styles.formatButtonTextActive,
                 ]}>
                 AnonCreds
               </Text>
@@ -120,19 +188,18 @@ const IssuerScreen: React.FC = () => {
           </View>
         )}
 
-        {/* Required Fields Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Dados Obrigatórios</Text>
+        {/* Student Data Section */}
+        <View style={styles.formCard}>
+          <Text style={styles.formCardTitle}>Dados do Aluno</Text>
 
           <View style={styles.fieldContainer}>
-            <Text style={styles.label}>Nome Completo *</Text>
+            <Text style={styles.label}>Nome Completo</Text>
             <TextInput
               style={[styles.input, errors.nome_completo && styles.inputError]}
               value={formData.nome_completo}
-              onChangeText={text =>
-                updateField('nome_completo', text)
-              }
-              placeholder="Digite o nome completo"
+              onChangeText={text => updateField('nome_completo', text)}
+              placeholder="Ex: Maria Clara Silva"
+              placeholderTextColor="#737784"
               editable={!isLoading}
             />
             {errors.nome_completo && (
@@ -141,12 +208,13 @@ const IssuerScreen: React.FC = () => {
           </View>
 
           <View style={styles.fieldContainer}>
-            <Text style={styles.label}>CPF *</Text>
+            <Text style={styles.label}>CPF</Text>
             <TextInput
               style={[styles.input, errors.cpf && styles.inputError]}
               value={formData.cpf}
               onChangeText={text => updateField('cpf', text)}
-              placeholder="Digite o CPF (11 dígitos)"
+              placeholder="000.000.000-00"
+              placeholderTextColor="#737784"
               keyboardType="numeric"
               editable={!isLoading}
             />
@@ -154,14 +222,13 @@ const IssuerScreen: React.FC = () => {
           </View>
 
           <View style={styles.fieldContainer}>
-            <Text style={styles.label}>Matrícula *</Text>
+            <Text style={styles.label}>Matrícula (UFSC)</Text>
             <TextInput
               style={[styles.input, errors.matricula && styles.inputError]}
               value={formData.matricula}
-              onChangeText={text =>
-                updateField('matricula', text)
-              }
-              placeholder="Digite a matrícula"
+              onChangeText={text => updateField('matricula', text)}
+              placeholder="Ex: 20241000"
+              placeholderTextColor="#737784"
               editable={!isLoading}
             />
             {errors.matricula && (
@@ -170,12 +237,13 @@ const IssuerScreen: React.FC = () => {
           </View>
 
           <View style={styles.fieldContainer}>
-            <Text style={styles.label}>Curso *</Text>
+            <Text style={styles.label}>Curso</Text>
             <TextInput
               style={[styles.input, errors.curso && styles.inputError]}
               value={formData.curso}
               onChangeText={text => updateField('curso', text)}
-              placeholder="Digite o curso"
+              placeholder="Selecione o curso..."
+              placeholderTextColor="#737784"
               editable={!isLoading}
             />
             {errors.curso && (
@@ -184,42 +252,38 @@ const IssuerScreen: React.FC = () => {
           </View>
 
           <View style={styles.fieldContainer}>
-            <Text style={styles.label}>Status de Matrícula *</Text>
-            <View style={styles.statusContainer}>
+            <Text style={styles.label}>Status de Matrícula</Text>
+            <View style={styles.formatContainer}>
               <TouchableOpacity
                 style={[
-                  styles.statusButton,
+                  styles.formatButton,
                   formData.status_matricula === 'Ativo' &&
-                    styles.statusButtonActive,
+                    styles.formatButtonActive,
                 ]}
-                onPress={() =>
-                  updateField('status_matricula', 'Ativo')
-                }
+                onPress={() => updateField('status_matricula', 'Ativo')}
                 disabled={isLoading}>
                 <Text
                   style={[
-                    styles.statusButtonText,
+                    styles.formatButtonText,
                     formData.status_matricula === 'Ativo' &&
-                      styles.statusButtonTextActive,
+                      styles.formatButtonTextActive,
                   ]}>
                   Ativo
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[
-                  styles.statusButton,
+                  styles.formatButton,
                   formData.status_matricula === 'Inativo' &&
-                    styles.statusButtonActive,
+                    styles.formatButtonActive,
                 ]}
-                onPress={() =>
-                  updateField('status_matricula', 'Inativo')
-                }
+                onPress={() => updateField('status_matricula', 'Inativo')}
                 disabled={isLoading}>
                 <Text
                   style={[
-                    styles.statusButtonText,
+                    styles.formatButtonText,
                     formData.status_matricula === 'Inativo' &&
-                      styles.statusButtonTextActive,
+                      styles.formatButtonTextActive,
                   ]}>
                   Inativo
                 </Text>
@@ -231,17 +295,16 @@ const IssuerScreen: React.FC = () => {
           </View>
 
           <View style={styles.fieldContainer}>
-            <Text style={styles.label}>Data de Nascimento *</Text>
+            <Text style={styles.label}>Data de Nascimento</Text>
             <TextInput
               style={[
                 styles.input,
                 errors.data_nascimento && styles.inputError,
               ]}
               value={formData.data_nascimento}
-              onChangeText={text =>
-                updateField('data_nascimento', text)
-              }
+              onChangeText={text => updateField('data_nascimento', text)}
               placeholder="AAAA-MM-DD"
+              placeholderTextColor="#737784"
               editable={!isLoading}
             />
             {errors.data_nascimento && (
@@ -251,116 +314,31 @@ const IssuerScreen: React.FC = () => {
         </View>
 
         {/* Benefits Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Benefícios e Programas</Text>
-
-          <View style={styles.switchContainer}>
-            <Text style={styles.switchLabel}>Alojamento Indígena</Text>
-            <Switch
-              value={formData.alojamento_indigena}
-              onValueChange={value =>
-                updateField('alojamento_indigena', value)
-              }
-              disabled={isLoading}
-            />
+        <View style={styles.benefitsCard}>
+          <View style={styles.benefitsHeader}>
+            <Text style={styles.benefitsIcon}>🛡️</Text>
+            <Text style={styles.benefitsTitle}>Benefícios</Text>
           </View>
+          <Text style={styles.benefitsDescription}>
+            Habilite os acessos institucionais que serão vinculados a esta
+            credencial SSI.
+          </Text>
 
-          <View style={styles.switchContainer}>
-            <Text style={styles.switchLabel}>Auxílio Creche</Text>
-            <Switch
-              value={formData.auxilio_creche}
-              onValueChange={value =>
-                updateField('auxilio_creche', value)
-              }
-              disabled={isLoading}
-            />
-          </View>
-
-          <View style={styles.switchContainer}>
-            <Text style={styles.switchLabel}>Auxílio Moradia</Text>
-            <Switch
-              value={formData.auxilio_moradia}
-              onValueChange={value =>
-                updateField('auxilio_moradia', value)
-              }
-              disabled={isLoading}
-            />
-          </View>
-
-          <View style={styles.switchContainer}>
-            <Text style={styles.switchLabel}>Bolsa Estudantil</Text>
-            <Switch
-              value={formData.bolsa_estudantil}
-              onValueChange={value =>
-                updateField('bolsa_estudantil', value)
-              }
-              disabled={isLoading}
-            />
-          </View>
-
-          <View style={styles.switchContainer}>
-            <Text style={styles.switchLabel}>Bolsa Permanência MEC</Text>
-            <Switch
-              value={formData.bolsa_permanencia_mec}
-              onValueChange={value =>
-                updateField('bolsa_permanencia_mec', value)
-              }
-              disabled={isLoading}
-            />
-          </View>
-
-          <View style={styles.switchContainer}>
-            <Text style={styles.switchLabel}>PAIQ</Text>
-            <Switch
-              value={formData.paiq}
-              onValueChange={value => updateField('paiq', value)}
-              disabled={isLoading}
-            />
-          </View>
-
-          <View style={styles.switchContainer}>
-            <Text style={styles.switchLabel}>Moradia Estudantil</Text>
-            <Switch
-              value={formData.moradia_estudantil}
-              onValueChange={value =>
-                updateField('moradia_estudantil', value)
-              }
-              disabled={isLoading}
-            />
-          </View>
-
-          <View style={styles.switchContainer}>
-            <Text style={styles.switchLabel}>Isenção RU</Text>
-            <Switch
-              value={formData.isencao_ru}
-              onValueChange={value =>
-                updateField('isencao_ru', value)
-              }
-              disabled={isLoading}
-            />
-          </View>
-
-          <View style={styles.switchContainer}>
-            <Text style={styles.switchLabel}>Isenção Esporte</Text>
-            <Switch
-              value={formData.isencao_esporte}
-              onValueChange={value =>
-                updateField('isencao_esporte', value)
-              }
-              disabled={isLoading}
-            />
-          </View>
-
-          <View style={styles.switchContainer}>
-            <Text style={styles.switchLabel}>Isenção Idiomas</Text>
-            <Switch
-              value={formData.isencao_idiomas}
-              onValueChange={value =>
-                updateField('isencao_idiomas', value)
-              }
-              disabled={isLoading}
-            />
-          </View>
+          {benefits.map(benefit => (
+            <View key={benefit.key} style={styles.switchContainer}>
+              <View style={styles.switchLabelContainer}>
+                <Text style={styles.switchLabel}>{benefit.label}</Text>
+                <Text style={styles.switchSubtitle}>{benefit.subtitle}</Text>
+              </View>
+              <Switch
+                value={benefit.value}
+                onValueChange={value => updateField(benefit.key as any, value)}
+                disabled={isLoading}
+                trackColor={{false: '#dcd9d9', true: '#b0c6ff'}}
+                thumbColor={benefit.value ? '#003a8c' : '#f6f3f2'}
+              />
+            </View>
+          ))}
         </View>
 
         {/* Issue Button */}
@@ -368,12 +346,19 @@ const IssuerScreen: React.FC = () => {
           {isLoading ? (
             <LoadingIndicator message="Emitindo credencial..." />
           ) : (
-            <TouchableOpacity
-              style={styles.issueButton}
-              onPress={handleIssueCredential}
-              disabled={isLoading}>
-              <Text style={styles.issueButtonText}>Emitir Credencial</Text>
-            </TouchableOpacity>
+            <>
+              <TouchableOpacity
+                style={styles.issueButton}
+                onPress={handleIssueCredential}
+                disabled={isLoading}>
+                <Text style={styles.issueButtonIcon}>▶</Text>
+                <Text style={styles.issueButtonText}>Emitir e Assinar</Text>
+              </TouchableOpacity>
+              <Text style={styles.disclaimerText}>
+                Ao emitir, a credencial será ancorada na blockchain
+                institucional.
+              </Text>
+            </>
           )}
         </View>
       </View>
@@ -384,127 +369,214 @@ const IssuerScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#fcf9f8', // surface
   },
   content: {
-    padding: 20,
+    padding: 24,
   },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#003366',
+  institutionLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#003a8c', // primary
+    letterSpacing: 1.5,
     marginBottom: 8,
   },
-  subtitle: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 20,
+  title: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#003a8c', // primary
+    marginBottom: 24,
+    letterSpacing: -0.5,
   },
   section: {
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    padding: 16,
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 20,
     marginBottom: 16,
+    // Ambient shadow
+    shadowColor: '#1b1b1c',
+    shadowOffset: {width: 0, height: 4},
+    shadowOpacity: 0.04,
+    shadowRadius: 24,
+    elevation: 2,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
-    color: '#003366',
+    color: '#1b1b1c',
     marginBottom: 16,
   },
+  // Form Card
+  formCard: {
+    backgroundColor: '#f6f3f2', // surface-container-low
+    borderRadius: 12,
+    padding: 24,
+    marginBottom: 24,
+  },
+  formCardTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#1b1b1c', // on-surface
+    marginBottom: 24,
+  },
   fieldContainer: {
-    marginBottom: 16,
+    marginBottom: 20,
   },
   label: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#333',
+    color: '#1b1b1c',
     marginBottom: 8,
   },
   input: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 4,
-    padding: 12,
+    backgroundColor: '#e5e2e1', // surface-container-highest
+    borderRadius: 8,
+    padding: 14,
     fontSize: 16,
-    backgroundColor: '#fff',
+    color: '#1b1b1c',
+    // No border - per DESIGN.md "No-Line" rule
   },
   inputError: {
-    borderColor: '#c62828',
+    // Ghost border for error - per DESIGN.md fallback
+    borderWidth: 2,
+    borderColor: 'rgba(186, 26, 26, 0.4)', // error at reduced opacity
   },
   errorText: {
     fontSize: 12,
-    color: '#c62828',
+    color: '#ba1a1a', // error
     marginTop: 4,
   },
-  statusContainer: {
+  formatContainer: {
     flexDirection: 'row',
     gap: 12,
   },
-  statusButton: {
+  formatButton: {
     flex: 1,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 4,
+    padding: 14,
+    borderRadius: 8,
     alignItems: 'center',
+    backgroundColor: '#e5e2e1', // surface-container-highest
   },
-  statusButtonActive: {
-    backgroundColor: '#003366',
-    borderColor: '#003366',
+  formatButtonActive: {
+    backgroundColor: '#003a8c', // primary
   },
-  statusButtonText: {
-    fontSize: 16,
-    color: '#666',
+  formatButtonText: {
+    fontSize: 15,
+    color: '#434653',
+    fontWeight: '600',
   },
-  statusButtonTextActive: {
-    color: '#fff',
+  formatButtonTextActive: {
+    color: '#ffffff',
     fontWeight: 'bold',
+  },
+  // Benefits Card
+  benefitsCard: {
+    backgroundColor: '#f6f3f2', // surface-container-low
+    borderRadius: 12,
+    padding: 24,
+    marginBottom: 24,
+  },
+  benefitsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 8,
+  },
+  benefitsIcon: {
+    fontSize: 24,
+    backgroundColor: '#d9e2ff',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    textAlign: 'center',
+    lineHeight: 44,
+    overflow: 'hidden',
+  },
+  benefitsTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#1b1b1c',
+  },
+  benefitsDescription: {
+    fontSize: 14,
+    color: '#434653',
+    marginBottom: 20,
+    lineHeight: 20,
   },
   switchContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    paddingVertical: 14,
+    // No border-bottom line - use spacing instead per DESIGN.md
+  },
+  switchLabelContainer: {
+    flex: 1,
+    marginRight: 12,
   },
   switchLabel: {
     fontSize: 16,
-    color: '#333',
+    color: '#1b1b1c', // on-surface
+    fontWeight: '500',
   },
+  switchSubtitle: {
+    fontSize: 13,
+    color: '#434653', // on-surface-variant
+    marginTop: 2,
+  },
+  // Issue Button
   buttonContainer: {
     marginTop: 8,
     marginBottom: 32,
   },
   issueButton: {
-    backgroundColor: '#003366',
-    padding: 16,
-    borderRadius: 8,
+    backgroundColor: '#fecc03', // secondary-container (yellow CTA)
+    padding: 18,
+    borderRadius: 12,
     alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 8,
+    shadowColor: '#745b00',
+    shadowOffset: {width: 0, height: 4},
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 3,
+  },
+  issueButtonIcon: {
+    fontSize: 16,
+    color: '#6e5700',
   },
   issueButtonText: {
-    color: '#fff',
+    color: '#6e5700', // on-secondary-container
     fontSize: 18,
     fontWeight: 'bold',
   },
+  disclaimerText: {
+    fontSize: 12,
+    color: '#737784',
+    textAlign: 'center',
+    marginTop: 12,
+    lineHeight: 18,
+  },
+  // Credential Token Display
   credentialToken: {
     fontSize: 12,
     fontFamily: 'monospace',
-    color: '#333',
-    backgroundColor: '#f0f0f0',
-    padding: 12,
-    borderRadius: 4,
+    color: '#434653',
+    backgroundColor: '#e5e2e1', // surface-container-highest
+    padding: 16,
+    borderRadius: 8,
     marginBottom: 12,
   },
   copyButton: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#8ffb85', // tertiary-fixed (success green)
     padding: 12,
-    borderRadius: 6,
+    borderRadius: 8,
     alignItems: 'center',
   },
   copyButtonText: {
-    color: '#fff',
+    color: '#002202', // on-tertiary-fixed
     fontSize: 14,
     fontWeight: '600',
   },

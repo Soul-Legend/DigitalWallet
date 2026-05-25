@@ -1,5 +1,5 @@
 import React from 'react';
-import {View, Text, StyleSheet, ScrollView} from 'react-native';
+import {View, Text, StyleSheet, ScrollView, TouchableOpacity} from 'react-native';
 import {VerifiableCredential} from '../types';
 
 interface CredentialCardProps {
@@ -12,7 +12,11 @@ const CredentialCard: React.FC<CredentialCardProps> = ({credential}) => {
   const formatDate = (dateString: string): string => {
     try {
       const date = new Date(dateString);
-      return date.toLocaleDateString('pt-BR');
+      return date.toLocaleDateString('pt-BR', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+      });
     } catch {
       return dateString;
     }
@@ -26,236 +30,372 @@ const CredentialCard: React.FC<CredentialCardProps> = ({credential}) => {
     return arr.length > 0 ? arr.join(', ') : 'Nenhum';
   };
 
+  const isActive = credentialSubject.status_matricula === 'Ativo';
+
   return (
     <View style={styles.card}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Carteira de Identidade Acadêmica</Text>
-        <Text style={styles.issuer}>Emitido por: {credential.issuer}</Text>
-        <Text style={styles.date}>
-          Data de emissão: {formatDate(credential.issuanceDate)}
-        </Text>
+      {/* Top Accent Bar */}
+      <View style={styles.accentBar} />
+
+      {/* Header: Icon + Badge */}
+      <View style={styles.headerRow}>
+        <View style={styles.iconContainer}>
+          <Text style={styles.iconText}>🎓</Text>
+        </View>
+        <View style={styles.verifiedBadge}>
+          <Text style={styles.verifiedIcon}>✓</Text>
+          <Text style={styles.verifiedText}>VERIFICADA</Text>
+        </View>
       </View>
 
-      <ScrollView style={styles.content}>
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Dados Pessoais</Text>
-          <View style={styles.field}>
-            <Text style={styles.label}>Nome Completo:</Text>
-            <Text style={styles.value}>{credentialSubject.nome_completo}</Text>
+      {/* Title */}
+      <Text style={styles.title}>Carteira de Identidade Acadêmica</Text>
+      <Text style={styles.issuer}>
+        {credential.issuer || 'Universidade Federal de Santa Catarina (UFSC)'}
+      </Text>
+
+      {/* Metadata Grid */}
+      <View style={styles.metadataGrid}>
+        <View style={styles.metadataItem}>
+          <Text style={styles.metadataLabel}>TITULAR</Text>
+          <Text style={styles.metadataValue} numberOfLines={1}>
+            {credentialSubject.nome_completo}
+          </Text>
+        </View>
+        <View style={styles.metadataItem}>
+          <Text style={styles.metadataLabel}>EMISSÃO</Text>
+          <Text style={styles.metadataValue}>
+            {formatDate(credential.issuanceDate)}
+          </Text>
+        </View>
+      </View>
+
+      {/* Status */}
+      <View style={styles.statusRow}>
+        <View style={styles.metadataItem}>
+          <Text style={styles.metadataLabel}>STATUS ACADÊMICO</Text>
+          <View style={styles.statusBadgeRow}>
+            <View
+              style={[
+                styles.statusDot,
+                {backgroundColor: isActive ? '#006511' : '#ba1a1a'},
+              ]}
+            />
+            <Text
+              style={[
+                styles.statusText,
+                {color: isActive ? '#006511' : '#ba1a1a'},
+              ]}>
+              {credentialSubject.status_matricula} ({credentialSubject.curso})
+            </Text>
           </View>
-          <View style={styles.field}>
-            <Text style={styles.label}>CPF:</Text>
-            <Text style={styles.value}>{credentialSubject.cpf}</Text>
+        </View>
+      </View>
+
+      {/* Expandable Details */}
+      <ScrollView style={styles.detailsScroll} nestedScrollEnabled>
+        {/* Academic Data */}
+        <View style={styles.detailSection}>
+          <Text style={styles.detailSectionTitle}>Dados Acadêmicos</Text>
+          <View style={styles.detailField}>
+            <Text style={styles.detailLabel}>Matrícula</Text>
+            <Text style={styles.detailValue}>{credentialSubject.matricula}</Text>
           </View>
-          <View style={styles.field}>
-            <Text style={styles.label}>Data de Nascimento:</Text>
-            <Text style={styles.value}>
+          <View style={styles.detailField}>
+            <Text style={styles.detailLabel}>Data de Nascimento</Text>
+            <Text style={styles.detailValue}>
               {formatDate(credentialSubject.data_nascimento)}
             </Text>
           </View>
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Dados Acadêmicos</Text>
-          <View style={styles.field}>
-            <Text style={styles.label}>Matrícula:</Text>
-            <Text style={styles.value}>{credentialSubject.matricula}</Text>
-          </View>
-          <View style={styles.field}>
-            <Text style={styles.label}>Curso:</Text>
-            <Text style={styles.value}>{credentialSubject.curso}</Text>
-          </View>
-          <View style={styles.field}>
-            <Text style={styles.label}>Status:</Text>
-            <Text
-              style={[
-                styles.value,
-                credentialSubject.status_matricula === 'Ativo'
-                  ? styles.statusActive
-                  : styles.statusInactive,
-              ]}>
-              {credentialSubject.status_matricula}
-            </Text>
+          <View style={styles.detailField}>
+            <Text style={styles.detailLabel}>CPF</Text>
+            <Text style={styles.detailValue}>{credentialSubject.cpf}</Text>
           </View>
         </View>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Benefícios e Auxílios</Text>
-          <View style={styles.field}>
-            <Text style={styles.label}>Alojamento Indígena:</Text>
-            <Text style={styles.value}>
-              {formatBoolean(credentialSubject.alojamento_indigena)}
-            </Text>
-          </View>
-          <View style={styles.field}>
-            <Text style={styles.label}>Auxílio Creche:</Text>
-            <Text style={styles.value}>
-              {formatBoolean(credentialSubject.auxilio_creche)}
-            </Text>
-          </View>
-          <View style={styles.field}>
-            <Text style={styles.label}>Auxílio Moradia:</Text>
-            <Text style={styles.value}>
-              {formatBoolean(credentialSubject.auxilio_moradia)}
-            </Text>
-          </View>
-          <View style={styles.field}>
-            <Text style={styles.label}>Bolsa Estudantil:</Text>
-            <Text style={styles.value}>
-              {formatBoolean(credentialSubject.bolsa_estudantil)}
-            </Text>
-          </View>
-          <View style={styles.field}>
-            <Text style={styles.label}>Bolsa Permanência MEC:</Text>
-            <Text style={styles.value}>
-              {formatBoolean(credentialSubject.bolsa_permanencia_mec)}
-            </Text>
-          </View>
-          <View style={styles.field}>
-            <Text style={styles.label}>PAIQ:</Text>
-            <Text style={styles.value}>
-              {formatBoolean(credentialSubject.paiq)}
-            </Text>
-          </View>
-          <View style={styles.field}>
-            <Text style={styles.label}>Moradia Estudantil:</Text>
-            <Text style={styles.value}>
-              {formatBoolean(credentialSubject.moradia_estudantil)}
-            </Text>
-          </View>
+        {/* Benefits */}
+        <View style={styles.detailSection}>
+          <Text style={styles.detailSectionTitle}>Benefícios</Text>
+          {[
+            {label: 'Isenção RU', value: credentialSubject.isencao_ru},
+            {label: 'Moradia Estudantil', value: credentialSubject.moradia_estudantil},
+            {label: 'Bolsa Estudantil', value: credentialSubject.bolsa_estudantil},
+            {label: 'Bolsa Permanência MEC', value: credentialSubject.bolsa_permanencia_mec},
+            {label: 'Auxílio Moradia', value: credentialSubject.auxilio_moradia},
+            {label: 'Auxílio Creche', value: credentialSubject.auxilio_creche},
+          ].map(item => (
+            <View key={item.label} style={styles.benefitRow}>
+              <Text style={styles.detailLabel}>{item.label}</Text>
+              <View
+                style={[
+                  styles.benefitBadge,
+                  {
+                    backgroundColor: item.value ? '#8ffb85' : '#e5e2e1',
+                  },
+                ]}>
+                <Text
+                  style={[
+                    styles.benefitBadgeText,
+                    {color: item.value ? '#002202' : '#434653'},
+                  ]}>
+                  {formatBoolean(item.value)}
+                </Text>
+              </View>
+            </View>
+          ))}
         </View>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Isenções</Text>
-          <View style={styles.field}>
-            <Text style={styles.label}>Isenção RU:</Text>
-            <Text style={styles.value}>
-              {formatBoolean(credentialSubject.isencao_ru)}
-            </Text>
-          </View>
-          <View style={styles.field}>
-            <Text style={styles.label}>Isenção Esporte:</Text>
-            <Text style={styles.value}>
-              {formatBoolean(credentialSubject.isencao_esporte)}
-            </Text>
-          </View>
-          <View style={styles.field}>
-            <Text style={styles.label}>Isenção Idiomas:</Text>
-            <Text style={styles.value}>
-              {formatBoolean(credentialSubject.isencao_idiomas)}
-            </Text>
-          </View>
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Permissões de Acesso</Text>
-          <View style={styles.field}>
-            <Text style={styles.label}>Acesso a Laboratórios:</Text>
-            <Text style={styles.value}>
+        {/* Access Permissions */}
+        <View style={styles.detailSection}>
+          <Text style={styles.detailSectionTitle}>Permissões de Acesso</Text>
+          <View style={styles.detailField}>
+            <Text style={styles.detailLabel}>Laboratórios</Text>
+            <Text style={styles.detailValue}>
               {formatArray(credentialSubject.acesso_laboratorios)}
             </Text>
           </View>
-          <View style={styles.field}>
-            <Text style={styles.label}>Acesso a Prédios:</Text>
-            <Text style={styles.value}>
+          <View style={styles.detailField}>
+            <Text style={styles.detailLabel}>Prédios</Text>
+            <Text style={styles.detailValue}>
               {formatArray(credentialSubject.acesso_predios)}
             </Text>
           </View>
         </View>
-
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>DID do Titular:</Text>
-          <Text style={styles.footerValue}>{credentialSubject.id}</Text>
-        </View>
       </ScrollView>
+
+      {/* Action Buttons */}
+      <View style={styles.actionButtons}>
+        <TouchableOpacity style={styles.presentButton} activeOpacity={0.8}>
+          <Text style={styles.presentButtonIcon}>🔲</Text>
+          <Text style={styles.presentButtonText}>Apresentar</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.copyButton} activeOpacity={0.8}>
+          <Text style={styles.copyButtonIcon}>📋</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* DID Footer */}
+      <View style={styles.footer}>
+        <Text style={styles.footerLabel}>DID do Titular</Text>
+        <Text style={styles.footerDid} numberOfLines={1}>
+          {credentialSubject.id}
+        </Text>
+      </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#ffffff', // surface-container-lowest
     borderRadius: 12,
-    padding: 20,
-    marginVertical: 12,
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    overflow: 'hidden',
+    marginVertical: 8,
+    // Ambient shadow - no borders
+    shadowColor: '#1b1b1c',
+    shadowOffset: {width: 0, height: 4},
+    shadowOpacity: 0.04,
+    shadowRadius: 24,
+    elevation: 2,
     maxHeight: 600,
   },
-  header: {
-    borderBottomWidth: 2,
-    borderBottomColor: '#003366',
+  accentBar: {
+    height: 3,
+    backgroundColor: '#fecc03', // secondary-container (yellow accent)
+    width: '100%',
+  },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    paddingHorizontal: 20,
+    paddingTop: 20,
     paddingBottom: 12,
-    marginBottom: 16,
+  },
+  iconContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 12,
+    backgroundColor: '#eae7e7', // surface-container-high
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconText: {
+    fontSize: 28,
+  },
+  verifiedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(0, 101, 17, 0.08)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 16,
+  },
+  verifiedIcon: {
+    fontSize: 12,
+    color: '#006511', // tertiary-container
+    fontWeight: 'bold',
+  },
+  verifiedText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#006511',
+    letterSpacing: 1,
   },
   title: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#003366',
-    marginBottom: 8,
+    color: '#1b1b1c', // on-surface
+    paddingHorizontal: 20,
+    marginBottom: 4,
   },
   issuer: {
-    fontSize: 12,
-    color: '#666',
-    marginBottom: 4,
+    fontSize: 14,
+    color: '#434653', // on-surface-variant
+    fontWeight: '600',
+    paddingHorizontal: 20,
+    marginBottom: 16,
   },
-  date: {
-    fontSize: 12,
-    color: '#666',
+  metadataGrid: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    gap: 24,
+    borderTopWidth: 0, // No borders per DESIGN.md
+    // Using top spacing + color shift instead
+    backgroundColor: '#fcf9f8',
+    paddingBottom: 12,
   },
-  content: {
+  metadataItem: {
     flex: 1,
   },
-  section: {
-    marginBottom: 20,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#003366',
-    marginBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-    paddingBottom: 4,
-  },
-  field: {
-    marginBottom: 8,
-  },
-  label: {
-    fontSize: 13,
-    color: '#666',
-    marginBottom: 2,
-  },
-  value: {
-    fontSize: 15,
-    color: '#333',
-    fontWeight: '500',
-  },
-  statusActive: {
-    color: '#2e7d32',
-    fontWeight: 'bold',
-  },
-  statusInactive: {
-    color: '#c62828',
-    fontWeight: 'bold',
-  },
-  footer: {
-    marginTop: 16,
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
-  },
-  footerText: {
-    fontSize: 11,
-    color: '#999',
+  metadataLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#737784', // outline
+    letterSpacing: 1.2,
     marginBottom: 4,
   },
-  footerValue: {
+  metadataValue: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1b1b1c', // on-surface
+  },
+  statusRow: {
+    paddingHorizontal: 20,
+    paddingBottom: 16,
+    backgroundColor: '#fcf9f8',
+  },
+  statusBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  statusText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  detailsScroll: {
+    maxHeight: 200,
+    paddingHorizontal: 20,
+  },
+  detailSection: {
+    marginBottom: 20,
+  },
+  detailSectionTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#003a8c',
+    marginBottom: 12,
+    letterSpacing: 0.3,
+  },
+  detailField: {
+    marginBottom: 8,
+  },
+  detailLabel: {
+    fontSize: 12,
+    color: '#737784',
+    marginBottom: 2,
+    fontWeight: '500',
+  },
+  detailValue: {
+    fontSize: 14,
+    color: '#1b1b1c',
+    fontWeight: '500',
+  },
+  benefitRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  benefitBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 12,
+  },
+  benefitBadgeText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  // Action Buttons
+  actionButtons: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    gap: 12,
+  },
+  presentButton: {
+    flex: 1,
+    backgroundColor: '#fecc03', // secondary-container
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  presentButtonIcon: {
+    fontSize: 14,
+  },
+  presentButtonText: {
+    color: '#6e5700', // on-secondary-container
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  copyButton: {
+    backgroundColor: '#eae7e7', // surface-container-high
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  copyButtonIcon: {
+    fontSize: 16,
+  },
+  footer: {
+    paddingHorizontal: 20,
+    paddingBottom: 16,
+    paddingTop: 8,
+  },
+  footerLabel: {
     fontSize: 10,
-    color: '#666',
+    color: '#737784',
+    marginBottom: 2,
+    fontWeight: '600',
+    letterSpacing: 0.5,
+  },
+  footerDid: {
+    fontSize: 11,
+    color: '#434653',
     fontFamily: 'monospace',
   },
 });

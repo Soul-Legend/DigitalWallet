@@ -11,9 +11,6 @@ const LogEntry: React.FC<LogEntryProps> = ({log}) => {
 
   const formatTimestamp = (date: Date): string => {
     return new Date(date).toLocaleString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
       second: '2-digit',
@@ -22,17 +19,47 @@ const LogEntry: React.FC<LogEntryProps> = ({log}) => {
 
   const getOperationLabel = (operation: LogEntryType['operation']): string => {
     const labels: Record<LogEntryType['operation'], string> = {
-      key_generation: 'Geração de Chaves',
-      credential_issuance: 'Emissão de Credencial',
+      key_generation: 'Geração de DID',
+      credential_issuance: 'Assinatura SD-JWT',
       presentation_creation: 'Criação de Apresentação',
       verification: 'Verificação',
       hash_computation: 'Computação de Hash',
       zkp_generation: 'Geração de ZKP',
-      trust_chain_init: 'Inicialização da Cadeia de Confiança',
-      trust_chain_register: 'Registro de Emissor na Cadeia',
+      trust_chain_init: 'Cadeia de Confiança',
+      trust_chain_register: 'Registro de Emissor',
       error: 'Erro',
     };
     return labels[operation];
+  };
+
+  const getOperationIcon = (operation: LogEntryType['operation']): string => {
+    const icons: Record<LogEntryType['operation'], string> = {
+      key_generation: '🔑',
+      credential_issuance: '🔏',
+      presentation_creation: '📤',
+      verification: '✅',
+      hash_computation: '🔢',
+      zkp_generation: '🔐',
+      trust_chain_init: '🔗',
+      trust_chain_register: '📋',
+      error: '⚠️',
+    };
+    return icons[operation];
+  };
+
+  const getOperationDescription = (operation: LogEntryType['operation']): string => {
+    const descriptions: Record<LogEntryType['operation'], string> = {
+      key_generation: 'Novo par de chaves criptográficas gerado localmente.',
+      credential_issuance: 'Autenticação biométrica validada com sucesso.',
+      presentation_creation: 'Apresentação verificável criada.',
+      verification: 'Assinaturas criptográficas verificadas.',
+      hash_computation: 'Hash criptográfico computado.',
+      zkp_generation: 'Prova de conhecimento zero gerada.',
+      trust_chain_init: 'Cadeia de confiança inicializada.',
+      trust_chain_register: 'Emissor registrado na cadeia.',
+      error: 'Erro durante operação criptográfica.',
+    };
+    return descriptions[operation];
   };
 
   const getModuleLabel = (module: LogEntryType['module']): string => {
@@ -67,28 +94,28 @@ const LogEntry: React.FC<LogEntryProps> = ({log}) => {
       <View style={styles.detailsContainer}>
         {details.algorithm && (
           <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Algoritmo:</Text>
+            <Text style={styles.detailLabel}>Algoritmo</Text>
             <Text style={styles.detailValue}>{details.algorithm}</Text>
           </View>
         )}
 
         {details.key_size && (
           <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Tamanho da Chave:</Text>
+            <Text style={styles.detailLabel}>Tamanho da Chave</Text>
             <Text style={styles.detailValue}>{details.key_size} bits</Text>
           </View>
         )}
 
         {details.did_method && (
           <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Método DID:</Text>
+            <Text style={styles.detailLabel}>Método DID</Text>
             <Text style={styles.detailValue}>{details.did_method}</Text>
           </View>
         )}
 
         {details.hash_output && (
           <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Hash:</Text>
+            <Text style={styles.detailLabel}>Hash</Text>
             <Text style={styles.detailValueMono}>
               {truncateHash(details.hash_output)}
             </Text>
@@ -97,7 +124,7 @@ const LogEntry: React.FC<LogEntryProps> = ({log}) => {
 
         {details.verification_result !== undefined && (
           <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Resultado da Validação:</Text>
+            <Text style={styles.detailLabel}>Resultado da Validação</Text>
             <Text
               style={[
                 styles.detailValue,
@@ -112,7 +139,7 @@ const LogEntry: React.FC<LogEntryProps> = ({log}) => {
 
         {details.parameters && (
           <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Parâmetros:</Text>
+            <Text style={styles.detailLabel}>Parâmetros</Text>
             <View style={styles.parametersContainer}>
               {Object.entries(details.parameters).map(([key, value]) => {
                 let displayValue = value;
@@ -141,7 +168,7 @@ const LogEntry: React.FC<LogEntryProps> = ({log}) => {
 
         {details.stack_trace && (
           <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Stack Trace:</Text>
+            <Text style={styles.detailLabel}>Stack Trace</Text>
             <Text style={styles.stackTrace}>{details.stack_trace}</Text>
           </View>
         )}
@@ -149,152 +176,210 @@ const LogEntry: React.FC<LogEntryProps> = ({log}) => {
     );
   };
 
+  const isSuccess = log.success;
+
   return (
     <TouchableOpacity
-      style={[
-        styles.container,
-        !log.success && styles.errorContainer,
-      ]}
+      style={[styles.container, !isSuccess && styles.errorCardContainer]}
       onPress={() => setExpanded(!expanded)}
       activeOpacity={0.7}>
+      {/* Left accent border is handled by container style */}
+
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <Text style={styles.operationText}>
-            {getOperationLabel(log.operation)}
-          </Text>
-          <Text style={styles.moduleText}>{getModuleLabel(log.module)}</Text>
-        </View>
-        <View style={styles.headerRight}>
-          <Text
+          {/* Status Icon Circle */}
+          <View
             style={[
-              styles.statusBadge,
-              log.success ? styles.successBadge : styles.errorBadge,
+              styles.statusCircle,
+              {backgroundColor: isSuccess ? '#8ffb85' : '#ffdad6'},
             ]}>
-            {log.success ? '✓' : '✗'}
-          </Text>
+            <Text style={styles.statusCircleIcon}>
+              {isSuccess ? '✓' : '!'}
+            </Text>
+          </View>
+
+          {/* Content */}
+          <View style={styles.headerContent}>
+            <Text style={styles.operationText}>
+              {getOperationLabel(log.operation)}
+            </Text>
+            <View style={styles.descriptionRow}>
+              <Text style={styles.operationIconSmall}>
+                {getOperationIcon(log.operation)}
+              </Text>
+              <Text
+                style={[
+                  styles.descriptionText,
+                  !isSuccess && styles.errorDescriptionText,
+                ]}
+                numberOfLines={2}>
+                {log.error
+                  ? log.error.message
+                  : getOperationDescription(log.operation)}
+              </Text>
+            </View>
+          </View>
         </View>
       </View>
 
-      <Text style={styles.timestamp}>{formatTimestamp(log.timestamp)}</Text>
-
-      {log.error && (
-        <View style={styles.errorMessageContainer}>
-          <Text style={styles.errorMessage}>{log.error.message}</Text>
-        </View>
-      )}
+      {/* Footer: Timestamp + Details link */}
+      <View style={styles.footer}>
+        <Text style={styles.timestamp}>{formatTimestamp(log.timestamp)}</Text>
+        <TouchableOpacity
+          style={styles.detailsLink}
+          onPress={() => setExpanded(!expanded)}>
+          <Text style={styles.detailsLinkText}>
+            {expanded ? 'Ocultar' : 'Ver Detalhes'}
+          </Text>
+          <Text style={styles.detailsLinkArrow}>
+            {expanded ? '▲' : '›'}
+          </Text>
+        </TouchableOpacity>
+      </View>
 
       {expanded && renderDetails()}
-
-      <Text style={styles.expandHint}>
-        {expanded ? '▲ Toque para recolher' : '▼ Toque para expandir'}
-      </Text>
     </TouchableOpacity>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#ffffff',
-    borderRadius: 8,
-    padding: 16,
+    backgroundColor: '#ffffff', // surface-container-lowest
+    borderRadius: 12,
+    padding: 20,
     marginVertical: 6,
-    marginHorizontal: 12,
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 1},
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    marginHorizontal: 24,
+    // Left accent border for success
     borderLeftWidth: 4,
-    borderLeftColor: '#4caf50',
+    borderLeftColor: '#006511', // tertiary-container (green)
+    // Ambient shadow
+    shadowColor: '#1b1b1c',
+    shadowOffset: {width: 0, height: 4},
+    shadowOpacity: 0.04,
+    shadowRadius: 24,
+    elevation: 2,
   },
-  errorContainer: {
-    borderLeftColor: '#f44336',
-    backgroundColor: '#ffebee',
+  errorCardContainer: {
+    borderLeftColor: '#ba1a1a', // error
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
+    alignItems: 'flex-start',
+    marginBottom: 12,
   },
   headerLeft: {
     flex: 1,
+    flexDirection: 'row',
+    gap: 14,
   },
-  headerRight: {
-    marginLeft: 12,
+  statusCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  operationText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#003366',
-    marginBottom: 4,
-  },
-  moduleText: {
-    fontSize: 13,
-    color: '#666',
-  },
-  timestamp: {
-    fontSize: 12,
-    color: '#999',
-    marginBottom: 8,
-  },
-  statusBadge: {
+  statusCircleIcon: {
     fontSize: 20,
     fontWeight: 'bold',
+    color: '#1b1b1c',
   },
-  successBadge: {
-    color: '#4caf50',
+  headerContent: {
+    flex: 1,
   },
-  errorBadge: {
-    color: '#f44336',
+  operationText: {
+    fontSize: 17,
+    fontWeight: 'bold',
+    color: '#1b1b1c', // on-surface
+    marginBottom: 4,
   },
-  errorMessageContainer: {
-    backgroundColor: '#ffcdd2',
-    padding: 8,
-    borderRadius: 4,
-    marginVertical: 8,
+  descriptionRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 6,
   },
-  errorMessage: {
+  operationIconSmall: {
     fontSize: 13,
-    color: '#c62828',
+    marginTop: 2,
+  },
+  descriptionText: {
+    fontSize: 13,
+    color: '#434653', // on-surface-variant
+    lineHeight: 18,
+    flex: 1,
+  },
+  errorDescriptionText: {
+    color: '#ba1a1a', // error
+  },
+  // Footer
+  footer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  timestamp: {
+    fontSize: 13,
+    color: '#737784', // outline
     fontWeight: '500',
   },
+  detailsLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: 4,
+  },
+  detailsLinkText: {
+    fontSize: 14,
+    color: '#003a8c', // primary
+    fontWeight: '600',
+  },
+  detailsLinkArrow: {
+    fontSize: 14,
+    color: '#003a8c',
+    fontWeight: 'bold',
+  },
+  // Details (expanded)
   detailsContainer: {
-    marginTop: 12,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
+    marginTop: 16,
+    paddingTop: 16,
+    backgroundColor: '#f6f3f2', // surface-container-low
+    borderRadius: 8,
+    padding: 16,
   },
   detailRow: {
-    marginBottom: 10,
+    marginBottom: 12,
   },
   detailLabel: {
-    fontSize: 12,
-    color: '#666',
+    fontSize: 11,
+    color: '#737784',
     marginBottom: 4,
-    fontWeight: '600',
+    fontWeight: '700',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
   },
   detailValue: {
     fontSize: 14,
-    color: '#333',
+    color: '#1b1b1c',
+    fontWeight: '500',
   },
   detailValueMono: {
     fontSize: 13,
-    color: '#333',
+    color: '#1b1b1c',
     fontFamily: 'monospace',
   },
   successText: {
-    color: '#2e7d32',
+    color: '#006511',
     fontWeight: 'bold',
   },
   errorText: {
-    color: '#c62828',
+    color: '#ba1a1a',
     fontWeight: 'bold',
   },
   parametersContainer: {
-    backgroundColor: '#f5f5f5',
-    padding: 8,
-    borderRadius: 4,
+    backgroundColor: '#e5e2e1', // surface-container-highest
+    padding: 12,
+    borderRadius: 8,
     marginTop: 4,
   },
   parameterRow: {
@@ -303,29 +388,23 @@ const styles = StyleSheet.create({
   },
   parameterKey: {
     fontSize: 12,
-    color: '#666',
+    color: '#737784',
     fontWeight: '600',
     marginRight: 8,
   },
   parameterValue: {
     fontSize: 12,
-    color: '#333',
+    color: '#1b1b1c',
     flex: 1,
   },
   stackTrace: {
     fontSize: 11,
-    color: '#666',
+    color: '#434653',
     fontFamily: 'monospace',
-    backgroundColor: '#f5f5f5',
-    padding: 8,
-    borderRadius: 4,
+    backgroundColor: '#e5e2e1',
+    padding: 12,
+    borderRadius: 8,
     marginTop: 4,
-  },
-  expandHint: {
-    fontSize: 11,
-    color: '#999',
-    textAlign: 'center',
-    marginTop: 8,
   },
 });
 

@@ -1,0 +1,519 @@
+{
+	"artifacts" : 
+	[
+		{
+			"path" : "S:/Sandbox/DigitalWallet/DigitalWallet/android/app/build/intermediates/cxx/Debug/3y3m5b5t/obj/x86/libappmodules.so"
+		}
+	],
+	"backtrace" : 3,
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"add_library",
+			"include",
+			"target_link_libraries",
+			"target_compile_options",
+			"target_include_directories"
+		],
+		"files" : 
+		[
+			"S:/Sandbox/DigitalWallet/DigitalWallet/node_modules/react-native/ReactAndroid/cmake-utils/ReactNative-application.cmake",
+			"CMakeLists.txt",
+			"S:/Sandbox/DigitalWallet/DigitalWallet/node_modules/react-native-safe-area-context/android/src/main/jni/CMakeLists.txt",
+			"S:/Sandbox/DigitalWallet/DigitalWallet/node_modules/react-native-screens/android/src/main/jni/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 1
+			},
+			{
+				"command" : 1,
+				"file" : 1,
+				"line" : 31,
+				"parent" : 0
+			},
+			{
+				"file" : 0,
+				"parent" : 1
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 41,
+				"parent" : 2
+			},
+			{
+				"command" : 2,
+				"file" : 0,
+				"line" : 86,
+				"parent" : 2
+			},
+			{
+				"command" : 2,
+				"file" : 0,
+				"line" : 72,
+				"parent" : 2
+			},
+			{
+				"command" : 2,
+				"file" : 0,
+				"line" : 96,
+				"parent" : 2
+			},
+			{
+				"command" : 3,
+				"file" : 0,
+				"line" : 48,
+				"parent" : 2
+			},
+			{
+				"command" : 3,
+				"file" : 0,
+				"line" : 102,
+				"parent" : 2
+			},
+			{
+				"command" : 4,
+				"file" : 0,
+				"line" : 43,
+				"parent" : 2
+			},
+			{
+				"file" : 2
+			},
+			{
+				"command" : 4,
+				"file" : 2,
+				"line" : 82,
+				"parent" : 10
+			},
+			{
+				"file" : 3
+			},
+			{
+				"command" : 4,
+				"file" : 3,
+				"line" : 80,
+				"parent" : 12
+			}
+		]
+	},
+	"compileGroups" : 
+	[
+		{
+			"compileCommandFragments" : 
+			[
+				{
+					"fragment" : "-g -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security   -fno-limit-debug-info  -fPIC"
+				},
+				{
+					"backtrace" : 7,
+					"fragment" : "-Wall"
+				},
+				{
+					"backtrace" : 7,
+					"fragment" : "-Werror"
+				},
+				{
+					"backtrace" : 7,
+					"fragment" : "-Wno-error=cpp"
+				},
+				{
+					"backtrace" : 7,
+					"fragment" : "-fexceptions"
+				},
+				{
+					"backtrace" : 7,
+					"fragment" : "-frtti"
+				},
+				{
+					"backtrace" : 7,
+					"fragment" : "-std=c++20"
+				},
+				{
+					"backtrace" : 7,
+					"fragment" : "-DLOG_TAG=\\\"ReactNative\\\""
+				},
+				{
+					"backtrace" : 7,
+					"fragment" : "-DFOLLY_NO_CONFIG=1"
+				},
+				{
+					"backtrace" : 8,
+					"fragment" : "-DREACT_NATIVE_APP_CODEGEN_HEADER=\\\"AppModules.h\\\""
+				},
+				{
+					"backtrace" : 8,
+					"fragment" : "-DREACT_NATIVE_APP_COMPONENT_DESCRIPTORS_HEADER=\\\"react/renderer/components/AppModules/ComponentDescriptors.h\\\""
+				},
+				{
+					"backtrace" : 8,
+					"fragment" : "-DREACT_NATIVE_APP_COMPONENT_REGISTRATION=AppModules_registerComponentDescriptorsFromCodegen"
+				},
+				{
+					"backtrace" : 8,
+					"fragment" : "-DREACT_NATIVE_APP_MODULE_PROVIDER=AppModules_ModuleProvider"
+				},
+				{
+					"backtrace" : 4,
+					"fragment" : "-DFOLLY_HAVE_CLOCK_GETTIME=1"
+				},
+				{
+					"backtrace" : 4,
+					"fragment" : "-DFOLLY_USE_LIBCPP=1"
+				},
+				{
+					"backtrace" : 4,
+					"fragment" : "-DFOLLY_CFG_NO_COROUTINES=1"
+				},
+				{
+					"backtrace" : 4,
+					"fragment" : "-DFOLLY_MOBILE=1"
+				},
+				{
+					"backtrace" : 4,
+					"fragment" : "-DFOLLY_HAVE_RECVMMSG=1"
+				},
+				{
+					"backtrace" : 4,
+					"fragment" : "-DFOLLY_HAVE_PTHREAD=1"
+				},
+				{
+					"backtrace" : 4,
+					"fragment" : "-DFOLLY_HAVE_XSI_STRERROR_R=1"
+				}
+			],
+			"defines" : 
+			[
+				{
+					"define" : "appmodules_EXPORTS"
+				}
+			],
+			"includes" : 
+			[
+				{
+					"backtrace" : 9,
+					"path" : "S:/Sandbox/DigitalWallet/DigitalWallet/node_modules/react-native/ReactAndroid/cmake-utils/default-app-setup"
+				},
+				{
+					"backtrace" : 9,
+					"path" : "S:/Sandbox/DigitalWallet/DigitalWallet/android/app/build/generated/autolinking/src/main/jni"
+				},
+				{
+					"backtrace" : 11,
+					"path" : "S:/Sandbox/DigitalWallet/DigitalWallet/node_modules/react-native-safe-area-context/android/src/main/jni"
+				},
+				{
+					"backtrace" : 13,
+					"path" : "S:/Sandbox/DigitalWallet/DigitalWallet/node_modules/react-native-screens/android/src/main/jni"
+				},
+				{
+					"backtrace" : 4,
+					"path" : "S:/Sandbox/DigitalWallet/DigitalWallet/node_modules/mopro-ffi/android/build/generated/source/codegen/jni/."
+				},
+				{
+					"backtrace" : 4,
+					"path" : "S:/Sandbox/DigitalWallet/DigitalWallet/node_modules/mopro-ffi/android/build/generated/source/codegen/jni/react/renderer/components/MoproFFISpec"
+				},
+				{
+					"backtrace" : 4,
+					"path" : "S:/Sandbox/DigitalWallet/DigitalWallet/node_modules/react-native-safe-area-context/android/src/main/jni/."
+				},
+				{
+					"backtrace" : 4,
+					"path" : "S:/Sandbox/DigitalWallet/DigitalWallet/node_modules/react-native-safe-area-context/android/src/main/jni/../../../../common/cpp"
+				},
+				{
+					"backtrace" : 4,
+					"path" : "S:/Sandbox/DigitalWallet/DigitalWallet/node_modules/react-native-safe-area-context/android/src/main/jni/../../../build/generated/source/codegen/jni"
+				},
+				{
+					"backtrace" : 4,
+					"path" : "S:/Sandbox/DigitalWallet/DigitalWallet/node_modules/react-native-safe-area-context/android/src/main/jni/../../../build/generated/source/codegen/jni/react/renderer/components/safeareacontext"
+				},
+				{
+					"backtrace" : 4,
+					"path" : "S:/Sandbox/DigitalWallet/DigitalWallet/node_modules/react-native-screens/android/src/main/jni/."
+				},
+				{
+					"backtrace" : 4,
+					"path" : "S:/Sandbox/DigitalWallet/DigitalWallet/node_modules/react-native-screens/android/src/main/jni/../../../../common/cpp"
+				},
+				{
+					"backtrace" : 4,
+					"path" : "S:/Sandbox/DigitalWallet/DigitalWallet/node_modules/react-native-screens/android/src/main/jni/../../../build/generated/source/codegen/jni"
+				},
+				{
+					"backtrace" : 4,
+					"path" : "S:/Sandbox/DigitalWallet/DigitalWallet/node_modules/react-native-screens/android/src/main/jni/../../../build/generated/source/codegen/jni/react/renderer/components/rnscreens"
+				},
+				{
+					"backtrace" : 4,
+					"path" : "S:/Sandbox/DigitalWallet/DigitalWallet/node_modules/react-native-svg/android/src/main/jni/."
+				},
+				{
+					"backtrace" : 4,
+					"path" : "S:/Sandbox/DigitalWallet/DigitalWallet/node_modules/react-native-svg/android/src/main/jni/../../../../common/cpp"
+				},
+				{
+					"backtrace" : 4,
+					"path" : "S:/Sandbox/DigitalWallet/DigitalWallet/node_modules/react-native-svg/android/src/main/jni/../../../build/generated/source/codegen/jni"
+				},
+				{
+					"backtrace" : 4,
+					"path" : "S:/Sandbox/DigitalWallet/DigitalWallet/node_modules/react-native-svg/android/src/main/jni/../../../build/generated/source/codegen/jni/react/renderer/components/rnsvg"
+				},
+				{
+					"backtrace" : 4,
+					"path" : "S:/Sandbox/DigitalWallet/DigitalWallet/node_modules/react-native-svg/android/src/main/jni"
+				},
+				{
+					"backtrace" : 6,
+					"path" : "S:/Sandbox/DigitalWallet/DigitalWallet/android/app/build/generated/source/codegen/jni/."
+				},
+				{
+					"backtrace" : 6,
+					"path" : "S:/Sandbox/DigitalWallet/DigitalWallet/android/app/build/generated/source/codegen/jni/react/renderer/components/AppModules"
+				},
+				{
+					"backtrace" : 5,
+					"isSystem" : true,
+					"path" : "C:/Users/Pedro/.gradle/caches/8.10.2/transforms/0188faaeb9cdea70d153ae175e23dfa1/transformed/jetified-fbjni-0.6.0/prefab/modules/fbjni/include"
+				},
+				{
+					"backtrace" : 5,
+					"isSystem" : true,
+					"path" : "C:/Users/Pedro/.gradle/caches/8.10.2/transforms/857aa42d1bcc5d3b56f1357f663db7b3/transformed/jetified-react-android-0.76.5-debug/prefab/modules/jsi/include"
+				},
+				{
+					"backtrace" : 5,
+					"isSystem" : true,
+					"path" : "C:/Users/Pedro/.gradle/caches/8.10.2/transforms/857aa42d1bcc5d3b56f1357f663db7b3/transformed/jetified-react-android-0.76.5-debug/prefab/modules/reactnative/include"
+				}
+			],
+			"language" : "CXX",
+			"sourceIndexes" : 
+			[
+				0,
+				1
+			],
+			"sysroot" : 
+			{
+				"path" : "C:/Users/Pedro/AppData/Local/Android/Sdk/ndk/26.1.10909125/toolchains/llvm/prebuilt/windows-x86_64/sysroot"
+			}
+		}
+	],
+	"dependencies" : 
+	[
+		{
+			"backtrace" : 4,
+			"id" : "react_codegen_MoproFFISpec::@abec2e5540960b00eb7d"
+		},
+		{
+			"backtrace" : 4,
+			"id" : "react_codegen_safeareacontext::@7984cd80db47aa7b952a"
+		},
+		{
+			"backtrace" : 4,
+			"id" : "react_codegen_rnscreens::@25bcbd507e98d3a854ad"
+		},
+		{
+			"backtrace" : 4,
+			"id" : "react_codegen_rnsvg::@4f40eb209d0c0b4a3b65"
+		},
+		{
+			"backtrace" : 6,
+			"id" : "react_codegen_AppModules::@d7e081e776fcf37281b1"
+		}
+	],
+	"id" : "appmodules::@6890427a1f51a3e7e1df",
+	"link" : 
+	{
+		"commandFragments" : 
+		[
+			{
+				"fragment" : "-Wl,--build-id=sha1 -Wl,--no-rosegment -Wl,--no-undefined-version -Wl,--fatal-warnings -Wl,--no-undefined -Qunused-arguments",
+				"role" : "flags"
+			},
+			{
+				"backtrace" : 4,
+				"fragment" : "S:\\Sandbox\\DigitalWallet\\DigitalWallet\\android\\app\\build\\intermediates\\cxx\\Debug\\3y3m5b5t\\obj\\x86\\libreact_codegen_safeareacontext.so",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 4,
+				"fragment" : "S:\\Sandbox\\DigitalWallet\\DigitalWallet\\android\\app\\build\\intermediates\\cxx\\Debug\\3y3m5b5t\\obj\\x86\\libreact_codegen_rnscreens.so",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 4,
+				"fragment" : "S:\\Sandbox\\DigitalWallet\\DigitalWallet\\android\\app\\build\\intermediates\\cxx\\Debug\\3y3m5b5t\\obj\\x86\\libreact_codegen_rnsvg.so",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 5,
+				"fragment" : "C:\\Users\\Pedro\\.gradle\\caches\\8.10.2\\transforms\\0188faaeb9cdea70d153ae175e23dfa1\\transformed\\jetified-fbjni-0.6.0\\prefab\\modules\\fbjni\\libs\\android.x86\\libfbjni.so",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 5,
+				"fragment" : "C:\\Users\\Pedro\\.gradle\\caches\\8.10.2\\transforms\\857aa42d1bcc5d3b56f1357f663db7b3\\transformed\\jetified-react-android-0.76.5-debug\\prefab\\modules\\jsi\\libs\\android.x86\\libjsi.so",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 5,
+				"fragment" : "C:\\Users\\Pedro\\.gradle\\caches\\8.10.2\\transforms\\857aa42d1bcc5d3b56f1357f663db7b3\\transformed\\jetified-react-android-0.76.5-debug\\prefab\\modules\\reactnative\\libs\\android.x86\\libreactnative.so",
+				"role" : "libraries"
+			},
+			{
+				"fragment" : "-latomic -lm",
+				"role" : "libraries"
+			}
+		],
+		"language" : "CXX",
+		"sysroot" : 
+		{
+			"path" : "C:/Users/Pedro/AppData/Local/Android/Sdk/ndk/26.1.10909125/toolchains/llvm/prebuilt/windows-x86_64/sysroot"
+		}
+	},
+	"name" : "appmodules",
+	"nameOnDisk" : "libappmodules.so",
+	"paths" : 
+	{
+		"build" : ".",
+		"source" : "."
+	},
+	"sourceGroups" : 
+	[
+		{
+			"name" : "Source Files",
+			"sourceIndexes" : 
+			[
+				0,
+				1
+			]
+		},
+		{
+			"name" : "Object Libraries",
+			"sourceIndexes" : 
+			[
+				2,
+				3,
+				4,
+				5,
+				6,
+				7,
+				8,
+				9,
+				10,
+				11,
+				12,
+				13,
+				14,
+				15
+			]
+		}
+	],
+	"sources" : 
+	[
+		{
+			"backtrace" : 3,
+			"compileGroupIndex" : 0,
+			"path" : "S:/Sandbox/DigitalWallet/DigitalWallet/android/app/build/generated/autolinking/src/main/jni/autolinking.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 3,
+			"compileGroupIndex" : 0,
+			"path" : "OnLoad.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 4,
+			"isGenerated" : true,
+			"path" : "S:/Sandbox/DigitalWallet/DigitalWallet/android/app/.cxx/Debug/3y3m5b5t/x86/MoproFFISpec_autolinked_build/CMakeFiles/react_codegen_MoproFFISpec.dir/MoproFFISpec-generated.cpp.o",
+			"sourceGroupIndex" : 1
+		},
+		{
+			"backtrace" : 4,
+			"isGenerated" : true,
+			"path" : "S:/Sandbox/DigitalWallet/DigitalWallet/android/app/.cxx/Debug/3y3m5b5t/x86/MoproFFISpec_autolinked_build/CMakeFiles/react_codegen_MoproFFISpec.dir/react/renderer/components/MoproFFISpec/ComponentDescriptors.cpp.o",
+			"sourceGroupIndex" : 1
+		},
+		{
+			"backtrace" : 4,
+			"isGenerated" : true,
+			"path" : "S:/Sandbox/DigitalWallet/DigitalWallet/android/app/.cxx/Debug/3y3m5b5t/x86/MoproFFISpec_autolinked_build/CMakeFiles/react_codegen_MoproFFISpec.dir/react/renderer/components/MoproFFISpec/EventEmitters.cpp.o",
+			"sourceGroupIndex" : 1
+		},
+		{
+			"backtrace" : 4,
+			"isGenerated" : true,
+			"path" : "S:/Sandbox/DigitalWallet/DigitalWallet/android/app/.cxx/Debug/3y3m5b5t/x86/MoproFFISpec_autolinked_build/CMakeFiles/react_codegen_MoproFFISpec.dir/react/renderer/components/MoproFFISpec/MoproFFISpecJSI-generated.cpp.o",
+			"sourceGroupIndex" : 1
+		},
+		{
+			"backtrace" : 4,
+			"isGenerated" : true,
+			"path" : "S:/Sandbox/DigitalWallet/DigitalWallet/android/app/.cxx/Debug/3y3m5b5t/x86/MoproFFISpec_autolinked_build/CMakeFiles/react_codegen_MoproFFISpec.dir/react/renderer/components/MoproFFISpec/Props.cpp.o",
+			"sourceGroupIndex" : 1
+		},
+		{
+			"backtrace" : 4,
+			"isGenerated" : true,
+			"path" : "S:/Sandbox/DigitalWallet/DigitalWallet/android/app/.cxx/Debug/3y3m5b5t/x86/MoproFFISpec_autolinked_build/CMakeFiles/react_codegen_MoproFFISpec.dir/react/renderer/components/MoproFFISpec/ShadowNodes.cpp.o",
+			"sourceGroupIndex" : 1
+		},
+		{
+			"backtrace" : 4,
+			"isGenerated" : true,
+			"path" : "S:/Sandbox/DigitalWallet/DigitalWallet/android/app/.cxx/Debug/3y3m5b5t/x86/MoproFFISpec_autolinked_build/CMakeFiles/react_codegen_MoproFFISpec.dir/react/renderer/components/MoproFFISpec/States.cpp.o",
+			"sourceGroupIndex" : 1
+		},
+		{
+			"backtrace" : 6,
+			"isGenerated" : true,
+			"path" : "S:/Sandbox/DigitalWallet/DigitalWallet/android/app/.cxx/Debug/3y3m5b5t/x86/codegen_app_build/CMakeFiles/react_codegen_AppModules.dir/AppModules-generated.cpp.o",
+			"sourceGroupIndex" : 1
+		},
+		{
+			"backtrace" : 6,
+			"isGenerated" : true,
+			"path" : "S:/Sandbox/DigitalWallet/DigitalWallet/android/app/.cxx/Debug/3y3m5b5t/x86/codegen_app_build/CMakeFiles/react_codegen_AppModules.dir/react/renderer/components/AppModules/AppModulesJSI-generated.cpp.o",
+			"sourceGroupIndex" : 1
+		},
+		{
+			"backtrace" : 6,
+			"isGenerated" : true,
+			"path" : "S:/Sandbox/DigitalWallet/DigitalWallet/android/app/.cxx/Debug/3y3m5b5t/x86/codegen_app_build/CMakeFiles/react_codegen_AppModules.dir/react/renderer/components/AppModules/ComponentDescriptors.cpp.o",
+			"sourceGroupIndex" : 1
+		},
+		{
+			"backtrace" : 6,
+			"isGenerated" : true,
+			"path" : "S:/Sandbox/DigitalWallet/DigitalWallet/android/app/.cxx/Debug/3y3m5b5t/x86/codegen_app_build/CMakeFiles/react_codegen_AppModules.dir/react/renderer/components/AppModules/EventEmitters.cpp.o",
+			"sourceGroupIndex" : 1
+		},
+		{
+			"backtrace" : 6,
+			"isGenerated" : true,
+			"path" : "S:/Sandbox/DigitalWallet/DigitalWallet/android/app/.cxx/Debug/3y3m5b5t/x86/codegen_app_build/CMakeFiles/react_codegen_AppModules.dir/react/renderer/components/AppModules/Props.cpp.o",
+			"sourceGroupIndex" : 1
+		},
+		{
+			"backtrace" : 6,
+			"isGenerated" : true,
+			"path" : "S:/Sandbox/DigitalWallet/DigitalWallet/android/app/.cxx/Debug/3y3m5b5t/x86/codegen_app_build/CMakeFiles/react_codegen_AppModules.dir/react/renderer/components/AppModules/ShadowNodes.cpp.o",
+			"sourceGroupIndex" : 1
+		},
+		{
+			"backtrace" : 6,
+			"isGenerated" : true,
+			"path" : "S:/Sandbox/DigitalWallet/DigitalWallet/android/app/.cxx/Debug/3y3m5b5t/x86/codegen_app_build/CMakeFiles/react_codegen_AppModules.dir/react/renderer/components/AppModules/States.cpp.o",
+			"sourceGroupIndex" : 1
+		}
+	],
+	"type" : "SHARED_LIBRARY"
+}

@@ -28,46 +28,66 @@ const HomeScreen: React.FC<Props> = ({navigation}) => {
   }, [setCurrentModule]);
   const modules = [
     {
-      name: 'Emissor',
-      description: 'Emitir credenciais acadêmicas verificáveis',
-      route: 'Emissor' as const,
-      icon: '📝',
-    },
-    {
-      name: 'Titular',
-      description: 'Gerenciar e apresentar credenciais',
+      name: 'Minha Carteira',
+      description:
+        'Acesse e gerencie suas credenciais digitais armazenadas com segurança.',
       route: 'Titular' as const,
-      icon: '👤',
+      icon: '🔐',
+      iconBg: '#d9e2ff', // primary-fixed
+      iconColor: '#003a8c',
     },
     {
-      name: 'Verificador',
-      description: 'Validar apresentações verificáveis',
+      name: 'Emitir Credencial',
+      description:
+        'Emita novas credenciais verificáveis para outros estudantes ou entidades.',
+      route: 'Emissor' as const,
+      icon: '🛡️',
+      iconBg: '#ffe089', // secondary-fixed
+      iconColor: '#6e5700',
+    },
+    {
+      name: 'Validar',
+      description:
+        'Verifique a autenticidade de credenciais apresentadas a você.',
       route: 'Verificador' as const,
-      icon: '✓',
+      icon: '✅',
+      iconBg: '#8ffb85', // tertiary-fixed
+      iconColor: '#004a09',
     },
     {
-      name: 'Logs',
-      description: 'Monitorar eventos criptográficos',
+      name: 'Eventos',
+      description:
+        'Consulte o histórico de atividades e logs de suas credenciais.',
       route: 'Logs' as const,
-      icon: '📊',
+      icon: '📜',
+      iconBg: '#e5e2e1', // surface-container-highest
+      iconColor: '#1b1b1c',
     },
     {
       name: 'Glossário',
-      description: 'Termos e definições SSI',
+      description: 'Aprenda os termos técnicos e conceitos do ecossistema SSI.',
       route: 'Glossario' as const,
       icon: '📖',
+      iconBg: '#e5e2e1', // surface-container-highest
+      iconColor: '#1b1b1c',
     },
   ];
 
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Carteira Digital SSI</Text>
-        <Text style={styles.subtitle}>
-          Sistema de Identidade Auto-Soberana Acadêmica
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.contentContainer}>
+      {/* Hero Section */}
+      <View style={styles.heroSection}>
+        <View style={styles.heroGradientOverlay} />
+        <Text style={styles.heroTitle}>Olá, Estudante</Text>
+        <Text style={styles.heroSubtitle}>
+          Bem-vindo à sua Carteira Digital SSI. Gerencie suas credenciais
+          verificáveis de forma segura e soberana.
         </Text>
       </View>
 
+      {/* Feature Cards */}
       <View style={styles.modulesContainer}>
         {modules.map(module => (
           <TouchableOpacity
@@ -83,7 +103,15 @@ const HomeScreen: React.FC<Props> = ({navigation}) => {
             accessibilityLabel={`Módulo ${module.name}`}
             accessibilityHint={module.description}
             accessibilityRole="button">
-            <Text style={styles.moduleIcon} accessible={false}>{module.icon}</Text>
+            <View
+              style={[
+                styles.moduleIconContainer,
+                {backgroundColor: module.iconBg},
+              ]}>
+              <Text style={styles.moduleIcon} accessible={false}>
+                {module.icon}
+              </Text>
+            </View>
             <Text style={styles.moduleName}>{module.name}</Text>
             <Text style={styles.moduleDescription}>{module.description}</Text>
           </TouchableOpacity>
@@ -96,52 +124,79 @@ const HomeScreen: React.FC<Props> = ({navigation}) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#fcf9f8', // surface
   },
-  header: {
-    backgroundColor: '#003366',
-    padding: 20,
-    alignItems: 'center',
+  contentContainer: {
+    paddingBottom: 32,
   },
-  title: {
-    fontSize: 24,
+  heroSection: {
+    backgroundColor: '#1351b4', // primary-container
+    marginHorizontal: 24,
+    marginTop: 24,
+    marginBottom: 12,
+    borderRadius: 12,
+    padding: 24,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  heroGradientOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderRadius: 12,
+  },
+  heroTitle: {
+    fontSize: 22,
     fontWeight: 'bold',
-    color: '#fff',
+    color: '#ffffff',
     marginBottom: 8,
   },
-  subtitle: {
-    fontSize: 14,
-    color: '#ccc',
-    textAlign: 'center',
+  heroSubtitle: {
+    fontSize: 16,
+    color: '#b8cbff', // on-primary-container
+    lineHeight: 24,
   },
   modulesContainer: {
-    padding: 16,
+    paddingHorizontal: 24,
+    paddingTop: 12,
   },
   moduleCard: {
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    padding: 20,
-    marginBottom: 16,
+    backgroundColor: '#ffffff', // surface-container-lowest
+    borderRadius: 12,
+    padding: 24,
+    marginBottom: 12,
+    // Ambient shadow per DESIGN.md (no borders)
+    shadowColor: '#1b1b1c',
+    shadowOffset: {width: 0, height: 4},
+    shadowOpacity: 0.04,
+    shadowRadius: 24,
     elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
     minHeight: 44, // Minimum touch target
   },
+  moduleIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
   moduleIcon: {
-    fontSize: 40,
-    marginBottom: 12,
+    fontSize: 24,
   },
   moduleName: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#003366',
+    color: '#1b1b1c', // on-surface
     marginBottom: 8,
   },
   moduleDescription: {
     fontSize: 14,
-    color: '#666',
+    color: '#434653', // on-surface-variant
+    lineHeight: 20,
   },
 });
 

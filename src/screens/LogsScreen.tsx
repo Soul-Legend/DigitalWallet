@@ -50,22 +50,33 @@ const LogsScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
+      {/* Editorial Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>Painel de Logs</Text>
+        <Text style={styles.title}>Atividades de Segurança</Text>
         <Text style={styles.subtitle}>
-          Monitoramento de eventos criptográficos
+          Registro de eventos criptográficos da Carteira Digital SSI
         </Text>
-        <View style={styles.statsContainer}>
-          <Text style={styles.statsText}>Total de eventos: {logs.length}</Text>
-          {logs.length > 0 && (
-            <TouchableOpacity
-              style={styles.clearButton}
-              onPress={handleClearLogs}>
-              <Text style={styles.clearButtonText}>Limpar Histórico</Text>
-            </TouchableOpacity>
-          )}
-        </View>
+
+        {logs.length > 0 && (
+          <TouchableOpacity
+            style={styles.clearButton}
+            onPress={handleClearLogs}>
+            <Text style={styles.clearButtonIcon}>🗑️</Text>
+            <Text style={styles.clearButtonText}>Limpar Histórico</Text>
+          </TouchableOpacity>
+        )}
       </View>
+
+      {/* Date Header & Filter */}
+      {logs.length > 0 && (
+        <View style={styles.filterBar}>
+          <Text style={styles.dateLabel}>Hoje</Text>
+          <TouchableOpacity style={styles.filterButton}>
+            <Text style={styles.filterButtonIcon}>≡</Text>
+            <Text style={styles.filterButtonText}>Filtrar Logs</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       {logs.length === 0 ? (
         <View style={styles.emptyContainer}>
@@ -87,6 +98,11 @@ const LogsScreen: React.FC = () => {
           maxToRenderPerBatch={20}
           windowSize={10}
           removeClippedSubviews
+          ListFooterComponent={
+            <TouchableOpacity style={styles.loadMoreButton}>
+              <Text style={styles.loadMoreText}>Carregar Mais Logs</Text>
+            </TouchableOpacity>
+          }
         />
       )}
     </View>
@@ -96,55 +112,78 @@ const LogsScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#fcf9f8', // surface
   },
   header: {
-    backgroundColor: '#003366',
-    padding: 20,
+    paddingHorizontal: 24,
     paddingTop: 24,
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 4,
+    paddingBottom: 16,
   },
   title: {
-    fontSize: 24,
+    fontSize: 32,
     fontWeight: 'bold',
-    color: '#ffffff',
-    marginBottom: 4,
+    color: '#1b1b1c', // on-surface
+    marginBottom: 8,
+    letterSpacing: -0.5,
   },
   subtitle: {
-    fontSize: 14,
-    color: '#b3d9ff',
-    marginBottom: 12,
+    fontSize: 15,
+    color: '#434653', // on-surface-variant
+    marginBottom: 16,
+    lineHeight: 22,
   },
-  statsContainer: {
+  clearButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 8,
+    alignSelf: 'flex-start',
+  },
+  clearButtonIcon: {
+    fontSize: 14,
+  },
+  clearButtonText: {
+    color: '#ba1a1a', // error
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  // Filter Bar
+  filterBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 8,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
   },
-  statsText: {
-    fontSize: 13,
-    color: '#b3d9ff',
+  dateLabel: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#1b1b1c', // on-surface
   },
-  clearButton: {
-    backgroundColor: '#f44336',
-    paddingHorizontal: 16,
+  filterButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
     paddingVertical: 8,
-    borderRadius: 6,
+    paddingHorizontal: 12,
+    backgroundColor: '#f6f3f2', // surface-container-low
+    borderRadius: 8,
   },
-  clearButtonText: {
-    color: '#ffffff',
-    fontSize: 13,
-    fontWeight: '600',
+  filterButtonIcon: {
+    fontSize: 16,
+    color: '#434653',
   },
+  filterButtonText: {
+    fontSize: 14,
+    color: '#434653',
+    fontWeight: '500',
+  },
+  // Empty State
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 40,
+    padding: 48,
   },
   emptyIcon: {
     fontSize: 64,
@@ -153,20 +192,33 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#666',
+    color: '#434653',
     marginBottom: 8,
   },
   emptySubtext: {
     fontSize: 14,
-    color: '#999',
+    color: '#737784',
     textAlign: 'center',
     lineHeight: 20,
   },
+  // Logs List
   logsList: {
     flex: 1,
   },
   logsListContent: {
-    paddingVertical: 12,
+    paddingBottom: 24,
+  },
+  // Load More
+  loadMoreButton: {
+    alignItems: 'center',
+    paddingVertical: 16,
+    marginHorizontal: 24,
+    marginTop: 8,
+  },
+  loadMoreText: {
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: '#003a8c', // primary
   },
 });
 

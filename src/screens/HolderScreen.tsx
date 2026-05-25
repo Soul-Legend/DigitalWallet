@@ -51,18 +51,27 @@ const HolderScreen: React.FC = () => {
   return (
     <ScrollView style={styles.container}>
       <View style={styles.content}>
-        <Text style={styles.title}>Módulo Titular</Text>
+        {/* Editorial Header */}
+        <Text style={styles.title}>Minha Carteira Acadêmica</Text>
         <Text style={styles.subtitle}>
-          Armazene e visualize suas credenciais acadêmicas
+          Gerencie suas credenciais acadêmicas e profissionais emitidas por
+          instituições confiáveis.
         </Text>
 
         {/* Credential Input Section */}
         <View style={styles.inputSection}>
-          <Text style={styles.sectionTitle}>Adicionar Credencial</Text>
+          <View style={styles.inputSectionHeader}>
+            <Text style={styles.addIcon}>⊕</Text>
+            <Text style={styles.sectionTitle}>Adicionar Credencial</Text>
+          </View>
+          <Text style={styles.inputDescription}>
+            Cole o JSON da sua credencial verificável para adicioná-la à sua
+            carteira com segurança.
+          </Text>
           <TextInput
             style={styles.input}
-            placeholder="Cole sua credencial aqui (SD-JWT ou AnonCreds)"
-            placeholderTextColor="#999"
+            placeholder="Insira o JSON da Credencial aqui..."
+            placeholderTextColor="#737784"
             multiline
             numberOfLines={4}
             value={credentialInput}
@@ -70,11 +79,12 @@ const HolderScreen: React.FC = () => {
             editable={!isLoading}
           />
           <TouchableOpacity
-            style={[styles.button, isLoading && styles.buttonDisabled]}
+            style={[styles.saveButton, isLoading && styles.buttonDisabled]}
             onPress={handleStoreCredential}
             disabled={isLoading}>
-            <Text style={styles.buttonText}>
-              {isLoading ? 'Processando...' : 'Armazenar Credencial'}
+            <Text style={styles.saveButtonIcon}>💾</Text>
+            <Text style={styles.saveButtonText}>
+              {isLoading ? 'Processando...' : 'Salvar na Carteira'}
             </Text>
           </TouchableOpacity>
         </View>
@@ -101,14 +111,16 @@ const HolderScreen: React.FC = () => {
             />
 
             <View style={styles.requestSection}>
-              <Text style={styles.sectionTitle}>Processar Requisição de Apresentação</Text>
-              <Text style={styles.sectionSubtitle}>
+              <Text style={styles.sectionTitle}>
+                Processar Requisição de Apresentação
+              </Text>
+              <Text style={styles.inputDescription}>
                 Cole uma requisição PEX para criar uma apresentação
               </Text>
               <TextInput
                 style={styles.input}
                 placeholder="Cole a requisição PEX aqui"
-                placeholderTextColor="#999"
+                placeholderTextColor="#737784"
                 multiline
                 numberOfLines={4}
                 value={requestInput}
@@ -116,11 +128,16 @@ const HolderScreen: React.FC = () => {
                 editable={!isProcessingRequest}
               />
               <TouchableOpacity
-                style={[styles.button, isProcessingRequest && styles.buttonDisabled]}
+                style={[
+                  styles.saveButton,
+                  isProcessingRequest && styles.buttonDisabled,
+                ]}
                 onPress={handleProcessRequest}
                 disabled={isProcessingRequest}>
-                <Text style={styles.buttonText}>
-                  {isProcessingRequest ? 'Processando...' : 'Processar Requisição'}
+                <Text style={styles.saveButtonText}>
+                  {isProcessingRequest
+                    ? 'Processando...'
+                    : 'Processar Requisição'}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -135,7 +152,7 @@ const HolderScreen: React.FC = () => {
                       value={presentationOutput}
                       size={220}
                       backgroundColor="#ffffff"
-                      color="#003366"
+                      color="#003a8c"
                     />
                     <Text style={styles.qrHint}>
                       Escaneie com o módulo Verificador
@@ -143,9 +160,11 @@ const HolderScreen: React.FC = () => {
                   </View>
                 ) : null}
                 <TouchableOpacity
-                  style={styles.copyOutputButton}
+                  style={styles.presentButton}
                   onPress={handleCopyOutput}>
-                  <Text style={styles.copyOutputButtonText}>📋 Copiar Apresentação</Text>
+                  <Text style={styles.presentButtonText}>
+                    📋 Copiar Apresentação
+                  </Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -167,8 +186,11 @@ const HolderScreen: React.FC = () => {
           <LoadingIndicator message="Carregando credenciais..." />
         ) : credentials.length > 0 ? (
           <View style={styles.credentialsSection}>
+            <Text style={styles.credentialsSectionTitle}>
+              Credenciais Armazenadas
+            </Text>
+
             <View style={styles.navigationHeader}>
-              <Text style={styles.sectionTitle}>Minhas Credenciais</Text>
               <Text style={styles.credentialCounter}>
                 {currentIndex + 1} de {credentials.length}
               </Text>
@@ -239,95 +261,110 @@ const HolderScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#fcf9f8', // surface
   },
   content: {
-    padding: 20,
+    padding: 24,
   },
   title: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: 'bold',
-    color: '#003366',
+    color: '#003a8c', // primary
     marginBottom: 8,
+    letterSpacing: -0.5,
   },
   subtitle: {
     fontSize: 16,
-    color: '#666',
+    color: '#434653', // on-surface-variant
+    marginBottom: 32,
+    lineHeight: 24,
+  },
+  // Input Section
+  inputSection: {
+    backgroundColor: '#f6f3f2', // surface-container-low
+    borderRadius: 12,
+    padding: 24,
     marginBottom: 24,
   },
-  inputSection: {
-    backgroundColor: '#ffffff',
-    borderRadius: 8,
-    padding: 16,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 1},
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+  inputSectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
   },
-  requestSection: {
-    backgroundColor: '#fff8e1',
-    borderRadius: 8,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#ffd54f',
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 1},
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+  addIcon: {
+    fontSize: 20,
+    color: '#003a8c',
+    fontWeight: 'bold',
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
-    color: '#003366',
-    marginBottom: 12,
+    color: '#003a8c', // primary
   },
-  sectionSubtitle: {
+  inputDescription: {
     fontSize: 14,
-    color: '#666',
-    marginBottom: 12,
+    color: '#434653', // on-surface-variant
+    marginBottom: 16,
+    lineHeight: 20,
   },
   input: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 14,
-    color: '#333',
-    backgroundColor: '#fafafa',
-    minHeight: 100,
-    textAlignVertical: 'top',
-    marginBottom: 12,
-  },
-  button: {
-    backgroundColor: '#003366',
+    backgroundColor: '#ffffff', // surface-container-lowest
     borderRadius: 8,
     padding: 16,
+    fontSize: 14,
+    color: '#1b1b1c',
+    minHeight: 100,
+    textAlignVertical: 'top',
+    marginBottom: 16,
+    // No border - follow "No-Line" rule
+  },
+  saveButton: {
+    backgroundColor: '#003a8c', // primary
+    borderRadius: 8,
+    padding: 14,
     alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  saveButtonIcon: {
+    fontSize: 14,
+  },
+  saveButtonText: {
+    color: '#ffffff',
+    fontSize: 15,
+    fontWeight: '600',
   },
   buttonDisabled: {
-    backgroundColor: '#999',
+    opacity: 0.5,
   },
-  buttonText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: 'bold',
+  // Request Section
+  requestSection: {
+    backgroundColor: '#f6f3f2',
+    borderRadius: 12,
+    padding: 24,
+    marginBottom: 24,
   },
+  // Credentials Section
   credentialsSection: {
-    marginTop: 24,
+    marginTop: 16,
+  },
+  credentialsSectionTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#003a8c',
+    marginBottom: 16,
   },
   navigationHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-end',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   credentialCounter: {
     fontSize: 14,
-    color: '#666',
+    color: '#434653',
     fontWeight: '500',
   },
   navigationControls: {
@@ -339,13 +376,13 @@ const styles = StyleSheet.create({
   },
   navButton: {
     flex: 1,
-    backgroundColor: '#003366',
+    backgroundColor: '#003a8c',
     borderRadius: 8,
     padding: 12,
     alignItems: 'center',
   },
   navButtonDisabled: {
-    backgroundColor: '#e0e0e0',
+    backgroundColor: '#e5e2e1', // surface-container-highest
   },
   navButtonText: {
     color: '#ffffff',
@@ -353,10 +390,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   navButtonTextDisabled: {
-    color: '#999',
+    color: '#737784', // outline
   },
   deleteButton: {
-    backgroundColor: '#c62828',
+    backgroundColor: '#ba1a1a', // error
     borderRadius: 8,
     padding: 12,
     alignItems: 'center',
@@ -370,8 +407,8 @@ const styles = StyleSheet.create({
   emptyState: {
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 40,
-    marginTop: 40,
+    padding: 48,
+    marginTop: 32,
   },
   emptyStateIcon: {
     fontSize: 64,
@@ -380,49 +417,48 @@ const styles = StyleSheet.create({
   emptyStateText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#666',
+    color: '#434653',
     marginBottom: 8,
   },
   emptyStateSubtext: {
     fontSize: 14,
-    color: '#999',
+    color: '#737784',
     textAlign: 'center',
   },
+  // Presentation Output
   presentationOutputSection: {
     backgroundColor: '#ffffff',
-    borderRadius: 8,
-    padding: 16,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 1},
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    borderRadius: 12,
+    padding: 24,
+    marginBottom: 24,
+    shadowColor: '#1b1b1c',
+    shadowOffset: {width: 0, height: 4},
+    shadowOpacity: 0.04,
+    shadowRadius: 24,
     elevation: 2,
   },
   qrContainer: {
     alignItems: 'center',
-    padding: 20,
+    padding: 24,
     backgroundColor: '#ffffff',
     borderRadius: 8,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
+    marginBottom: 16,
   },
   qrHint: {
     fontSize: 14,
-    color: '#666',
+    color: '#434653',
     marginTop: 12,
     textAlign: 'center',
   },
-  copyOutputButton: {
-    backgroundColor: '#1976d2',
+  presentButton: {
+    backgroundColor: '#fecc03', // secondary-container
     borderRadius: 8,
-    padding: 12,
+    padding: 14,
     alignItems: 'center',
   },
-  copyOutputButtonText: {
-    color: '#ffffff',
-    fontSize: 14,
+  presentButtonText: {
+    color: '#6e5700', // on-secondary-container
+    fontSize: 15,
     fontWeight: '600',
   },
 });

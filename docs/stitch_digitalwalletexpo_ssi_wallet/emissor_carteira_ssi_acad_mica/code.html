@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+
+<html lang="pt-BR"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Emissor - Nova Credencial Acadêmica</title>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700;800&amp;family=Raleway:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Config -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "inverse-on-surface": "#f3f0ef",
+                    "on-secondary-container": "#6e5700",
+                    "surface-container-high": "#eae7e7",
+                    "on-primary-fixed-variant": "#00429c",
+                    "inverse-surface": "#303030",
+                    "surface-dim": "#dcd9d9",
+                    "surface-bright": "#fcf9f8",
+                    "on-tertiary-fixed-variant": "#00530c",
+                    "tertiary-fixed": "#8ffb85",
+                    "on-tertiary-fixed": "#002202",
+                    "on-tertiary": "#ffffff",
+                    "outline": "#737784",
+                    "background": "#fcf9f8",
+                    "secondary-fixed": "#ffe089",
+                    "on-background": "#1b1b1c",
+                    "outline-variant": "#c3c6d5",
+                    "tertiary-fixed-dim": "#73dd6b",
+                    "surface-container-lowest": "#ffffff",
+                    "surface-container-low": "#f6f3f2",
+                    "primary": "#003a8c",
+                    "secondary": "#745b00",
+                    "on-primary-fixed": "#001945",
+                    "error-container": "#ffdad6",
+                    "error": "#ba1a1a",
+                    "surface-container-highest": "#e5e2e1",
+                    "on-secondary-fixed-variant": "#574400",
+                    "on-primary-container": "#b8cbff",
+                    "on-surface": "#1b1b1c",
+                    "on-error": "#ffffff",
+                    "surface-variant": "#e5e2e1",
+                    "surface": "#fcf9f8",
+                    "secondary-fixed-dim": "#f0c100",
+                    "primary-container": "#1351b4",
+                    "primary-fixed-dim": "#b0c6ff",
+                    "surface-tint": "#225abd",
+                    "inverse-primary": "#b0c6ff",
+                    "on-surface-variant": "#434653",
+                    "on-primary": "#ffffff",
+                    "on-tertiary-container": "#79e370",
+                    "on-secondary": "#ffffff",
+                    "primary-fixed": "#d9e2ff",
+                    "secondary-container": "#fecc03",
+                    "on-error-container": "#93000a",
+                    "surface-container": "#f0eded",
+                    "on-secondary-fixed": "#241a00",
+                    "tertiary": "#004a09",
+                    "tertiary-container": "#006511"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {},
+            "fontFamily": {
+                    "headline": ["Public Sans"],
+                    "body": ["Public Sans"],
+                    "label": ["Public Sans"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined.fill {
+            font-variation-settings: 'FILL' 1;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-surface text-on-surface font-body antialiased min-h-screen flex flex-col selection:bg-primary-fixed selection:text-on-primary-fixed">
+<!-- TopAppBar (Shared Component) -->
+<header class="fixed top-0 w-full z-50 flex items-center justify-between px-6 h-16 bg-[#1351B4] backdrop-blur-xl bg-opacity-90 dark:bg-slate-900/90 no-border shadow-none bg-gradient-to-br from-white/10 to-transparent shadow-lg shadow-blue-900/20 docked full-width top-0">
+<div class="flex items-center gap-4 hover:bg-white/10 transition-colors rounded-full p-1 cursor-pointer scale-95 active:scale-90 transition-transform">
+<div class="w-10 h-10 rounded-full overflow-hidden border border-white/20 bg-surface-container-low flex-shrink-0">
+<img alt="User Profile Portrait" class="w-full h-full object-cover" data-alt="professional portrait of a public servant smiling warmly in a bright office environment" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDA2y3UCVlIGtjiq-1u40iqdpGMXC1Udr8RAVE-yzd2cedhMDUyW22_Xw5EX2I19O2nu07qjQMni4YeCvOF8J4sE2MjsiKM5YA3aA5v7TOhCQiKCAw1UPigelkjznoKOvlwjeBbYnn8SOsEZJULVn-Zuhvjm4HkggpX6Wjc0HuAnDRXu7vDQ9Wp04Bc2QYQLTZTbfUAV5FGCbKdsyjokBD9iA-eOBqtUClJNo69Tx5uc0d_216gxcPU4z3VWRcL4MdmTgSou9dse-0"/>
+</div>
+</div>
+<div class="text-white font-black tracking-tighter text-2xl font-['Raleway'] font-bold tracking-tight text-lg">
+            Nova Credencial Acadêmica
+        </div>
+<button aria-label="Settings" class="w-12 h-12 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors text-white dark:text-blue-400 scale-95 active:scale-90 transition-transform">
+<span class="material-symbols-outlined text-2xl">settings</span>
+</button>
+</header>
+<!-- Main Canvas -->
+<main class="flex-grow pt-24 pb-28 px-4 md:px-8 max-w-7xl mx-auto w-full flex flex-col gap-8">
+<!-- Hero Section / Editorial Header -->
+<section class="flex flex-col gap-2 pt-4 pb-6">
+<p class="text-primary font-bold tracking-wider uppercase text-sm font-label">Universidade Federal de Santa Catarina</p>
+<h1 class="text-4xl md:text-5xl lg:text-[3.5rem] font-extrabold text-primary leading-tight tracking-tight font-['Raleway'] -ml-1">
+                Nova Credencial<br/>Acadêmica
+            </h1>
+</section>
+<!-- Bento Grid Form Layout -->
+<form class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+<!-- Left Column: Dados do Aluno (wider) -->
+<div class="lg:col-span-8 flex flex-col gap-6">
+<div class="bg-surface-container-low rounded-xl p-6 md:p-8 flex flex-col gap-6">
+<h2 class="text-2xl font-bold text-on-surface font-['Raleway'] border-b border-transparent">Dados do Aluno</h2>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
+<!-- Name Input -->
+<div class="flex flex-col gap-1 md:col-span-2">
+<label class="text-sm font-semibold text-on-surface-variant ml-1" for="nome">Nome Completo</label>
+<input class="h-11 bg-surface-container-highest border border-outline-variant/20 rounded-lg px-4 text-on-surface focus:outline-none focus:ring-2 focus:ring-primary-fixed transition-shadow w-full placeholder:text-outline/60" id="nome" placeholder="Ex: Maria Clara Silva" required="" type="text"/>
+</div>
+<!-- CPF Input -->
+<div class="flex flex-col gap-1">
+<label class="text-sm font-semibold text-on-surface-variant ml-1" for="cpf">CPF</label>
+<input class="h-11 bg-surface-container-highest border border-outline-variant/20 rounded-lg px-4 text-on-surface focus:outline-none focus:ring-2 focus:ring-primary-fixed transition-shadow w-full placeholder:text-outline/60" id="cpf" placeholder="000.000.000-00" required="" type="text"/>
+</div>
+<!-- Matrícula Input -->
+<div class="flex flex-col gap-1">
+<label class="text-sm font-semibold text-on-surface-variant ml-1" for="matricula">Matrícula (UFSC)</label>
+<input class="h-11 bg-surface-container-highest border border-outline-variant/20 rounded-lg px-4 text-on-surface focus:outline-none focus:ring-2 focus:ring-primary-fixed transition-shadow w-full placeholder:text-outline/60" id="matricula" placeholder="Ex: 20241000" required="" type="text"/>
+</div>
+<!-- Course Input -->
+<div class="flex flex-col gap-1 md:col-span-2">
+<label class="text-sm font-semibold text-on-surface-variant ml-1" for="curso">Curso</label>
+<div class="relative">
+<select class="h-11 bg-surface-container-highest border border-outline-variant/20 rounded-lg px-4 text-on-surface focus:outline-none focus:ring-2 focus:ring-primary-fixed transition-shadow w-full appearance-none pr-10" id="curso" required="">
+<option disabled="" selected="" value="">Selecione o curso...</option>
+<option value="ecv">Engenharia Civil</option>
+<option value="med">Medicina</option>
+<option value="dir">Direito</option>
+<option value="cco">Ciência da Computação</option>
+</select>
+<div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-outline">
+<span class="material-symbols-outlined">expand_more</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Column: Benefícios & Actions -->
+<div class="lg:col-span-4 flex flex-col gap-6">
+<!-- Benefícios Card -->
+<div class="bg-surface-container-low rounded-xl p-6 md:p-8 flex flex-col gap-6">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center">
+<span class="material-symbols-outlined fill">stars</span>
+</div>
+<h2 class="text-xl font-bold text-on-surface font-['Raleway']">Benefícios</h2>
+</div>
+<p class="text-sm text-on-surface-variant leading-relaxed">
+                        Habilite os acessos institucionais que serão vinculados a esta credencial SSI.
+                    </p>
+<div class="flex flex-col gap-4 mt-2">
+<!-- Switch RU -->
+<div class="flex items-center justify-between p-3 rounded-lg hover:bg-surface-container-highest transition-colors">
+<div class="flex flex-col">
+<span class="font-semibold text-on-surface">Restaurante Universitário</span>
+<span class="text-xs text-on-surface-variant">Acesso subsidiado (RU)</span>
+</div>
+<label class="relative inline-flex items-center cursor-pointer min-h-[44px] min-w-[44px] justify-center">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-surface-dim peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary-fixed rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[10px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+</label>
+</div>
+<!-- Switch Housing -->
+<div class="flex items-center justify-between p-3 rounded-lg hover:bg-surface-container-highest transition-colors">
+<div class="flex flex-col">
+<span class="font-semibold text-on-surface">Moradia Estudantil</span>
+<span class="text-xs text-on-surface-variant">Acesso aos blocos</span>
+</div>
+<label class="relative inline-flex items-center cursor-pointer min-h-[44px] min-w-[44px] justify-center">
+<input class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-surface-dim peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary-fixed rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[10px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+</label>
+</div>
+<!-- Switch Library -->
+<div class="flex items-center justify-between p-3 rounded-lg hover:bg-surface-container-highest transition-colors">
+<div class="flex flex-col">
+<span class="font-semibold text-on-surface">Biblioteca Universitária</span>
+<span class="text-xs text-on-surface-variant">Empréstimos (BU)</span>
+</div>
+<label class="relative inline-flex items-center cursor-pointer min-h-[44px] min-w-[44px] justify-center">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-surface-dim peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary-fixed rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[10px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+</label>
+</div>
+</div>
+</div>
+<!-- Action Button -->
+<button class="w-full min-h-[56px] flex items-center justify-center gap-3 bg-primary text-on-primary rounded-xl font-bold text-lg hover:bg-primary/90 active:scale-[0.98] transition-all shadow-md shadow-primary/20" type="submit">
+<span class="material-symbols-outlined">edit_document</span>
+                    Emitir e Assinar
+                </button>
+<p class="text-center text-xs text-on-surface-variant px-4">
+                    Ao emitir, a credencial será ancorada na blockchain institucional.
+                </p>
+</div>
+</form>
+</main>
+<!-- BottomNavBar (Shared Component) -->
+<!-- Desktop Hidden, Mobile Shown -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-2 py-3 bg-opacity-95 bg-[#fcf9f8] dark:bg-slate-950 docked full-width bottom-0 rounded-t-none border-t border-[#e5e2e1]/20 dark:border-slate-800 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] transition-all duration-300 ease-in-out">
+<!-- Tab 0: Vault (Inactive) -->
+<a class="flex flex-col items-center justify-center w-16 h-14 hover:bg-[#f6f3f2] dark:hover:bg-slate-900 rounded-xl transition-all duration-300 ease-in-out text-slate-400 dark:text-slate-600 opacity-70" href="#">
+<span class="material-symbols-outlined mb-1">account_balance_wallet</span>
+<span class="font-['Public_Sans'] text-[10px] font-semibold uppercase tracking-wider">Vault</span>
+</a>
+<!-- Tab 1: Issue (Active - Emissor) -->
+<a class="flex flex-col items-center justify-center w-16 h-14 hover:bg-[#f6f3f2] dark:hover:bg-slate-900 rounded-xl transition-all duration-300 ease-in-out flex flex-col items-center justify-center text-[#1351B4] dark:text-blue-400 font-bold scale-110" href="#">
+<span class="material-symbols-outlined mb-1 fill">add_moderator</span>
+<span class="font-['Public_Sans'] text-[10px] font-semibold uppercase tracking-wider">Issue</span>
+</a>
+<!-- Tab 2: Verify (Inactive) -->
+<a class="flex flex-col items-center justify-center w-16 h-14 hover:bg-[#f6f3f2] dark:hover:bg-slate-900 rounded-xl transition-all duration-300 ease-in-out text-slate-400 dark:text-slate-600 opacity-70" href="#">
+<span class="material-symbols-outlined mb-1">verified_user</span>
+<span class="font-['Public_Sans'] text-[10px] font-semibold uppercase tracking-wider">Verify</span>
+</a>
+<!-- Tab 3: Logs (Inactive) -->
+<a class="flex flex-col items-center justify-center w-16 h-14 hover:bg-[#f6f3f2] dark:hover:bg-slate-900 rounded-xl transition-all duration-300 ease-in-out text-slate-400 dark:text-slate-600 opacity-70" href="#">
+<span class="material-symbols-outlined mb-1">history_edu</span>
+<span class="font-['Public_Sans'] text-[10px] font-semibold uppercase tracking-wider">Logs</span>
+</a>
+<!-- Tab 4: Glossary (Inactive) -->
+<a class="flex flex-col items-center justify-center w-16 h-14 hover:bg-[#f6f3f2] dark:hover:bg-slate-900 rounded-xl transition-all duration-300 ease-in-out text-slate-400 dark:text-slate-600 opacity-70" href="#">
+<span class="material-symbols-outlined mb-1">menu_book</span>
+<span class="font-['Public_Sans'] text-[10px] font-semibold uppercase tracking-wider">Glossary</span>
+</a>
+</nav>
+</body></html>

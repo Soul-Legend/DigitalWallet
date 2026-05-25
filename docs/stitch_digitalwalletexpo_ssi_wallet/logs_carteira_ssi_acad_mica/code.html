@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+
+<html lang="pt-BR"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Carteira Digital SSI - Logs</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;600;700&amp;family=Raleway:wght@400;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "inverse-on-surface": "#f3f0ef",
+                        "on-secondary-container": "#6e5700",
+                        "surface-container-high": "#eae7e7",
+                        "on-primary-fixed-variant": "#00429c",
+                        "inverse-surface": "#303030",
+                        "surface-dim": "#dcd9d9",
+                        "surface-bright": "#fcf9f8",
+                        "on-tertiary-fixed-variant": "#00530c",
+                        "tertiary-fixed": "#8ffb85",
+                        "on-tertiary-fixed": "#002202",
+                        "on-tertiary": "#ffffff",
+                        "outline": "#737784",
+                        "background": "#fcf9f8",
+                        "secondary-fixed": "#ffe089",
+                        "on-background": "#1b1b1c",
+                        "outline-variant": "#c3c6d5",
+                        "tertiary-fixed-dim": "#73dd6b",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-container-low": "#f6f3f2",
+                        "primary": "#003a8c",
+                        "secondary": "#745b00",
+                        "on-primary-fixed": "#001945",
+                        "error-container": "#ffdad6",
+                        "error": "#ba1a1a",
+                        "surface-container-highest": "#e5e2e1",
+                        "on-secondary-fixed-variant": "#574400",
+                        "on-primary-container": "#b8cbff",
+                        "on-surface": "#1b1b1c",
+                        "on-error": "#ffffff",
+                        "surface-variant": "#e5e2e1",
+                        "surface": "#fcf9f8",
+                        "secondary-fixed-dim": "#f0c100",
+                        "primary-container": "#1351b4",
+                        "primary-fixed-dim": "#b0c6ff",
+                        "surface-tint": "#225abd",
+                        "inverse-primary": "#b0c6ff",
+                        "on-surface-variant": "#434653",
+                        "on-primary": "#ffffff",
+                        "on-tertiary-container": "#79e370",
+                        "on-secondary": "#ffffff",
+                        "primary-fixed": "#d9e2ff",
+                        "secondary-container": "#fecc03",
+                        "on-error-container": "#93000a",
+                        "surface-container": "#f0eded",
+                        "on-secondary-fixed": "#241a00",
+                        "tertiary": "#004a09",
+                        "tertiary-container": "#006511"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {},
+                    "fontFamily": {
+                        "headline": ["Raleway", "sans-serif"],
+                        "body": ["Public Sans", "sans-serif"],
+                        "label": ["Public Sans", "sans-serif"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Public Sans', sans-serif; }
+        h1, h2, h3, h4, h5, h6 { font-family: 'Raleway', sans-serif; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-surface text-on-surface min-h-screen flex flex-col pb-24 md:pb-0">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 flex items-center justify-between px-6 h-16 bg-[#1351B4] backdrop-blur-xl bg-opacity-90 dark:bg-slate-900/90 shadow-lg shadow-blue-900/20 bg-gradient-to-br from-white/10 to-transparent">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center overflow-hidden">
+<img alt="User Profile Portrait" class="w-full h-full object-cover" data-alt="professional portrait of a man in a blue shirt on a light background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDtENp_E1Au0HNVzoubqLjzgsNwWrzXmwgALLL9FiN_N5jm7ELzCULhG-kH2zW60_E2n07tEgf8rGHANsPkjmVz0x1jldTzN0kooNL9DSB1A_VEuz8TeJ9EKr8KC50hVc0cr78y6r0huV02X95Noot50O7RKgSruiOAwYvmKhkXEwFybGFuYlWN_Az1JdEEK1MkLnRoxRsa1Y1PlAg72o4xFoTqJHE-zIw8-elfMuyREz-tUC5twf0RdwScLgdcrSB7p5yYj8LZzOE"/>
+</div>
+<span class="text-white font-bold tracking-tight text-xl font-['Raleway']">Atividades de Segurança</span>
+</div>
+<button class="text-white dark:text-blue-400 hover:bg-white/10 transition-colors p-2 rounded-full scale-95 active:scale-90 transition-transform">
+<span class="material-symbols-outlined">settings</span>
+</button>
+</header>
+<!-- Main Content -->
+<main class="flex-grow pt-24 px-4 md:px-8 max-w-5xl mx-auto w-full">
+<div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+<div>
+<h1 class="text-4xl md:text-5xl font-black text-primary tracking-tight font-headline mb-2">Atividades de Segurança</h1>
+<p class="text-on-surface-variant text-lg">Registro de eventos criptográficos da Carteira Digital SSI</p>
+</div>
+<button class="text-primary hover:bg-surface-container-low px-4 py-2 rounded-lg font-bold transition-colors flex items-center gap-2">
+<span class="material-symbols-outlined">delete</span>
+                Limpar Histórico
+            </button>
+</div>
+<!-- Filters / Timeline Header -->
+<div class="flex justify-between items-center mb-6 px-2">
+<h2 class="text-xl font-bold font-headline text-on-surface">Hoje</h2>
+<div class="text-sm text-on-surface-variant flex items-center gap-2 bg-surface-container-low px-3 py-1 rounded-full">
+<span class="material-symbols-outlined text-[18px]">filter_list</span>
+                Filtrar Logs
+            </div>
+</div>
+<!-- Log Entries List -->
+<div class="space-y-4">
+<!-- Entry 1: Success -->
+<div class="bg-surface-container-lowest rounded-xl p-6 shadow-[0_4px_24px_rgba(0,0,0,0.04)] flex flex-col md:flex-row gap-4 md:items-center relative overflow-hidden group">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-tertiary"></div>
+<div class="flex items-start md:items-center gap-4 flex-grow">
+<div class="bg-tertiary-container/10 p-3 rounded-full flex-shrink-0 text-tertiary">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+<div>
+<h3 class="font-bold text-lg text-on-surface font-headline mb-1">Assinatura SD-JWT</h3>
+<p class="text-on-surface-variant text-sm flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px]">fingerprint</span>
+                            Autenticação biométrica validada com sucesso.
+                        </p>
+</div>
+</div>
+<div class="flex md:flex-col items-center md:items-end justify-between md:justify-center gap-2 mt-2 md:mt-0 pt-4 md:pt-0 border-t md:border-none border-surface-variant/20">
+<span class="text-on-surface-variant text-sm font-semibold">14:32:05</span>
+<a class="text-primary font-bold text-sm hover:underline flex items-center gap-1" href="#">
+                        Ver Detalhes
+                        <span class="material-symbols-outlined text-[16px]">chevron_right</span>
+</a>
+</div>
+</div>
+<!-- Entry 2: Warning/Error -->
+<div class="bg-surface-container-lowest rounded-xl p-6 shadow-[0_4px_24px_rgba(0,0,0,0.04)] flex flex-col md:flex-row gap-4 md:items-center relative overflow-hidden group">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-error"></div>
+<div class="flex items-start md:items-center gap-4 flex-grow">
+<div class="bg-error-container/20 p-3 rounded-full flex-shrink-0 text-error">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">error</span>
+</div>
+<div>
+<h3 class="font-bold text-lg text-on-surface font-headline mb-1">Falha na Resolução de DID</h3>
+<p class="text-error text-sm flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px]">wifi_off</span>
+                            Timeout na conexão com o registro VDR principal.
+                        </p>
+</div>
+</div>
+<div class="flex md:flex-col items-center md:items-end justify-between md:justify-center gap-2 mt-2 md:mt-0 pt-4 md:pt-0 border-t md:border-none border-surface-variant/20">
+<span class="text-on-surface-variant text-sm font-semibold">11:15:42</span>
+<a class="text-primary font-bold text-sm hover:underline flex items-center gap-1" href="#">
+                        Ver Detalhes
+                        <span class="material-symbols-outlined text-[16px]">chevron_right</span>
+</a>
+</div>
+</div>
+<!-- Entry 3: Success -->
+<div class="bg-surface-container-lowest rounded-xl p-6 shadow-[0_4px_24px_rgba(0,0,0,0.04)] flex flex-col md:flex-row gap-4 md:items-center relative overflow-hidden group">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-tertiary"></div>
+<div class="flex items-start md:items-center gap-4 flex-grow">
+<div class="bg-tertiary-container/10 p-3 rounded-full flex-shrink-0 text-tertiary">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+<div>
+<h3 class="font-bold text-lg text-on-surface font-headline mb-1">Geração de DID</h3>
+<p class="text-on-surface-variant text-sm flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px]">key</span>
+                            Novo par de chaves criptográficas gerado localmente.
+                        </p>
+</div>
+</div>
+<div class="flex md:flex-col items-center md:items-end justify-between md:justify-center gap-2 mt-2 md:mt-0 pt-4 md:pt-0 border-t md:border-none border-surface-variant/20">
+<span class="text-on-surface-variant text-sm font-semibold">09:00:12</span>
+<a class="text-primary font-bold text-sm hover:underline flex items-center gap-1" href="#">
+                        Ver Detalhes
+                        <span class="material-symbols-outlined text-[16px]">chevron_right</span>
+</a>
+</div>
+</div>
+<div class="flex justify-center mt-8">
+<button class="bg-surface-container-low text-primary font-bold py-3 px-6 rounded-lg hover:bg-surface-container-high transition-colors">
+                    Carregar Mais Logs
+                </button>
+</div>
+</div>
+</main>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-2 py-3 bg-[#fcf9f8] dark:bg-slate-950 border-t border-[#e5e2e1]/20 dark:border-slate-800 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] rounded-t-none bg-opacity-95 transition-all duration-300 ease-in-out">
+<button class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-600 opacity-70 hover:bg-[#f6f3f2] dark:hover:bg-slate-900 rounded-xl p-2 w-full transition-colors">
+<span class="material-symbols-outlined mb-1">account_balance_wallet</span>
+<span class="font-['Public_Sans'] text-[10px] font-semibold uppercase tracking-wider">Vault</span>
+</button>
+<button class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-600 opacity-70 hover:bg-[#f6f3f2] dark:hover:bg-slate-900 rounded-xl p-2 w-full transition-colors">
+<span class="material-symbols-outlined mb-1">add_moderator</span>
+<span class="font-['Public_Sans'] text-[10px] font-semibold uppercase tracking-wider">Issue</span>
+</button>
+<button class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-600 opacity-70 hover:bg-[#f6f3f2] dark:hover:bg-slate-900 rounded-xl p-2 w-full transition-colors">
+<span class="material-symbols-outlined mb-1">verified_user</span>
+<span class="font-['Public_Sans'] text-[10px] font-semibold uppercase tracking-wider">Verify</span>
+</button>
+<button class="flex flex-col items-center justify-center text-[#1351B4] dark:text-blue-400 font-bold scale-110 hover:bg-[#f6f3f2] dark:hover:bg-slate-900 rounded-xl p-2 w-full transition-colors">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 1;">history_edu</span>
+<span class="font-['Public_Sans'] text-[10px] font-semibold uppercase tracking-wider">Logs</span>
+</button>
+<button class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-600 opacity-70 hover:bg-[#f6f3f2] dark:hover:bg-slate-900 rounded-xl p-2 w-full transition-colors">
+<span class="material-symbols-outlined mb-1">menu_book</span>
+<span class="font-['Public_Sans'] text-[10px] font-semibold uppercase tracking-wider">Glossary</span>
+</button>
+</nav>
+<!-- Desktop Nav Cluster (Hidden on Mobile, shown on md screens within a broader layout ideally, but represented here as a floating side element for demonstration of the component architecture separation) -->
+<div class="hidden md:flex fixed top-24 left-8 flex-col gap-2 w-48 z-40 bg-surface-container-lowest p-4 rounded-xl shadow-[0_4px_24px_rgba(0,0,0,0.04)] border border-surface-variant/20">
+<div class="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-2 px-2">Navegação</div>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container-low transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]">account_balance_wallet</span>
+<span class="text-sm font-semibold">Vault</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container-low transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]">add_moderator</span>
+<span class="text-sm font-semibold">Issue</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container-low transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]">verified_user</span>
+<span class="text-sm font-semibold">Verify</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg bg-primary-container/10 text-primary font-bold transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">history_edu</span>
+<span class="text-sm">Logs</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container-low transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]">menu_book</span>
+<span class="text-sm font-semibold">Glossary</span>
+</a>
+</div>
+</body></html>

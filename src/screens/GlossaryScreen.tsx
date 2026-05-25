@@ -14,7 +14,7 @@ import {
   GlossaryTerm,
 } from '../utils/glossary';
 import {MIN_TOUCH_TARGET_SIZE} from '../utils/accessibility';
-import {getTheme, scaleFontSize} from '../utils/theme';
+import {scaleFontSize} from '../utils/theme';
 
 // Hoisted out of the component body — these never change between renders.
 const CATEGORIES = [
@@ -26,16 +26,29 @@ const CATEGORIES = [
 ] as const;
 
 const CATEGORY_COLORS: Record<string, string> = {
-  identity: '#2196f3',
-  cryptography: '#9c27b0',
-  credential: '#4caf50',
-  protocol: '#ff9800',
+  identity: '#003a8c',
+  cryptography: '#745b00',
+  credential: '#006511',
+  protocol: '#1351b4',
+};
+
+const CATEGORY_LABELS: Record<string, string> = {
+  identity: 'IDENTIDADE',
+  cryptography: 'CRIPTOGRAFIA',
+  credential: 'AUTENTICAÇÃO',
+  protocol: 'INFRAESTRUTURA',
+};
+
+const CATEGORY_ICONS: Record<string, string> = {
+  identity: '🔑',
+  cryptography: '🔐',
+  credential: '✅',
+  protocol: '🌐',
 };
 
 const GlossaryScreen: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const theme = getTheme();
 
   const categories = CATEGORIES;
 
@@ -52,35 +65,24 @@ const GlossaryScreen: React.FC = () => {
     return [...terms].sort((a, b) => a.term.localeCompare(b.term));
   }, [searchQuery, selectedCategory]);
 
-  const getCategoryColor = (category: string): string =>
-    CATEGORY_COLORS[category] || theme.colors.textSecondary;
-
-  const getCategoryLabel = (category: string): string => {
-    const labels: Record<string, string> = {
-      identity: 'Identidade',
-      cryptography: 'Criptografia',
-      credential: 'Credencial',
-      protocol: 'Protocolo',
-    };
-    return labels[category] || category;
-  };
-
   return (
     <View style={styles.container}>
-      {/* Header */}
+      {/* Editorial Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>Glossário SSI</Text>
+        <Text style={styles.title}>Glossário</Text>
         <Text style={styles.subtitle}>
-          Termos e definições de Identidade Auto-Soberana
+          Terminologia oficial para a arquitetura de Identidade Autossoberana
+          (SSI).
         </Text>
       </View>
 
       {/* Search Bar */}
       <View style={styles.searchContainer}>
+        <Text style={styles.searchIcon}>🔍</Text>
         <TextInput
           style={styles.searchInput}
-          placeholder="Buscar termo..."
-          placeholderTextColor={theme.colors.textDisabled}
+          placeholder="Buscar termos técnicos..."
+          placeholderTextColor="#737784"
           value={searchQuery}
           onChangeText={setSearchQuery}
           accessible={true}
@@ -120,7 +122,7 @@ const GlossaryScreen: React.FC = () => {
       </ScrollView>
 
       {/* Terms List */}
-      <ScrollView style={styles.termsList}>
+      <ScrollView style={styles.termsList} contentContainerStyle={styles.termsListContent}>
         {filteredTerms.length === 0 ? (
           <View style={styles.emptyState}>
             <Text style={styles.emptyStateIcon}>🔍</Text>
@@ -140,18 +142,33 @@ const GlossaryScreen: React.FC = () => {
               accessibilityLabel={`Termo: ${term.term}`}
               accessibilityHint={term.definition}
               accessibilityRole="text">
+              {/* Term Header */}
               <View style={styles.termHeader}>
                 <Text style={styles.termTitle}>{term.term}</Text>
-                <View
-                  style={[
-                    styles.categoryBadge,
-                    {backgroundColor: getCategoryColor(term.category)},
-                  ]}>
-                  <Text style={styles.categoryBadgeText}>
-                    {getCategoryLabel(term.category)}
-                  </Text>
-                </View>
+                <Text style={styles.termIcon}>
+                  {CATEGORY_ICONS[term.category] || '📄'}
+                </Text>
               </View>
+
+              {/* Category Badge */}
+              <View
+                style={[
+                  styles.categoryBadge,
+                  {
+                    backgroundColor:
+                      (CATEGORY_COLORS[term.category] || '#737784') + '15',
+                  },
+                ]}>
+                <Text
+                  style={[
+                    styles.categoryBadgeText,
+                    {color: CATEGORY_COLORS[term.category] || '#737784'},
+                  ]}>
+                  {CATEGORY_LABELS[term.category] || term.category.toUpperCase()}
+                </Text>
+              </View>
+
+              {/* Definition */}
               <Text style={styles.termDefinition}>{term.definition}</Text>
             </View>
           ))
@@ -164,84 +181,95 @@ const GlossaryScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#fcf9f8', // surface
   },
   header: {
-    backgroundColor: '#003366',
-    padding: 20,
+    paddingHorizontal: 24,
     paddingTop: 24,
+    paddingBottom: 16,
   },
   title: {
-    fontSize: scaleFontSize(24),
+    fontSize: scaleFontSize(32),
     fontWeight: 'bold',
-    color: '#ffffff',
-    marginBottom: 4,
+    color: '#1b1b1c', // on-surface
+    marginBottom: 8,
+    letterSpacing: -0.5,
   },
   subtitle: {
-    fontSize: scaleFontSize(14),
-    color: '#b3d9ff',
+    fontSize: scaleFontSize(15),
+    color: '#434653', // on-surface-variant
+    lineHeight: 22,
   },
+  // Search
   searchContainer: {
-    padding: 16,
-    backgroundColor: '#ffffff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 24,
+    marginBottom: 16,
+    backgroundColor: '#f6f3f2', // surface-container-low
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    gap: 10,
+  },
+  searchIcon: {
+    fontSize: 18,
   },
   searchInput: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 12,
+    flex: 1,
     fontSize: scaleFontSize(16),
-    backgroundColor: '#f5f5f5',
+    color: '#1b1b1c',
+    paddingVertical: 14,
     minHeight: MIN_TOUCH_TARGET_SIZE,
+    // No border - per DESIGN.md
   },
+  // Category Filter
   categoryScroll: {
-    backgroundColor: '#ffffff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    maxHeight: 52,
   },
   categoryContainer: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: 24,
+    paddingBottom: 16,
     gap: 8,
   },
   categoryButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: '#f5f5f5',
-    borderWidth: 1,
-    borderColor: '#ddd',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 24,
+    backgroundColor: '#f6f3f2', // surface-container-low
     minHeight: MIN_TOUCH_TARGET_SIZE,
     justifyContent: 'center',
+    // No border
   },
   categoryButtonActive: {
-    backgroundColor: '#003366',
-    borderColor: '#003366',
+    backgroundColor: '#003a8c', // primary
   },
   categoryButtonText: {
     fontSize: scaleFontSize(14),
-    color: '#666',
-    fontWeight: '500',
+    color: '#434653',
+    fontWeight: '600',
   },
   categoryButtonTextActive: {
     color: '#ffffff',
     fontWeight: 'bold',
   },
+  // Terms List
   termsList: {
     flex: 1,
-    padding: 16,
+  },
+  termsListContent: {
+    paddingHorizontal: 24,
+    paddingBottom: 32,
   },
   termCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 8,
-    padding: 16,
+    backgroundColor: '#ffffff', // surface-container-lowest
+    borderRadius: 12,
+    padding: 20,
     marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 1},
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    // Ambient shadow - no borders
+    shadowColor: '#1b1b1c',
+    shadowOffset: {width: 0, height: 4},
+    shadowOpacity: 0.04,
+    shadowRadius: 24,
     elevation: 2,
   },
   termHeader: {
@@ -251,32 +279,38 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   termTitle: {
-    fontSize: scaleFontSize(16),
+    fontSize: scaleFontSize(18),
     fontWeight: 'bold',
-    color: '#003366',
+    color: '#003a8c', // primary
     flex: 1,
     marginRight: 8,
   },
+  termIcon: {
+    fontSize: 18,
+  },
   categoryBadge: {
-    paddingHorizontal: 8,
+    alignSelf: 'flex-start',
+    paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 12,
+    borderRadius: 6,
+    marginBottom: 12,
   },
   categoryBadgeText: {
-    fontSize: scaleFontSize(11),
-    color: '#ffffff',
-    fontWeight: '600',
+    fontSize: scaleFontSize(10),
+    fontWeight: '700',
+    letterSpacing: 1,
   },
   termDefinition: {
     fontSize: scaleFontSize(14),
-    color: '#333',
-    lineHeight: scaleFontSize(20),
+    color: '#1b1b1c', // on-surface (not textSecondary - better readability)
+    lineHeight: scaleFontSize(21),
   },
+  // Empty State
   emptyState: {
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 40,
-    marginTop: 40,
+    padding: 48,
+    marginTop: 32,
   },
   emptyStateIcon: {
     fontSize: 64,
@@ -285,12 +319,12 @@ const styles = StyleSheet.create({
   emptyStateText: {
     fontSize: scaleFontSize(18),
     fontWeight: '600',
-    color: '#666',
+    color: '#434653',
     marginBottom: 8,
   },
   emptyStateSubtext: {
     fontSize: scaleFontSize(14),
-    color: '#999',
+    color: '#737784',
     textAlign: 'center',
   },
 });
