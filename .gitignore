@@ -2,6 +2,9 @@
 docs/libs_Docs
 .github/agents/
 
+# Circuit proving keys (5-50 MB each, environment-specific, see android/app/src/main/assets/zkeys/README.md)
+*.zkey
+
 # OSX
 .DS_Store
 
