@@ -1,10 +1,17 @@
 const fs = require('fs');
 const path = require('path');
 
-function replaceInFile(filePath, searchRegex, replacement) {
+function replaceInFile(filePath, searchRegex, replacement, alreadyPatchedRegex) {
   const fullPath = path.join(__dirname, '..', filePath);
   if (fs.existsSync(fullPath)) {
     let content = fs.readFileSync(fullPath, 'utf8');
+    
+    // Check if already patched
+    if (alreadyPatchedRegex && alreadyPatchedRegex.test(content)) {
+      console.log(`Already patched: ${filePath}`);
+      return;
+    }
+
     if (searchRegex.test(content)) {
       content = content.replace(searchRegex, replacement);
       fs.writeFileSync(fullPath, content, 'utf8');
@@ -24,8 +31,9 @@ console.log('Patching mopro-ffi for React Native 0.76...');
 // 1. Disable new architecture in build.gradle
 replaceInFile(
   'node_modules/mopro-ffi/android/build.gradle',
-  /return rootProject\.hasProperty\("newArchEnabled"\) && rootProject\.getProperty\("newArchEnabled"\) == "true"/g,
-  'return false'
+  /def isNewArchitectureEnabled\(\) \{[\s\S]*?\}/g,
+  'def isNewArchitectureEnabled() {\n  return false\n}',
+  /def isNewArchitectureEnabled\(\) \{\s*return false\s*\}/
 );
 
 // 2. Fix MoproFfiModule.kt
@@ -34,32 +42,37 @@ const moduleKtPath = 'node_modules/mopro-ffi/android/src/main/java/com/moproffi/
 replaceInFile(
   moduleKtPath,
   /import com\.facebook\.react\.bridge\.ReactApplicationContext/g,
-  'import com.facebook.react.bridge.ReactApplicationContext\\nimport com.facebook.react.bridge.ReactContextBaseJavaModule\\nimport com.facebook.react.bridge.ReactMethod'
+  'import com.facebook.react.bridge.ReactApplicationContext\\nimport com.facebook.react.bridge.ReactContextBaseJavaModule\\nimport com.facebook.react.bridge.ReactMethod',
+  /import com\.facebook\.react\.bridge\.ReactContextBaseJavaModule/
 );
 
 replaceInFile(
   moduleKtPath,
   /class MoproFfiModule\(reactContext: ReactApplicationContext\) :\s*NativeMoproFfiSpec\(reactContext\)/g,
-  'class MoproFfiModule(reactContext: ReactApplicationContext) :\\n  ReactContextBaseJavaModule(reactContext)'
+  'class MoproFfiModule(reactContext: ReactApplicationContext) :\\n  ReactContextBaseJavaModule(reactContext)',
+  /class MoproFfiModule\(reactContext: ReactApplicationContext\) :\s*ReactContextBaseJavaModule\(reactContext\)/
 );
 
 replaceInFile(
   moduleKtPath,
   /override fun installRustCrate\(\): Boolean {/g,
-  '@ReactMethod(isBlockingSynchronousMethod = true)\\n  fun installRustCrate(): Boolean {'
+  '@ReactMethod(isBlockingSynchronousMethod = true)\\n  fun installRustCrate(): Boolean {',
+  /@ReactMethod\(isBlockingSynchronousMethod = true\)\s*fun installRustCrate\(\): Boolean \{/
 );
 
 replaceInFile(
   moduleKtPath,
   /override fun cleanupRustCrate\(\): Boolean {/g,
-  '@ReactMethod(isBlockingSynchronousMethod = true)\\n  fun cleanupRustCrate(): Boolean {'
+  '@ReactMethod(isBlockingSynchronousMethod = true)\\n  fun cleanupRustCrate(): Boolean {',
+  /@ReactMethod\(isBlockingSynchronousMethod = true\)\s*fun cleanupRustCrate\(\): Boolean \{/
 );
 
 // 3. Fix MoproFfiPackage.kt
 replaceInFile(
   'node_modules/mopro-ffi/android/src/main/java/com/moproffi/MoproFfiPackage.kt',
   /true \/\/ isTurboModule/g,
-  'false // isTurboModule'
+  'false // isTurboModule',
+  /false \/\/ isTurboModule/
 );
 
 console.log('Patching complete.');
