@@ -11,8 +11,8 @@
     "test": "jest --silent",
     "test:verbose": "jest",
     "ci": "npm run typecheck && npm run lint && npm test",
-    "postinstall": "node scripts/fix-mopro-ffi.js",
-    "eas-build-post-install": "node scripts/fix-mopro-ffi.js",
+    "postinstall": "patch-package && node scripts/fix-mopro-ffi.js",
+    "eas-build-post-install": "patch-package && node scripts/fix-mopro-ffi.js",
     "setup:zkp": "powershell ./scripts/setup_zkp.ps1"
   },
   "dependencies": {
@@ -62,7 +62,7 @@
     "patch-package": "^8.0.1",
     "prettier": "2.8.8",
     "react-test-renderer": "18.3.1",
-    "typescript": "5.0.4"
+    "typescript": "~5.3.3"
   },
   "engines": {
     "node": ">=18"
@@ -70,5 +70,17 @@
   "overrides": {
     "@unimodules/core": "npm:empty-npm-package@1.0.0",
     "@unimodules/react-native-adapter": "npm:empty-npm-package@1.0.0"
+  },
+  "expo": {
+    "doctor": {
+      "reactNativeDirectoryCheck": {
+        "listUnknownPackages": false,
+        "exclude": [
+          "react-native-encrypted-storage",
+          "react-native-fs",
+          "crypto-js"
+        ]
+      }
+    }
   }
 }
