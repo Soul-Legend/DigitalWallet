@@ -80,4 +80,25 @@ replaceInFile(
   /false \/\/ isTurboModule/
 );
 
+// 4. Fix duplicate libjsi.so inside mopro-ffi
+replaceInFile(
+  'node_modules/mopro-ffi/android/build.gradle',
+  /buildFeatures \{\s*buildConfig true\s*\}/g,
+  `buildFeatures {
+    buildConfig true
+  }
+
+  packagingOptions {
+    excludes = [
+      "**/libc++_shared.so",
+      "**/libfbjni.so",
+      "**/libjsi.so",
+      "**/libreactnative.so",
+      "**/libreact_nativemodule_core.so",
+      "**/libturbomodulejsijni.so"
+    ]
+  }`,
+  /packagingOptions/
+);
+
 console.log('Patching complete.');
