@@ -42,28 +42,33 @@ const moduleKtPath = 'node_modules/mopro-ffi/android/src/main/java/com/moproffi/
 replaceInFile(
   moduleKtPath,
   /import com\.facebook\.react\.bridge\.ReactApplicationContext/g,
-  'import com.facebook.react.bridge.ReactApplicationContext\\nimport com.facebook.react.bridge.ReactContextBaseJavaModule\\nimport com.facebook.react.bridge.ReactMethod',
+  `import com.facebook.react.bridge.ReactApplicationContext
+import com.facebook.react.bridge.ReactContextBaseJavaModule
+import com.facebook.react.bridge.ReactMethod`,
   /import com\.facebook\.react\.bridge\.ReactContextBaseJavaModule/
 );
 
 replaceInFile(
   moduleKtPath,
   /class MoproFfiModule\(reactContext: ReactApplicationContext\) :\s*NativeMoproFfiSpec\(reactContext\)/g,
-  'class MoproFfiModule(reactContext: ReactApplicationContext) :\\n  ReactContextBaseJavaModule(reactContext)',
+  `class MoproFfiModule(reactContext: ReactApplicationContext) :
+  ReactContextBaseJavaModule(reactContext)`,
   /class MoproFfiModule\(reactContext: ReactApplicationContext\) :\s*ReactContextBaseJavaModule\(reactContext\)/
 );
 
 replaceInFile(
   moduleKtPath,
-  /override fun installRustCrate\(\): Boolean {/g,
-  '@ReactMethod(isBlockingSynchronousMethod = true)\\n  fun installRustCrate(): Boolean {',
+  /override fun installRustCrate\(\): Boolean \{/g,
+  `@ReactMethod(isBlockingSynchronousMethod = true)
+  fun installRustCrate(): Boolean {`,
   /@ReactMethod\(isBlockingSynchronousMethod = true\)\s*fun installRustCrate\(\): Boolean \{/
 );
 
 replaceInFile(
   moduleKtPath,
-  /override fun cleanupRustCrate\(\): Boolean {/g,
-  '@ReactMethod(isBlockingSynchronousMethod = true)\\n  fun cleanupRustCrate(): Boolean {',
+  /override fun cleanupRustCrate\(\): Boolean \{/g,
+  `@ReactMethod(isBlockingSynchronousMethod = true)
+  fun cleanupRustCrate(): Boolean {`,
   /@ReactMethod\(isBlockingSynchronousMethod = true\)\s*fun cleanupRustCrate\(\): Boolean \{/
 );
 
