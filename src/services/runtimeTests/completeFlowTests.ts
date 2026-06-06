@@ -210,6 +210,35 @@ const completeFlowTests: RuntimeTestCase[] = [
       assert(!result.valid, 'Tampered presentation should be invalid');
     },
   },
+  {
+    id: 'flow-anoncreds',
+    name: 'Full AnonCreds flow: identity → issue → parse',
+    category: 'integration',
+    run: async () => {
+      // Generate identities
+      const {did: holderDID} = await DIDService.generateHolderIdentity('key');
+      await DIDService.generateIssuerIdentity('ufsc.br');
+
+      // Issue AnonCreds credential
+      const credentialToken = await CredentialService.issueCredential(
+        defaultStudentData,
+        holderDID,
+        'anoncreds',
+      );
+      assertDefined(credentialToken, 'credentialToken');
+
+      const envelope = JSON.parse(credentialToken);
+      assertEqual(envelope.format, 'anoncreds', 'credential format');
+      assertDefined(envelope.credential, 'anoncreds credential body');
+      assertDefined(envelope.schema_id, 'schema_id');
+
+      // Parse credential
+      const parsed = await CredentialService.validateAndParseCredential(credentialToken);
+      assertDefined(parsed, 'parsedCredential');
+      assertEqual(parsed.credentialSubject.id, holderDID, 'credential subject');
+      assertEqual(parsed.credentialSubject.nome_completo, 'Maria Santos', 'nome_completo');
+    },
+  },
 ];
 
 export default completeFlowTests;

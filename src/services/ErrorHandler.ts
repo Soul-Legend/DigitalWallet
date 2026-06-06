@@ -70,8 +70,10 @@ class ErrorHandler {
     error: CryptoError,
     module: 'emissor' | 'titular' | 'verificador'
   ): string {
+    const errorMsg = error.details && error.details.error ? 
+      `${error.stack}\nCaused by: ${error.details.error.stack || error.details.error}` : error.stack;
     // Log the error
-    this.logger.logError(module, error, error.stack);
+    this.logger.logError(module, error, errorMsg);
 
     // Return user-friendly message in Portuguese
     return this.getCryptoErrorMessage(error);
@@ -127,7 +129,9 @@ class ErrorHandler {
     module: 'emissor' | 'titular' | 'verificador',
     _context?: string
   ): void {
-    this.logger.logError(module, error, error.stack);
+    const errorMsg = error instanceof CryptoError && error.details && error.details.error ? 
+      `${error.stack}\nCaused by: ${error.details.error.stack || error.details.error}` : error.stack;
+    this.logger.logError(module, error, errorMsg);
   }
 
   /**

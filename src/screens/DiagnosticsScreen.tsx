@@ -14,6 +14,7 @@ import {MaterialIcons} from '@expo/vector-icons';
 import {scaleFontSize} from '../utils/theme';
 import RuntimeTestRunner from '../services/RuntimeTestRunner';
 import {registerAllRuntimeTests} from '../services/runtimeTests';
+import zkProofServiceInstance from '../services/ZKProofService';
 import {
   generateMarkdownReport,
   generateJSONReport,
@@ -129,6 +130,9 @@ export default function DiagnosticsScreen(): React.JSX.Element {
         : RuntimeTestRunner.getTests();
 
       dispatch({type: 'START', total: tests.length});
+
+      // Ensure ZKPs are provisioned before running tests
+      await zkProofServiceInstance.provisionBundledZkeys();
 
       const suite = category
         ? await RuntimeTestRunner.runByCategory(category, (c, t, r) =>

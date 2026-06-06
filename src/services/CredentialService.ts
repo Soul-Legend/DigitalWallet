@@ -6,6 +6,7 @@ import StorageServiceInstance from './StorageService';
 import LogServiceInstance from './LogService';
 import AgentServiceInstance from './AgentService';
 import AnonCredsServiceInstance from './AnonCredsService';
+import CryptoServiceInstance from './CryptoService';
 import {CryptoError, ValidationError} from './ErrorHandler';
 import {
   CredentialFormat,
@@ -59,6 +60,7 @@ class CredentialService {
   private readonly logger: ILogService;
   private readonly agentService: IAgentService;
   private readonly anonCredsService: IAnonCredsService;
+  private readonly cryptoService: any; // We can use 'any' or import ICryptoService
   private readonly credentialTtlSeconds: number;
 
   constructor(
@@ -67,6 +69,7 @@ class CredentialService {
     logger: ILogService = LogServiceInstance,
     agentService: IAgentService = AgentServiceInstance,
     anonCredsService: IAnonCredsService = AnonCredsServiceInstance,
+    cryptoService: any = CryptoServiceInstance,
     credentialTtlSeconds: number = CREDENTIAL_DEFAULT_TTL_SECONDS,
   ) {
     this.didService = didService;
@@ -74,6 +77,7 @@ class CredentialService {
     this.logger = logger;
     this.agentService = agentService;
     this.anonCredsService = anonCredsService;
+    this.cryptoService = cryptoService;
     this.credentialTtlSeconds = credentialTtlSeconds;
     // Register default formats (order matters — first match wins)
     this.registerFormat({
@@ -298,48 +302,34 @@ class CredentialService {
 
       const dataToSign = utf8ToBytes(`${headerBase64}.${payloadBase64}`);
 
-      // Resolve wallet via either the public (`agent.wallet`) or context
-      // (`agent.context.wallet`) surface depending on the Credo version /
-      // mock in use. The signing key is the verification method's public
-      // key reference; the wallet looks up the matching private key.
-      type WalletSignArg = {data: Uint8Array; key: unknown};
-      type WalletLike = {
-        sign: (arg: WalletSignArg) => Promise<{signature: Uint8Array}>;
-      };
-      const wallet: WalletLike | undefined =
-        (agent as {wallet?: WalletLike}).wallet ??
-        (agent as {context?: {wallet?: WalletLike}}).context?.wallet;
-      if (!wallet || typeof wallet.sign !== 'function') {
+      // Retrieve the issuer's explicitly generated Ed25519 private key
+      const issuerPrivateKeyHex = await this.storage.getIssuerPrivateKey();
+      if (!issuerPrivateKeyHex) {
         throw new CryptoError(
-          'Credo wallet sign API unavailable',
+          'Issuer private key not found for SD-JWT signing',
           'signature',
-          {},
+          {}
         );
       }
 
-      // Credo's wallet always returns `{signature: Uint8Array}` — the previous
-      // implementation had a defensive `?? signResult` fallback for raw-bytes
-      // returns, but no version of Credo (>= 0.4) emits that shape. Keeping it
-      // would silently mask a future API drift, so we now assert the
-      // documented contract directly.
-      const signResult = await wallet.sign({
-        data: dataToSign,
-        key: (verificationMethod as {publicKey?: unknown}).publicKey,
-      });
-      if (!signResult || !('signature' in signResult)) {
-        throw new CryptoError(
-          'Credo wallet.sign() returned an unexpected shape (missing `signature`)',
-          'signature',
-          {got: typeof signResult},
-        );
+      // Use CryptoService to sign the data
+      const signatureHex = await this.cryptoService.signData(
+        dataToSign,
+        issuerPrivateKeyHex,
+        'emissor'
+      );
+
+      // Convert hex to bytes
+      const signatureBytes = new Uint8Array(signatureHex.length / 2);
+      for (let i = 0; i < signatureHex.length; i += 2) {
+        signatureBytes[i / 2] = parseInt(signatureHex.substring(i, i + 2), 16);
       }
-      const signatureBytes = toUint8Array(signResult.signature);
 
       const signatureBase64 = bytesToBase64Url(signatureBytes);
       return `${headerBase64}.${payloadBase64}.${signatureBase64}`;
     } catch (error) {
       throw new CryptoError(
-        'Failed to sign credential as SD-JWT',
+        `Failed to sign credential as SD-JWT: ${error instanceof Error ? error.message : String(error)}`,
         'signature',
         {error},
       );
@@ -714,9 +704,9 @@ class CredentialService {
     // Check if the date string matches the parsed date (catches invalid dates like 2024-13-01)
     const [year, month, day] = data.data_nascimento.split('-').map(Number);
     if (
-      dateObj.getFullYear() !== year ||
-      dateObj.getMonth() + 1 !== month ||
-      dateObj.getDate() !== day
+      dateObj.getUTCFullYear() !== year ||
+      dateObj.getUTCMonth() + 1 !== month ||
+      dateObj.getUTCDate() !== day
     ) {
       throw new ValidationError(
         'Data de nascimento inválida',

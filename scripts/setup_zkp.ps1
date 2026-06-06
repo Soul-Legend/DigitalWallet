@@ -31,6 +31,9 @@ foreach ($circuit in $circuits) {
 
     # 4. Copy to Android assets
     Write-Host "Copying ${circuit}_final.zkey to Android assets..."
+    if (-not (Test-Path "../android/app/src/main/assets/zkeys")) {
+        New-Item -ItemType Directory -Force -Path "../android/app/src/main/assets/zkeys" | Out-Null
+    }
     Copy-Item "${circuit}_final.zkey" -Destination "../android/app/src/main/assets/zkeys/" -Force
 }
 

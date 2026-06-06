@@ -40,8 +40,8 @@ describe('HomeScreen — navigation contract', () => {
   });
 
   it('declares only routes that exist in RootStackParamList', () => {
-    // Match every `route: 'X' as const` literal in the module list.
-    const routeLiteralRegex = /route:\s*'([A-Za-z]+)'\s+as\s+const/g;
+    // Match every `route: 'X'` literal in the module list.
+    const routeLiteralRegex = /route:\s*'([A-Za-z]+)'/g;
     const referenced = new Set<string>();
     for (const match of source.matchAll(routeLiteralRegex)) {
       referenced.add(match[1]);
@@ -54,14 +54,14 @@ describe('HomeScreen — navigation contract', () => {
   });
 
   it('routes referenced by HomeScreen are all registered in App.tsx Stack.Navigator', () => {
-    const routeLiteralRegex = /route:\s*'([A-Za-z]+)'\s+as\s+const/g;
+    const routeLiteralRegex = /route:\s*'([A-Za-z]+)'/g;
     const referenced = Array.from(source.matchAll(routeLiteralRegex)).map(
       m => m[1],
     );
 
     for (const route of referenced) {
-      // Each route must appear as a `<Stack.Screen name="X" ...>` declaration.
-      const screenDecl = new RegExp(`<Stack\\.Screen\\s+name="${route}"`);
+      // Each route must appear as a `<Stack.Screen name="X" ...>` or `<Tab.Screen name="X" ...>` declaration.
+      const screenDecl = new RegExp(`<(?:Stack|Tab)\\.Screen\\s+name="${route}"`);
       expect(appSource).toMatch(screenDecl);
     }
   });
