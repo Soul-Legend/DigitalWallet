@@ -1,19 +1,38 @@
-rootProject.name = 'CarteiraIdentidadeAcademica'
+pluginManagement {
+    includeBuild(new File(["node", "--print", "require.resolve('@react-native/gradle-plugin/package.json', { paths: [require.resolve('react-native/package.json')] })"].execute(null, rootDir).text.trim()).getParentFile().toString())
+}
+plugins { id("com.facebook.react.settings") }
 
-apply from: file("../node_modules/@react-native/gradle-plugin/settings.gradle")
+extensions.configure(com.facebook.react.ReactSettingsExtension) { ex ->
+  if (System.getenv('EXPO_USE_COMMUNITY_AUTOLINKING') == '1') {
+    ex.autolinkLibrariesFromCommand()
+  } else {
+    def command = [
+      'node',
+      '--no-warnings',
+      '--eval',
+      'require(require.resolve(\'expo-modules-autolinking\', { paths: [require.resolve(\'expo/package.json\')] }))(process.argv.slice(1))',
+      'react-native-config',
+      '--json',
+      '--platform',
+      'android'
+    ].toList()
+    ex.autolinkLibrariesFromCommand(command)
+  }
+}
 
-includeBuild("../node_modules/@react-native/gradle-plugin")
+rootProject.name = 'Carteira Identidade Acadêmica'
+
+dependencyResolutionManagement {
+  versionCatalogs {
+    reactAndroidLibs {
+      from(files(new File(["node", "--print", "require.resolve('react-native/package.json')"].execute(null, rootDir).text.trim(), "../gradle/libs.versions.toml")))
+    }
+  }
+}
+
+apply from: new File(["node", "--print", "require.resolve('expo/package.json')"].execute(null, rootDir).text.trim(), "../scripts/autolinking.gradle");
+useExpoModules()
 
 include ':app'
-
-// NOTE: the legacy `react-native-gradle-plugin` package was removed in
-// React Native 0.74 and is fully superseded by `@react-native/gradle-plugin`
-// included above. Keeping both was a no-op at best and a duplicate-class
-// failure at worst on RN 0.76.
-
-if (settings.hasProperty("newArchEnabled") && settings.newArchEnabled == "true") {
-    include(":ReactAndroid")
-    project(":ReactAndroid").projectDir = file("../node_modules/react-native/ReactAndroid")
-    include(":ReactAndroid:hermes-engine")
-    project(":ReactAndroid:hermes-engine").projectDir = file("../node_modules/react-native/ReactAndroid/hermes-engine")
-}
+includeBuild(new File(["node", "--print", "require.resolve('@react-native/gradle-plugin/package.json', { paths: [require.resolve('react-native/package.json')] })"].execute(null, rootDir).text.trim()).getParentFile())

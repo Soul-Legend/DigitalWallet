@@ -6,8 +6,11 @@ import {CryptoError} from './ErrorHandler';
 import LogServiceInstance from './LogService';
 import type {ILogService} from '../types';
 
-// @noble/ed25519 v3+ requires configuring SHA-512 for sync operations
+// @noble/ed25519 v3+ requires configuring SHA-512 for both sync and async operations.
+// The default async path uses crypto.subtle.digest('SHA-512'), which is unavailable
+// in React Native (Hermes). Override both to use @noble/hashes/sha512 instead.
 ed.hashes.sha512 = (...m: Uint8Array[]) => sha512(ed.etc.concatBytes(...m)) as ed.Bytes;
+ed.hashes.sha512Async = async (...m: Uint8Array[]) => sha512(ed.etc.concatBytes(...m)) as ed.Bytes;
 
 /**
  * CryptoService - Handles cryptographic operations

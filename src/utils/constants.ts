@@ -19,6 +19,7 @@ export const AppModule = {
   ...Module,
   LOGS: 'logs',
   HOME: 'home',
+  DIAGNOSTICS: 'diagnostics',
 } as const;
 
 export type AppModuleType = (typeof AppModule)[keyof typeof AppModule];

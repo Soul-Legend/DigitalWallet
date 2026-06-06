@@ -1,6 +1,8 @@
 import React from 'react';
 import {View, Text, StyleSheet, ScrollView, TouchableOpacity} from 'react-native';
+import {MaterialIcons} from '@expo/vector-icons';
 import {VerifiableCredential} from '../types';
+import {scaleFontSize} from '../utils/theme';
 
 interface CredentialCardProps {
   credential: VerifiableCredential;
@@ -40,10 +42,10 @@ const CredentialCard: React.FC<CredentialCardProps> = ({credential}) => {
       {/* Header: Icon + Badge */}
       <View style={styles.headerRow}>
         <View style={styles.iconContainer}>
-          <Text style={styles.iconText}>🎓</Text>
+          <MaterialIcons name="school" size={28} color="#003a8c" />
         </View>
         <View style={styles.verifiedBadge}>
-          <Text style={styles.verifiedIcon}>✓</Text>
+          <MaterialIcons name="check" size={14} color="#006511" />
           <Text style={styles.verifiedText}>VERIFICADA</Text>
         </View>
       </View>
@@ -166,11 +168,11 @@ const CredentialCard: React.FC<CredentialCardProps> = ({credential}) => {
       {/* Action Buttons */}
       <View style={styles.actionButtons}>
         <TouchableOpacity style={styles.presentButton} activeOpacity={0.8}>
-          <Text style={styles.presentButtonIcon}>🔲</Text>
+          <MaterialIcons name="qr-code-2" size={18} color="#6e5700" />
           <Text style={styles.presentButtonText}>Apresentar</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.copyButton} activeOpacity={0.8}>
-          <Text style={styles.copyButtonIcon}>📋</Text>
+          <MaterialIcons name="content-copy" size={18} color="#434653" />
         </TouchableOpacity>
       </View>
 
@@ -188,7 +190,7 @@ const CredentialCard: React.FC<CredentialCardProps> = ({credential}) => {
 const styles = StyleSheet.create({
   card: {
     backgroundColor: '#ffffff', // surface-container-lowest
-    borderRadius: 12,
+    borderRadius: 16,
     overflow: 'hidden',
     marginVertical: 8,
     // Ambient shadow - no borders
@@ -200,7 +202,7 @@ const styles = StyleSheet.create({
     maxHeight: 600,
   },
   accentBar: {
-    height: 3,
+    height: 4,
     backgroundColor: '#fecc03', // secondary-container (yellow accent)
     width: '100%',
   },
@@ -215,43 +217,35 @@ const styles = StyleSheet.create({
   iconContainer: {
     width: 56,
     height: 56,
-    borderRadius: 12,
-    backgroundColor: '#eae7e7', // surface-container-high
+    borderRadius: 14,
+    backgroundColor: '#d9e2ff', // primary-fixed
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  iconText: {
-    fontSize: 28,
   },
   verifiedBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: 'rgba(0, 101, 17, 0.08)',
+    backgroundColor: '#8ffb85', // tertiary-fixed
     paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingVertical: 6,
     borderRadius: 16,
   },
-  verifiedIcon: {
-    fontSize: 12,
-    color: '#006511', // tertiary-container
-    fontWeight: 'bold',
-  },
   verifiedText: {
-    fontSize: 10,
+    fontSize: scaleFontSize(10),
     fontWeight: '700',
-    color: '#006511',
+    color: '#002202', // on-tertiary-fixed
     letterSpacing: 1,
   },
   title: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontSize: scaleFontSize(20),
+    fontWeight: '800',
     color: '#1b1b1c', // on-surface
     paddingHorizontal: 20,
     marginBottom: 4,
   },
   issuer: {
-    fontSize: 14,
+    fontSize: scaleFontSize(14),
     color: '#434653', // on-surface-variant
     fontWeight: '600',
     paddingHorizontal: 20,
@@ -262,23 +256,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 16,
     gap: 24,
-    borderTopWidth: 0, // No borders per DESIGN.md
-    // Using top spacing + color shift instead
-    backgroundColor: '#fcf9f8',
+    backgroundColor: '#fcf9f8', // surface
     paddingBottom: 12,
   },
   metadataItem: {
     flex: 1,
   },
   metadataLabel: {
-    fontSize: 10,
+    fontSize: scaleFontSize(10),
     fontWeight: '700',
     color: '#737784', // outline
     letterSpacing: 1.2,
     marginBottom: 4,
   },
   metadataValue: {
-    fontSize: 14,
+    fontSize: scaleFontSize(14),
     fontWeight: '600',
     color: '#1b1b1c', // on-surface
   },
@@ -298,20 +290,21 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   statusText: {
-    fontSize: 14,
+    fontSize: scaleFontSize(14),
     fontWeight: '600',
   },
   detailsScroll: {
     maxHeight: 200,
     paddingHorizontal: 20,
+    marginTop: 8,
   },
   detailSection: {
     marginBottom: 20,
   },
   detailSectionTitle: {
-    fontSize: 14,
+    fontSize: scaleFontSize(14),
     fontWeight: '700',
-    color: '#003a8c',
+    color: '#003a8c', // primary
     marginBottom: 12,
     letterSpacing: 0.3,
   },
@@ -319,13 +312,13 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   detailLabel: {
-    fontSize: 12,
+    fontSize: scaleFontSize(12),
     color: '#737784',
     marginBottom: 2,
     fontWeight: '500',
   },
   detailValue: {
-    fontSize: 14,
+    fontSize: scaleFontSize(14),
     color: '#1b1b1c',
     fontWeight: '500',
   },
@@ -337,12 +330,12 @@ const styles = StyleSheet.create({
   },
   benefitBadge: {
     paddingHorizontal: 10,
-    paddingVertical: 3,
+    paddingVertical: 4,
     borderRadius: 12,
   },
   benefitBadgeText: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: scaleFontSize(12),
+    fontWeight: '700',
   },
   // Action Buttons
   actionButtons: {
@@ -354,32 +347,26 @@ const styles = StyleSheet.create({
   presentButton: {
     flex: 1,
     backgroundColor: '#fecc03', // secondary-container
-    borderRadius: 8,
-    paddingVertical: 10,
+    borderRadius: 12,
+    paddingVertical: 12,
     paddingHorizontal: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
   },
-  presentButtonIcon: {
-    fontSize: 14,
-  },
   presentButtonText: {
     color: '#6e5700', // on-secondary-container
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: scaleFontSize(15),
+    fontWeight: '700',
   },
   copyButton: {
     backgroundColor: '#eae7e7', // surface-container-high
-    borderRadius: 8,
-    paddingVertical: 10,
+    borderRadius: 12,
+    paddingVertical: 12,
     paddingHorizontal: 16,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  copyButtonIcon: {
-    fontSize: 16,
   },
   footer: {
     paddingHorizontal: 20,
@@ -387,14 +374,14 @@ const styles = StyleSheet.create({
     paddingTop: 8,
   },
   footerLabel: {
-    fontSize: 10,
+    fontSize: scaleFontSize(10),
     color: '#737784',
     marginBottom: 2,
-    fontWeight: '600',
+    fontWeight: '700',
     letterSpacing: 0.5,
   },
   footerDid: {
-    fontSize: 11,
+    fontSize: scaleFontSize(11),
     color: '#434653',
     fontFamily: 'monospace',
   },

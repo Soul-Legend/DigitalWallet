@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Switch,
 } from 'react-native';
+import {MaterialIcons} from '@expo/vector-icons';
 import LoadingIndicator from '../components/LoadingIndicator';
 import SuccessMessage from '../components/SuccessMessage';
 import ErrorMessage from '../components/ErrorMessage';
@@ -316,7 +317,9 @@ const IssuerScreen: React.FC = () => {
         {/* Benefits Section */}
         <View style={styles.benefitsCard}>
           <View style={styles.benefitsHeader}>
-            <Text style={styles.benefitsIcon}>🛡️</Text>
+            <View style={styles.benefitsIconContainer}>
+              <MaterialIcons name="stars" size={24} color="#003a8c" />
+            </View>
             <Text style={styles.benefitsTitle}>Benefícios</Text>
           </View>
           <Text style={styles.benefitsDescription}>
@@ -351,7 +354,7 @@ const IssuerScreen: React.FC = () => {
                 style={styles.issueButton}
                 onPress={handleIssueCredential}
                 disabled={isLoading}>
-                <Text style={styles.issueButtonIcon}>▶</Text>
+                <MaterialIcons name="edit-document" size={20} color="#ffffff" />
                 <Text style={styles.issueButtonText}>Emitir e Assinar</Text>
               </TouchableOpacity>
               <Text style={styles.disclaimerText}>
@@ -375,18 +378,18 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   institutionLabel: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '700',
     color: '#003a8c', // primary
     letterSpacing: 1.5,
     marginBottom: 8,
   },
   title: {
-    fontSize: 32,
-    fontWeight: 'bold',
+    fontSize: 34,
+    fontWeight: '800',
     color: '#003a8c', // primary
     marginBottom: 24,
-    letterSpacing: -0.5,
+    letterSpacing: -0.8,
   },
   section: {
     backgroundColor: '#ffffff',
@@ -414,8 +417,8 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   formCardTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
+    fontSize: 20,
+    fontWeight: '700',
     color: '#1b1b1c', // on-surface
     marginBottom: 24,
   },
@@ -425,26 +428,26 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#1b1b1c',
+    color: '#434653', // on-surface-variant
     marginBottom: 8,
   },
   input: {
     backgroundColor: '#e5e2e1', // surface-container-highest
     borderRadius: 8,
-    padding: 14,
-    fontSize: 16,
+    padding: 16,
+    fontSize: 15,
     color: '#1b1b1c',
     // No border - per DESIGN.md "No-Line" rule
   },
   inputError: {
     // Ghost border for error - per DESIGN.md fallback
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: 'rgba(186, 26, 26, 0.4)', // error at reduced opacity
   },
   errorText: {
     fontSize: 12,
     color: '#ba1a1a', // error
-    marginTop: 4,
+    marginTop: 6,
   },
   formatContainer: {
     flexDirection: 'row',
@@ -480,27 +483,25 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    marginBottom: 8,
+    marginBottom: 12,
   },
-  benefitsIcon: {
-    fontSize: 24,
-    backgroundColor: '#d9e2ff',
+  benefitsIconContainer: {
+    backgroundColor: '#fecc03', // secondaryContainer
     width: 44,
     height: 44,
     borderRadius: 22,
-    textAlign: 'center',
-    lineHeight: 44,
-    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   benefitsTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontWeight: '700',
     color: '#1b1b1c',
   },
   benefitsDescription: {
     fontSize: 14,
     color: '#434653',
-    marginBottom: 20,
+    marginBottom: 24,
     lineHeight: 20,
   },
   switchContainer: {
@@ -517,7 +518,7 @@ const styles = StyleSheet.create({
   switchLabel: {
     fontSize: 16,
     color: '#1b1b1c', // on-surface
-    fontWeight: '500',
+    fontWeight: '600',
   },
   switchSubtitle: {
     fontSize: 13,
@@ -530,27 +531,23 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   issueButton: {
-    backgroundColor: '#fecc03', // secondary-container (yellow CTA)
+    backgroundColor: '#003a8c', // primary
     padding: 18,
     borderRadius: 12,
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: 8,
-    shadowColor: '#745b00',
+    gap: 10,
+    shadowColor: '#003a8c',
     shadowOffset: {width: 0, height: 4},
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
+    shadowOpacity: 0.25,
+    shadowRadius: 16,
     elevation: 3,
   },
-  issueButtonIcon: {
-    fontSize: 16,
-    color: '#6e5700',
-  },
   issueButtonText: {
-    color: '#6e5700', // on-secondary-container
+    color: '#ffffff', // on-primary
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: '700',
   },
   disclaimerText: {
     fontSize: 12,

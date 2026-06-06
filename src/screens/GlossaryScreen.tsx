@@ -7,6 +7,7 @@ import {
   TextInput,
   TouchableOpacity,
 } from 'react-native';
+import {MaterialIcons} from '@expo/vector-icons';
 import {
   glossary,
   searchGlossary,
@@ -39,11 +40,11 @@ const CATEGORY_LABELS: Record<string, string> = {
   protocol: 'INFRAESTRUTURA',
 };
 
-const CATEGORY_ICONS: Record<string, string> = {
-  identity: '🔑',
-  cryptography: '🔐',
-  credential: '✅',
-  protocol: '🌐',
+const CATEGORY_ICONS: Record<string, keyof typeof MaterialIcons.glyphMap> = {
+  identity: 'fingerprint',
+  cryptography: 'lock',
+  credential: 'verified-user',
+  protocol: 'settings-ethernet',
 };
 
 const GlossaryScreen: React.FC = () => {
@@ -78,7 +79,7 @@ const GlossaryScreen: React.FC = () => {
 
       {/* Search Bar */}
       <View style={styles.searchContainer}>
-        <Text style={styles.searchIcon}>🔍</Text>
+        <MaterialIcons name="search" size={24} color="#434653" />
         <TextInput
           style={styles.searchInput}
           placeholder="Buscar termos técnicos..."
@@ -92,40 +93,42 @@ const GlossaryScreen: React.FC = () => {
       </View>
 
       {/* Category Filter */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.categoryScroll}
-        contentContainerStyle={styles.categoryContainer}>
-        {categories.map(cat => (
-          <TouchableOpacity
-            key={cat.id}
-            style={[
-              styles.categoryButton,
-              selectedCategory === cat.value && styles.categoryButtonActive,
-            ]}
-            onPress={() => setSelectedCategory(cat.value)}
-            accessible={true}
-            accessibilityLabel={`Filtrar por categoria ${cat.label}`}
-            accessibilityRole="button"
-            accessibilityState={{selected: selectedCategory === cat.value}}>
-            <Text
+      <View style={styles.categoryScrollContainer}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.categoryScroll}
+          contentContainerStyle={styles.categoryContainer}>
+          {categories.map(cat => (
+            <TouchableOpacity
+              key={cat.id}
               style={[
-                styles.categoryButtonText,
-                selectedCategory === cat.value &&
-                  styles.categoryButtonTextActive,
-              ]}>
-              {cat.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+                styles.categoryButton,
+                selectedCategory === cat.value && styles.categoryButtonActive,
+              ]}
+              onPress={() => setSelectedCategory(cat.value)}
+              accessible={true}
+              accessibilityLabel={`Filtrar por categoria ${cat.label}`}
+              accessibilityRole="button"
+              accessibilityState={{selected: selectedCategory === cat.value}}>
+              <Text
+                style={[
+                  styles.categoryButtonText,
+                  selectedCategory === cat.value &&
+                    styles.categoryButtonTextActive,
+                ]}>
+                {cat.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
 
       {/* Terms List */}
       <ScrollView style={styles.termsList} contentContainerStyle={styles.termsListContent}>
         {filteredTerms.length === 0 ? (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyStateIcon}>🔍</Text>
+            <MaterialIcons name="search-off" size={64} color="#e5e2e1" />
             <Text style={styles.emptyStateText}>
               Nenhum termo encontrado
             </Text>
@@ -145,9 +148,12 @@ const GlossaryScreen: React.FC = () => {
               {/* Term Header */}
               <View style={styles.termHeader}>
                 <Text style={styles.termTitle}>{term.term}</Text>
-                <Text style={styles.termIcon}>
-                  {CATEGORY_ICONS[term.category] || '📄'}
-                </Text>
+                <MaterialIcons
+                  name={CATEGORY_ICONS[term.category] || 'article'}
+                  size={24}
+                  color={CATEGORY_COLORS[term.category] || '#737784'}
+                  style={styles.termIcon}
+                />
               </View>
 
               {/* Category Badge */}
@@ -155,15 +161,10 @@ const GlossaryScreen: React.FC = () => {
                 style={[
                   styles.categoryBadge,
                   {
-                    backgroundColor:
-                      (CATEGORY_COLORS[term.category] || '#737784') + '15',
+                    backgroundColor: '#f6f3f2', // surface-container-low
                   },
                 ]}>
-                <Text
-                  style={[
-                    styles.categoryBadgeText,
-                    {color: CATEGORY_COLORS[term.category] || '#737784'},
-                  ]}>
+                <Text style={styles.categoryBadgeText}>
                   {CATEGORY_LABELS[term.category] || term.category.toUpperCase()}
                 </Text>
               </View>
@@ -190,7 +191,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: scaleFontSize(32),
-    fontWeight: 'bold',
+    fontWeight: '800',
     color: '#1b1b1c', // on-surface
     marginBottom: 8,
     letterSpacing: -0.5,
@@ -206,13 +207,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginHorizontal: 24,
     marginBottom: 16,
-    backgroundColor: '#f6f3f2', // surface-container-low
-    borderRadius: 12,
+    backgroundColor: '#e5e2e1', // surface-container-highest
+    borderRadius: 24, // rounded-full
     paddingHorizontal: 16,
     gap: 10,
-  },
-  searchIcon: {
-    fontSize: 18,
   },
   searchInput: {
     flex: 1,
@@ -223,12 +221,15 @@ const styles = StyleSheet.create({
     // No border - per DESIGN.md
   },
   // Category Filter
+  categoryScrollContainer: {
+    marginBottom: 12,
+  },
   categoryScroll: {
     maxHeight: 52,
   },
   categoryContainer: {
     paddingHorizontal: 24,
-    paddingBottom: 16,
+    paddingBottom: 8,
     gap: 8,
   },
   categoryButton: {
@@ -238,7 +239,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#f6f3f2', // surface-container-low
     minHeight: MIN_TOUCH_TARGET_SIZE,
     justifyContent: 'center',
-    // No border
   },
   categoryButtonActive: {
     backgroundColor: '#003a8c', // primary
@@ -262,10 +262,10 @@ const styles = StyleSheet.create({
   },
   termCard: {
     backgroundColor: '#ffffff', // surface-container-lowest
-    borderRadius: 12,
-    padding: 20,
+    borderRadius: 16,
+    padding: 24,
     marginBottom: 12,
-    // Ambient shadow - no borders
+    // Ambient shadow
     shadowColor: '#1b1b1c',
     shadowOffset: {width: 0, height: 4},
     shadowOpacity: 0.04,
@@ -280,30 +280,32 @@ const styles = StyleSheet.create({
   },
   termTitle: {
     fontSize: scaleFontSize(18),
-    fontWeight: 'bold',
+    fontWeight: '800',
     color: '#003a8c', // primary
     flex: 1,
-    marginRight: 8,
+    marginRight: 12,
+    letterSpacing: -0.3,
   },
   termIcon: {
-    fontSize: 18,
+    marginTop: 2,
   },
   categoryBadge: {
     alignSelf: 'flex-start',
-    paddingHorizontal: 10,
+    paddingHorizontal: 12,
     paddingVertical: 4,
-    borderRadius: 6,
-    marginBottom: 12,
+    borderRadius: 8,
+    marginBottom: 16,
   },
   categoryBadgeText: {
     fontSize: scaleFontSize(10),
     fontWeight: '700',
-    letterSpacing: 1,
+    letterSpacing: 1.2,
+    color: '#434653', // outline-ish
   },
   termDefinition: {
-    fontSize: scaleFontSize(14),
-    color: '#1b1b1c', // on-surface (not textSecondary - better readability)
-    lineHeight: scaleFontSize(21),
+    fontSize: scaleFontSize(15),
+    color: '#1b1b1c', // on-surface
+    lineHeight: scaleFontSize(22),
   },
   // Empty State
   emptyState: {
@@ -312,15 +314,12 @@ const styles = StyleSheet.create({
     padding: 48,
     marginTop: 32,
   },
-  emptyStateIcon: {
-    fontSize: 64,
-    marginBottom: 16,
-  },
   emptyStateText: {
     fontSize: scaleFontSize(18),
-    fontWeight: '600',
+    fontWeight: '700',
     color: '#434653',
     marginBottom: 8,
+    marginTop: 16,
   },
   emptyStateSubtext: {
     fontSize: scaleFontSize(14),

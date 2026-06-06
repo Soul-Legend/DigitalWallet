@@ -1,4 +1,23 @@
 {
-  "name": "CarteiraIdentidadeAcademica",
-  "displayName": "Carteira Identidade Acadêmica"
+  "name": "main",
+  "displayName": "Carteira Identidade Acadêmica",
+  "expo": {
+    "name": "Carteira Identidade Acadêmica",
+    "slug": "carteiraidentidadeacademica",
+    "extra": {
+      "eas": {
+        "projectId": "8d7a5b2b-c047-4f07-94de-0631af931e29"
+      }
+    },
+    "android": {
+      "package": "com.soullegend.carteiraidentidadeacademica",
+      "permissions": [
+        "INTERNET",
+        "READ_EXTERNAL_STORAGE",
+        "SYSTEM_ALERT_WINDOW",
+        "VIBRATE",
+        "WRITE_EXTERNAL_STORAGE"
+      ]
+    }
+  }
 }

@@ -101,4 +101,36 @@ replaceInFile(
   /packagingOptions/
 );
 
+// 5. Fix missing lib/ directory by pointing package.json to src/
+const packageJsonPath = 'node_modules/mopro-ffi/package.json';
+const packageJsonFullPath = path.join(__dirname, '..', packageJsonPath);
+if (fs.existsSync(packageJsonFullPath)) {
+  const pkg = JSON.parse(fs.readFileSync(packageJsonFullPath, 'utf8'));
+  let modified = false;
+  
+  if (pkg.main !== './src/index.tsx') {
+    pkg.main = './src/index.tsx';
+    pkg.types = './src/index.tsx';
+    if (pkg.exports && pkg.exports['.']) {
+      pkg.exports['.'].default = './src/index.tsx';
+      pkg.exports['.'].types = './src/index.tsx';
+    }
+    modified = true;
+  }
+  
+  if (modified) {
+    fs.writeFileSync(packageJsonFullPath, JSON.stringify(pkg, null, 2), 'utf8');
+    console.log(`Patched ${packageJsonPath} successfully!`);
+  } else {
+    console.log(`Already patched: ${packageJsonPath}`);
+  }
+}
+
+// 6. Delete nested node_modules in mopro-ffi to avoid React Native duplication
+const innerNodeModulesPath = path.join(__dirname, '..', 'node_modules', 'mopro-ffi', 'node_modules');
+if (fs.existsSync(innerNodeModulesPath)) {
+  console.log('Removing nested node_modules from mopro-ffi...');
+  fs.rmSync(innerNodeModulesPath, { recursive: true, force: true });
+}
+
 console.log('Patching complete.');

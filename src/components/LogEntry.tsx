@@ -1,5 +1,6 @@
 import React, {useState} from 'react';
 import {View, Text, StyleSheet, TouchableOpacity} from 'react-native';
+import {MaterialIcons} from '@expo/vector-icons';
 import {LogEntry as LogEntryType} from '../types';
 
 interface LogEntryProps {
@@ -32,17 +33,17 @@ const LogEntry: React.FC<LogEntryProps> = ({log}) => {
     return labels[operation];
   };
 
-  const getOperationIcon = (operation: LogEntryType['operation']): string => {
-    const icons: Record<LogEntryType['operation'], string> = {
-      key_generation: '🔑',
-      credential_issuance: '🔏',
-      presentation_creation: '📤',
-      verification: '✅',
-      hash_computation: '🔢',
-      zkp_generation: '🔐',
-      trust_chain_init: '🔗',
-      trust_chain_register: '📋',
-      error: '⚠️',
+  const getOperationIcon = (operation: LogEntryType['operation']): keyof typeof MaterialIcons.glyphMap => {
+    const icons: Record<LogEntryType['operation'], keyof typeof MaterialIcons.glyphMap> = {
+      key_generation: 'vpn-key',
+      credential_issuance: 'draw',
+      presentation_creation: 'outbox',
+      verification: 'verified-user',
+      hash_computation: 'tag',
+      zkp_generation: 'security',
+      trust_chain_init: 'link',
+      trust_chain_register: 'list-alt',
+      error: 'error',
     };
     return icons[operation];
   };
@@ -60,15 +61,6 @@ const LogEntry: React.FC<LogEntryProps> = ({log}) => {
       error: 'Erro durante operação criptográfica.',
     };
     return descriptions[operation];
-  };
-
-  const getModuleLabel = (module: LogEntryType['module']): string => {
-    const labels: Record<LogEntryType['module'], string> = {
-      emissor: 'Emissor',
-      titular: 'Titular',
-      verificador: 'Verificador',
-    };
-    return labels[module];
   };
 
   const truncateHash = (hash: string, length: number = 16): string => {
@@ -183,19 +175,15 @@ const LogEntry: React.FC<LogEntryProps> = ({log}) => {
       style={[styles.container, !isSuccess && styles.errorCardContainer]}
       onPress={() => setExpanded(!expanded)}
       activeOpacity={0.7}>
-      {/* Left accent border is handled by container style */}
-
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           {/* Status Icon Circle */}
-          <View
-            style={[
-              styles.statusCircle,
-              {backgroundColor: isSuccess ? '#8ffb85' : '#ffdad6'},
-            ]}>
-            <Text style={styles.statusCircleIcon}>
-              {isSuccess ? '✓' : '!'}
-            </Text>
+          <View style={styles.statusCircle}>
+            <MaterialIcons
+              name={isSuccess ? 'check-circle' : 'error'}
+              size={36}
+              color={isSuccess ? '#006511' : '#ba1a1a'}
+            />
           </View>
 
           {/* Content */}
@@ -204,9 +192,11 @@ const LogEntry: React.FC<LogEntryProps> = ({log}) => {
               {getOperationLabel(log.operation)}
             </Text>
             <View style={styles.descriptionRow}>
-              <Text style={styles.operationIconSmall}>
-                {getOperationIcon(log.operation)}
-              </Text>
+              <MaterialIcons
+                name={getOperationIcon(log.operation)}
+                size={14}
+                color={isSuccess ? '#434653' : '#ba1a1a'}
+              />
               <Text
                 style={[
                   styles.descriptionText,
@@ -225,16 +215,16 @@ const LogEntry: React.FC<LogEntryProps> = ({log}) => {
       {/* Footer: Timestamp + Details link */}
       <View style={styles.footer}>
         <Text style={styles.timestamp}>{formatTimestamp(log.timestamp)}</Text>
-        <TouchableOpacity
-          style={styles.detailsLink}
-          onPress={() => setExpanded(!expanded)}>
+        <View style={styles.detailsLink}>
           <Text style={styles.detailsLinkText}>
             {expanded ? 'Ocultar' : 'Ver Detalhes'}
           </Text>
-          <Text style={styles.detailsLinkArrow}>
-            {expanded ? '▲' : '›'}
-          </Text>
-        </TouchableOpacity>
+          <MaterialIcons
+            name={expanded ? 'expand-less' : 'chevron-right'}
+            size={18}
+            color="#003a8c"
+          />
+        </View>
       </View>
 
       {expanded && renderDetails()}
@@ -245,13 +235,12 @@ const LogEntry: React.FC<LogEntryProps> = ({log}) => {
 const styles = StyleSheet.create({
   container: {
     backgroundColor: '#ffffff', // surface-container-lowest
-    borderRadius: 12,
+    borderRadius: 16,
     padding: 20,
     marginVertical: 6,
     marginHorizontal: 24,
-    // Left accent border for success
     borderLeftWidth: 4,
-    borderLeftColor: '#006511', // tertiary-container (green)
+    borderLeftColor: '#006511', // success tertiary
     // Ambient shadow
     shadowColor: '#1b1b1c',
     shadowOffset: {width: 0, height: 4},
@@ -280,17 +269,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  statusCircleIcon: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#1b1b1c',
-  },
   headerContent: {
     flex: 1,
   },
   operationText: {
-    fontSize: 17,
-    fontWeight: 'bold',
+    fontSize: 16,
+    fontWeight: '700',
     color: '#1b1b1c', // on-surface
     marginBottom: 4,
   },
@@ -298,9 +282,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 6,
-  },
-  operationIconSmall: {
-    fontSize: 13,
     marginTop: 2,
   },
   descriptionText: {
@@ -317,6 +298,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginTop: 4,
   },
   timestamp: {
     fontSize: 13,
@@ -326,18 +308,13 @@ const styles = StyleSheet.create({
   detailsLink: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 2,
     paddingVertical: 4,
   },
   detailsLinkText: {
     fontSize: 14,
     color: '#003a8c', // primary
-    fontWeight: '600',
-  },
-  detailsLinkArrow: {
-    fontSize: 14,
-    color: '#003a8c',
-    fontWeight: 'bold',
+    fontWeight: '700',
   },
   // Details (expanded)
   detailsContainer: {

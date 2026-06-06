@@ -1,5 +1,7 @@
 import React from 'react';
 import {View, Text, StyleSheet} from 'react-native';
+import {MaterialIcons} from '@expo/vector-icons';
+import {scaleFontSize} from '../utils/theme';
 
 interface SuccessMessageProps {
   message: string;
@@ -14,37 +16,43 @@ const SuccessMessage: React.FC<SuccessMessageProps> = ({message, details}) => {
       accessibilityLabel={`Sucesso: ${message}${details ? '. ' + details : ''}`}
       accessibilityRole="alert"
       accessibilityLiveRegion="polite">
-      <Text style={styles.icon} accessible={false}>✓</Text>
-      <Text style={styles.message}>{message}</Text>
-      {details && <Text style={styles.details}>{details}</Text>}
+      <MaterialIcons name="check-circle" size={24} color="#006511" style={styles.icon} accessible={false} />
+      <View style={styles.content}>
+        <Text style={styles.message}>{message}</Text>
+        {details && <Text style={styles.details}>{details}</Text>}
+      </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#e8f5e9',
+    backgroundColor: '#8ffb85', // tertiary-fixed
     borderLeftWidth: 4,
-    borderLeftColor: '#2e7d32',
+    borderLeftColor: '#006511', // tertiary
     padding: 16,
-    marginVertical: 8,
-    borderRadius: 4,
+    marginVertical: 12,
+    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
   },
   icon: {
-    fontSize: 24,
-    marginBottom: 8,
-    color: '#2e7d32',
+    marginTop: 2,
+  },
+  content: {
+    flex: 1,
   },
   message: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#2e7d32',
+    fontSize: scaleFontSize(14),
+    fontWeight: '700',
+    color: '#002202', // on-tertiary-fixed
     marginBottom: 4,
   },
   details: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 4,
+    fontSize: scaleFontSize(13),
+    color: '#002202', // on-tertiary-fixed
+    lineHeight: scaleFontSize(18),
   },
 });
 

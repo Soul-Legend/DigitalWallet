@@ -7,15 +7,8 @@
 # For more details, see
 #   http://developer.android.com/guide/developing/tools/proguard.html
 
+# react-native-reanimated
+-keep class com.swmansion.reanimated.** { *; }
+-keep class com.facebook.react.turbomodule.** { *; }
+
 # Add any project specific keep options here:
-
-# React Native
--keep class com.facebook.react.** { *; }
--keep class com.facebook.hermes.** { *; }
--keep class com.facebook.jni.** { *; }
-
-# Credo-ts
--keep class org.hyperledger.** { *; }
-
-# AnonCreds
--keep class anoncreds.** { *; }

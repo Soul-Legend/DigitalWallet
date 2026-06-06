@@ -5,9 +5,12 @@ import {
   StyleSheet,
   ActivityIndicator,
   TouchableOpacity,
+  ScrollView,
+  SafeAreaView,
 } from 'react-native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {RootStackParamList} from '../App';
+import {MaterialIcons} from '@expo/vector-icons';
 import DIDService from '../services/DIDService';
 import StorageService from '../services/StorageService';
 import {useAppStore} from '../stores/useAppStore';
@@ -61,7 +64,7 @@ const InitializationScreen: React.FC<Props> = ({navigation}) => {
       if (existingDID) {
         // Not first launch, update store and navigate to home
         setHolderDID(existingDID);
-        navigation.replace('Home');
+        navigation.replace('MainTabs');
       } else {
         // First launch, generate identity
         await generateIdentity();
@@ -86,7 +89,7 @@ const InitializationScreen: React.FC<Props> = ({navigation}) => {
   };
 
   const handleContinue = () => {
-    navigation.replace('Home');
+    navigation.replace('MainTabs');
   };
 
   const renderContent = () => {
@@ -94,9 +97,14 @@ const InitializationScreen: React.FC<Props> = ({navigation}) => {
       case 'checking':
         return (
           <View style={styles.contentContainer}>
-            <ActivityIndicator size="large" color="#1351b4" />
-            <Text style={styles.loadingText}>
+            <View style={styles.loadingCircle}>
+              <ActivityIndicator size="large" color="#003a8c" />
+            </View>
+            <Text style={styles.loadingTitle}>
               Verificando inicialização...
+            </Text>
+            <Text style={styles.loadingSubtext}>
+              Aguarde enquanto preparamos sua carteira
             </Text>
           </View>
         );
@@ -104,11 +112,13 @@ const InitializationScreen: React.FC<Props> = ({navigation}) => {
       case 'generating':
         return (
           <View style={styles.contentContainer}>
-            <ActivityIndicator size="large" color="#1351b4" />
-            <Text style={styles.loadingText}>
+            <View style={styles.loadingCircle}>
+              <ActivityIndicator size="large" color="#003a8c" />
+            </View>
+            <Text style={styles.loadingTitle}>
               Gerando sua identidade digital...
             </Text>
-            <Text style={styles.subText}>
+            <Text style={styles.loadingSubtext}>
               Isso pode levar alguns segundos
             </Text>
           </View>
@@ -119,12 +129,12 @@ const InitializationScreen: React.FC<Props> = ({navigation}) => {
           <View style={styles.contentContainer}>
             {/* Success Icon */}
             <View style={styles.successIconCircle}>
-              <Text style={styles.successCheckmark}>✓</Text>
+              <MaterialIcons name="check" size={48} color="#002202" />
             </View>
 
             {/* Title */}
             <Text style={styles.successTitle}>
-              Identidade Acadêmica Criada
+              Identidade Acadêmica{'\n'}Criada
             </Text>
 
             {/* Description */}
@@ -136,7 +146,7 @@ const InitializationScreen: React.FC<Props> = ({navigation}) => {
             {/* DID Display Card */}
             <View style={styles.didCard}>
               <View style={styles.didCardHeader}>
-                <Text style={styles.didFingerprint}>🔑</Text>
+                <MaterialIcons name="fingerprint" size={16} color="#003a8c" />
                 <Text style={styles.didLabel}>
                   SEU IDENTIFICADOR DESCENTRALIZADO
                 </Text>
@@ -148,16 +158,17 @@ const InitializationScreen: React.FC<Props> = ({navigation}) => {
               </View>
               <View style={styles.didFooter}>
                 <Text style={styles.didFooterText}>Armazenado localmente</Text>
-                <Text style={styles.didShield}>🛡️</Text>
+                <MaterialIcons name="shield" size={16} color="#006511" />
               </View>
             </View>
 
             {/* Continue Button */}
             <TouchableOpacity
               style={styles.continueButton}
-              onPress={handleContinue}>
+              onPress={handleContinue}
+              activeOpacity={0.85}>
               <Text style={styles.continueButtonText}>Continuar</Text>
-              <Text style={styles.continueArrow}>→</Text>
+              <MaterialIcons name="arrow-forward" size={20} color="#ffffff" />
             </TouchableOpacity>
           </View>
         );
@@ -166,11 +177,15 @@ const InitializationScreen: React.FC<Props> = ({navigation}) => {
         return (
           <View style={styles.contentContainer}>
             <View style={styles.errorIconCircle}>
-              <Text style={styles.errorExclamation}>!</Text>
+              <MaterialIcons name="error-outline" size={48} color="#ba1a1a" />
             </View>
             <Text style={styles.errorTitle}>Erro na Inicialização</Text>
             <Text style={styles.errorText}>{error}</Text>
-            <TouchableOpacity style={styles.retryButton} onPress={handleRetry}>
+            <TouchableOpacity
+              style={styles.retryButton}
+              onPress={handleRetry}
+              activeOpacity={0.85}>
+              <MaterialIcons name="refresh" size={20} color="#ffffff" />
               <Text style={styles.retryButtonText}>Tentar Novamente</Text>
             </TouchableOpacity>
           </View>
@@ -182,18 +197,20 @@ const InitializationScreen: React.FC<Props> = ({navigation}) => {
   };
 
   return (
-    <View style={styles.container}>
-      {/* Top Branding */}
-      <View style={styles.branding}>
-        <Text style={styles.brandingIcon}>🎓</Text>
-        <Text style={styles.brandingText}>SSI Universitário</Text>
-      </View>
-
+    <SafeAreaView style={styles.container}>
       {/* Subtle gradient overlay */}
       <View style={styles.gradientOverlay} />
 
-      {renderContent()}
-    </View>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        {/* Top Branding */}
+        <View style={styles.branding}>
+          <MaterialIcons name="school" size={28} color="#003a8c" />
+          <Text style={styles.brandingText}>SSI Universitário</Text>
+        </View>
+
+        {renderContent()}
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 
@@ -214,35 +231,47 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingTop: 48,
+    paddingTop: 20,
     paddingBottom: 16,
-    gap: 8,
-  },
-  brandingIcon: {
-    fontSize: 28,
+    gap: 10,
   },
   brandingText: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontSize: 22,
+    fontWeight: '800',
     color: '#003a8c', // primary
-    letterSpacing: 0.5,
+    letterSpacing: -0.3,
+  },
+  scrollContent: {
+    flexGrow: 1,
   },
   contentContainer: {
-    flex: 1,
+    flexGrow: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 24,
+    paddingHorizontal: 28,
+    paddingBottom: 40,
   },
-  loadingText: {
-    fontSize: 18,
+  // Loading States
+  loadingCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#d9e2ff', // primaryFixed
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 24,
+  },
+  loadingTitle: {
+    fontSize: 20,
     color: '#003a8c',
-    marginTop: 20,
-    fontWeight: '600',
+    fontWeight: '700',
+    textAlign: 'center',
   },
-  subText: {
-    fontSize: 14,
+  loadingSubtext: {
+    fontSize: 15,
     color: '#434653', // on-surface-variant
     marginTop: 8,
+    textAlign: 'center',
   },
   // Success State
   successIconCircle: {
@@ -252,32 +281,28 @@ const styles = StyleSheet.create({
     backgroundColor: '#8ffb85', // tertiary-fixed
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 24,
+    marginBottom: 28,
     shadowColor: '#73dd6b',
-    shadowOffset: {width: 0, height: 4},
-    shadowOpacity: 0.2,
-    shadowRadius: 16,
-    elevation: 4,
-  },
-  successCheckmark: {
-    fontSize: 48,
-    color: '#002202', // on-tertiary-fixed
-    fontWeight: 'bold',
+    shadowOffset: {width: 0, height: 8},
+    shadowOpacity: 0.25,
+    shadowRadius: 20,
+    elevation: 6,
   },
   successTitle: {
-    fontSize: 32,
-    fontWeight: 'bold',
+    fontSize: 34,
+    fontWeight: '800',
     color: '#1b1b1c', // on-surface
     marginBottom: 16,
     textAlign: 'center',
-    letterSpacing: -0.5,
+    letterSpacing: -0.8,
+    lineHeight: 40,
   },
   infoText: {
-    fontSize: 17,
+    fontSize: 16,
     color: '#434653', // on-surface-variant
     textAlign: 'center',
     marginBottom: 32,
-    lineHeight: 26,
+    lineHeight: 24,
     maxWidth: 340,
   },
   // DID Card
@@ -296,13 +321,10 @@ const styles = StyleSheet.create({
     gap: 8,
     marginBottom: 12,
   },
-  didFingerprint: {
-    fontSize: 14,
-  },
   didLabel: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
-    color: '#1b1b1c', // on-surface
+    color: '#434653', // on-surface-variant
     letterSpacing: 1,
   },
   didCodeContainer: {
@@ -325,9 +347,7 @@ const styles = StyleSheet.create({
   didFooterText: {
     fontSize: 12,
     color: '#434653', // on-surface-variant
-  },
-  didShield: {
-    fontSize: 14,
+    fontWeight: '500',
   },
   // Continue Button
   continueButton: {
@@ -339,21 +359,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
+    gap: 10,
     shadowColor: '#003a8c',
-    shadowOffset: {width: 0, height: 4},
-    shadowOpacity: 0.2,
-    shadowRadius: 12,
-    elevation: 4,
+    shadowOffset: {width: 0, height: 6},
+    shadowOpacity: 0.25,
+    shadowRadius: 16,
+    elevation: 6,
   },
   continueButtonText: {
     color: '#ffffff',
     fontSize: 18,
-    fontWeight: 'bold',
-  },
-  continueArrow: {
-    color: '#ffffff',
-    fontSize: 20,
+    fontWeight: '700',
   },
   // Error State
   errorIconCircle: {
@@ -365,17 +381,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 24,
   },
-  errorExclamation: {
-    fontSize: 48,
-    color: '#ba1a1a', // error
-    fontWeight: 'bold',
-  },
   errorTitle: {
     fontSize: 28,
-    fontWeight: 'bold',
+    fontWeight: '800',
     color: '#ba1a1a',
     marginBottom: 16,
     textAlign: 'center',
+    letterSpacing: -0.5,
   },
   errorText: {
     fontSize: 16,
@@ -390,16 +402,20 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 40,
     borderRadius: 12,
-    elevation: 2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    elevation: 3,
     shadowColor: '#ba1a1a',
-    shadowOffset: {width: 0, height: 2},
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
+    shadowOffset: {width: 0, height: 4},
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
   },
   retryButtonText: {
     color: '#fff',
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '700',
   },
 });
 

@@ -10,6 +10,7 @@ import {
 import {useAppStore} from '../stores/useAppStore';
 import LogEntry from '../components/LogEntry';
 import type {LogEntry as LogEntryType} from '../types';
+import {MaterialIcons} from '@expo/vector-icons';
 
 const LogsScreen: React.FC = () => {
   const setCurrentModule = useAppStore(state => state.setCurrentModule);
@@ -61,7 +62,7 @@ const LogsScreen: React.FC = () => {
           <TouchableOpacity
             style={styles.clearButton}
             onPress={handleClearLogs}>
-            <Text style={styles.clearButtonIcon}>🗑️</Text>
+            <MaterialIcons name="delete-outline" size={18} color="#003a8c" />
             <Text style={styles.clearButtonText}>Limpar Histórico</Text>
           </TouchableOpacity>
         )}
@@ -72,7 +73,7 @@ const LogsScreen: React.FC = () => {
         <View style={styles.filterBar}>
           <Text style={styles.dateLabel}>Hoje</Text>
           <TouchableOpacity style={styles.filterButton}>
-            <Text style={styles.filterButtonIcon}>≡</Text>
+            <MaterialIcons name="filter-list" size={18} color="#434653" />
             <Text style={styles.filterButtonText}>Filtrar Logs</Text>
           </TouchableOpacity>
         </View>
@@ -80,7 +81,7 @@ const LogsScreen: React.FC = () => {
 
       {logs.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyIcon}>📋</Text>
+          <MaterialIcons name="history" size={64} color="#e5e2e1" style={styles.emptyIcon} />
           <Text style={styles.emptyText}>Nenhum evento registrado</Text>
           <Text style={styles.emptySubtext}>
             Os eventos criptográficos aparecerão aqui conforme você utiliza o
@@ -120,11 +121,11 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
   },
   title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#1b1b1c', // on-surface
+    fontSize: 34,
+    fontWeight: '800',
+    color: '#003a8c', // primary
     marginBottom: 8,
-    letterSpacing: -0.5,
+    letterSpacing: -0.8,
   },
   subtitle: {
     fontSize: 15,
@@ -139,11 +140,8 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     alignSelf: 'flex-start',
   },
-  clearButtonIcon: {
-    fontSize: 14,
-  },
   clearButtonText: {
-    color: '#ba1a1a', // error
+    color: '#003a8c', // primary
     fontSize: 15,
     fontWeight: '600',
   },
@@ -156,7 +154,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   dateLabel: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
     color: '#1b1b1c', // on-surface
   },
@@ -166,17 +164,13 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingVertical: 8,
     paddingHorizontal: 12,
-    backgroundColor: '#f6f3f2', // surface-container-low
-    borderRadius: 8,
-  },
-  filterButtonIcon: {
-    fontSize: 16,
-    color: '#434653',
+    backgroundColor: '#eae7e7', // surface-container-high
+    borderRadius: 16,
   },
   filterButtonText: {
     fontSize: 14,
     color: '#434653',
-    fontWeight: '500',
+    fontWeight: '600',
   },
   // Empty State
   emptyContainer: {
@@ -186,12 +180,11 @@ const styles = StyleSheet.create({
     padding: 48,
   },
   emptyIcon: {
-    fontSize: 64,
     marginBottom: 16,
   },
   emptyText: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: '700',
     color: '#434653',
     marginBottom: 8,
   },
@@ -211,13 +204,17 @@ const styles = StyleSheet.create({
   // Load More
   loadMoreButton: {
     alignItems: 'center',
-    paddingVertical: 16,
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
     marginHorizontal: 24,
     marginTop: 8,
+    backgroundColor: '#f6f3f2', // surface-container-low
+    borderRadius: 8,
   },
   loadMoreText: {
     fontSize: 15,
-    fontWeight: 'bold',
+    fontWeight: '700',
     color: '#003a8c', // primary
   },
 });

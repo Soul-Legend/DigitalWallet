@@ -1,6 +1,8 @@
 import React from 'react';
 import {View, Text, StyleSheet, TouchableOpacity} from 'react-native';
+import {MaterialIcons} from '@expo/vector-icons';
 import {TransportMode} from '../services/TransportService';
+import {scaleFontSize} from '../utils/theme';
 
 interface TransportModeSelectorProps {
   selectedMode: TransportMode;
@@ -8,17 +10,22 @@ interface TransportModeSelectorProps {
   disabled?: boolean;
 }
 
-const TRANSPORT_OPTIONS: {mode: TransportMode; label: string; icon: string; description: string}[] = [
+const TRANSPORT_OPTIONS: {
+  mode: TransportMode;
+  label: string;
+  icon: keyof typeof MaterialIcons.glyphMap;
+  description: string;
+}[] = [
   {
     mode: 'clipboard',
     label: 'Clipboard',
-    icon: '📋',
+    icon: 'content-copy',
     description: 'Copiar/Colar manual',
   },
   {
     mode: 'qrcode',
     label: 'QR Code',
-    icon: '📱',
+    icon: 'qr-code-scanner',
     description: 'Leitura via câmera',
   },
 ];
@@ -43,8 +50,14 @@ const TransportModeSelector: React.FC<TransportModeSelectorProps> = ({
                 disabled && styles.optionDisabled,
               ]}
               onPress={() => onSelectMode(option.mode)}
-              disabled={disabled}>
-              <Text style={styles.optionIcon}>{option.icon}</Text>
+              disabled={disabled}
+              activeOpacity={0.8}>
+              <MaterialIcons
+                name={option.icon}
+                size={28}
+                color={isSelected ? '#003a8c' : '#737784'}
+                style={styles.optionIcon}
+              />
               <Text
                 style={[
                   styles.optionLabel,
@@ -69,56 +82,62 @@ const TransportModeSelector: React.FC<TransportModeSelectorProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    padding: 16,
-    marginBottom: 16,
+    backgroundColor: '#ffffff', // surface-container-lowest
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 24,
+    // Ambient shadow
+    shadowColor: '#1b1b1c',
+    shadowOffset: {width: 0, height: 4},
+    shadowOpacity: 0.04,
+    shadowRadius: 24,
+    elevation: 2,
   },
   title: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#003366',
-    marginBottom: 12,
+    fontSize: scaleFontSize(16),
+    fontWeight: '700',
+    color: '#003a8c', // primary
+    marginBottom: 16,
+    letterSpacing: 0.2,
   },
   optionsRow: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 12,
   },
   option: {
     flex: 1,
-    borderWidth: 2,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 12,
+    backgroundColor: '#f6f3f2', // surface-container-low
+    borderRadius: 12,
+    padding: 16,
     alignItems: 'center',
+    // No borders
   },
   optionSelected: {
-    borderColor: '#003366',
-    backgroundColor: '#e3f2fd',
+    backgroundColor: '#d9e2ff', // primary-fixed
   },
   optionDisabled: {
     opacity: 0.5,
   },
   optionIcon: {
-    fontSize: 24,
-    marginBottom: 4,
+    marginBottom: 8,
   },
   optionLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#666',
-    marginBottom: 2,
+    fontSize: scaleFontSize(14),
+    fontWeight: '700',
+    color: '#434653', // on-surface-variant
+    marginBottom: 4,
   },
   optionLabelSelected: {
-    color: '#003366',
+    color: '#001a41', // on-primary-fixed
   },
   optionDescription: {
-    fontSize: 10,
-    color: '#999',
+    fontSize: scaleFontSize(11),
+    color: '#737784', // outline
     textAlign: 'center',
+    lineHeight: scaleFontSize(16),
   },
   optionDescriptionSelected: {
-    color: '#1976d2',
+    color: '#003a8c', // primary
   },
 });
 

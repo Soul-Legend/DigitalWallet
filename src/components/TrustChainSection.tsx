@@ -1,6 +1,8 @@
 import React from 'react';
 import {View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity} from 'react-native';
+import {MaterialIcons} from '@expo/vector-icons';
 import {TrustedIssuer} from '../types';
+import {scaleFontSize} from '../utils/theme';
 
 interface TrustChainSectionProps {
   expanded: boolean;
@@ -33,19 +35,28 @@ const TrustChainSection: React.FC<TrustChainSectionProps> = ({
 }) => {
   return (
     <View style={styles.section}>
-      <TouchableOpacity style={styles.chainHeader} onPress={onToggleExpanded}>
-        <Text style={styles.sectionTitle}>
-          🔗 Cadeia de Confiança {expanded ? '▼' : '▶'}
-        </Text>
-        <Text style={styles.chainBadge}>
-          {trustedIssuers.length} emissor(es)
-        </Text>
+      <TouchableOpacity style={styles.chainHeader} onPress={onToggleExpanded} activeOpacity={0.7}>
+        <View style={styles.headerLeft}>
+          <MaterialIcons name="link" size={24} color="#003a8c" />
+          <Text style={styles.sectionTitle}>Cadeia de Confiança</Text>
+        </View>
+        <View style={styles.headerRight}>
+          <View style={styles.chainBadge}>
+            <Text style={styles.chainBadgeText}>{trustedIssuers.length}</Text>
+          </View>
+          <MaterialIcons
+            name={expanded ? 'expand-less' : 'expand-more'}
+            size={24}
+            color="#003a8c"
+          />
+        </View>
       </TouchableOpacity>
 
       {expanded && (
-        <View>
+        <View style={styles.expandedContent}>
           {trustedIssuers.length === 0 ? (
             <View style={styles.chainEmptyState}>
+              <MaterialIcons name="lan" size={48} color="#e5e2e1" style={styles.emptyIcon} />
               <Text style={styles.chainEmptyText}>
                 Nenhuma cadeia de confiança configurada. Inicialize a âncora raiz para começar.
               </Text>
@@ -53,6 +64,7 @@ const TrustChainSection: React.FC<TrustChainSectionProps> = ({
                 style={styles.chainButton}
                 onPress={onInitializeRoot}
                 disabled={isChainLoading}>
+                <MaterialIcons name="account-balance" size={18} color="#ffffff" />
                 <Text style={styles.chainButtonText}>
                   {isChainLoading ? 'Inicializando...' : 'Inicializar Âncora Raiz'}
                 </Text>
@@ -70,9 +82,13 @@ const TrustChainSection: React.FC<TrustChainSectionProps> = ({
                       issuer.parentDid === null && styles.chainRootCard,
                     ]}>
                     <View style={styles.chainIssuerHeader}>
-                      <Text style={styles.chainIssuerIcon}>
-                        {issuer.parentDid === null ? '🏛️' : '🏢'}
-                      </Text>
+                      <View style={styles.chainIssuerIconContainer}>
+                        <MaterialIcons
+                          name={issuer.parentDid === null ? 'account-balance' : 'domain'}
+                          size={24}
+                          color="#003a8c"
+                        />
+                      </View>
                       <View style={styles.chainIssuerInfo}>
                         <Text style={styles.chainIssuerName}>
                           {issuer.name}
@@ -83,13 +99,16 @@ const TrustChainSection: React.FC<TrustChainSectionProps> = ({
                       </View>
                     </View>
                     {issuer.parentDid && (
-                      <Text style={styles.chainParentLabel}>
-                        ↑ assinado por: {issuer.parentDid}
-                      </Text>
+                      <View style={styles.chainParentRow}>
+                        <MaterialIcons name="subdirectory-arrow-right" size={16} color="#737784" />
+                        <Text style={styles.chainParentLabel}>
+                          assinado por: {issuer.parentDid}
+                        </Text>
+                      </View>
                     )}
                     {idx < trustedIssuers.length - 1 && issuer.parentDid === null && (
                       <View style={styles.chainConnector}>
-                        <Text style={styles.chainConnectorText}>│</Text>
+                        <View style={styles.connectorLine} />
                       </View>
                     )}
                   </View>
@@ -117,24 +136,28 @@ const TrustChainSection: React.FC<TrustChainSectionProps> = ({
                       onPress={() => onSelectParent(
                         selectedParentDid === issuer.did ? null : issuer.did,
                       )}>
+                      <MaterialIcons
+                        name={issuer.parentDid === null ? 'account-balance' : 'domain'}
+                        size={14}
+                        color={selectedParentDid === issuer.did ? '#ffffff' : '#434653'}
+                        style={styles.parentChipIcon}
+                      />
                       <Text
                         style={[
                           styles.parentChipText,
                           selectedParentDid === issuer.did && styles.parentChipTextSelected,
                         ]}
                         numberOfLines={1}>
-                        {issuer.parentDid === null ? '🏛️ ' : '🏢 '}
                         {issuer.name}
                       </Text>
                     </TouchableOpacity>
                   ))}
                 </ScrollView>
-                {selectedParentDid && (
+                {selectedParentDid ? (
                   <Text style={styles.parentSelectedHint}>
                     Pai selecionado: {selectedParentDid}
                   </Text>
-                )}
-                {!selectedParentDid && (
+                ) : (
                   <Text style={styles.parentSelectedHint}>
                     Nenhum pai selecionado — usará a âncora raiz
                   </Text>
@@ -145,19 +168,22 @@ const TrustChainSection: React.FC<TrustChainSectionProps> = ({
                   value={childDid}
                   onChangeText={onChildDidChange}
                   placeholder="DID do emissor (ex: did:web:dept.ufsc.br)"
+                  placeholderTextColor="#737784"
                   editable={!isChainLoading}
                 />
                 <TextInput
-                  style={[styles.input, {marginTop: 8}]}
+                  style={[styles.input, {marginTop: 12}]}
                   value={childName}
                   onChangeText={onChildNameChange}
                   placeholder="Nome do emissor (ex: CAGR)"
+                  placeholderTextColor="#737784"
                   editable={!isChainLoading}
                 />
                 <TouchableOpacity
-                  style={[styles.chainButton, {marginTop: 12}]}
+                  style={[styles.chainButton, {marginTop: 16}]}
                   onPress={onRegisterChild}
                   disabled={isChainLoading || !childDid.trim() || !childName.trim()}>
+                  <MaterialIcons name="add-circle-outline" size={18} color="#ffffff" />
                   <Text style={styles.chainButtonText}>
                     {isChainLoading ? 'Registrando...' : 'Registrar Emissor'}
                   </Text>
@@ -173,157 +199,204 @@ const TrustChainSection: React.FC<TrustChainSectionProps> = ({
 
 const styles = StyleSheet.create({
   section: {
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    padding: 16,
+    backgroundColor: '#ffffff', // surface-container-lowest
+    borderRadius: 16,
     marginBottom: 16,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#003366',
-    marginBottom: 16,
+    // Ambient shadow
+    shadowColor: '#1b1b1c',
+    shadowOffset: {width: 0, height: 4},
+    shadowOpacity: 0.04,
+    shadowRadius: 24,
+    elevation: 2,
+    overflow: 'hidden',
   },
   chainHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    padding: 20,
+    backgroundColor: '#f6f3f2', // surface-container-low
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  sectionTitle: {
+    fontSize: scaleFontSize(16),
+    fontWeight: '700',
+    color: '#003a8c', // primary
   },
   chainBadge: {
-    fontSize: 12,
-    color: '#666',
-    backgroundColor: '#e8f0fe',
+    backgroundColor: '#d9e2ff', // primary-fixed
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
   },
+  chainBadgeText: {
+    fontSize: scaleFontSize(12),
+    color: '#001a41', // on-primary-fixed
+    fontWeight: '700',
+  },
+  expandedContent: {
+    padding: 20,
+  },
   chainEmptyState: {
     alignItems: 'center',
-    paddingVertical: 16,
+    paddingVertical: 24,
   },
-  chainEmptyText: {
-    fontSize: 14,
-    color: '#666',
-    textAlign: 'center',
+  emptyIcon: {
     marginBottom: 16,
   },
+  chainEmptyText: {
+    fontSize: scaleFontSize(14),
+    color: '#434653',
+    textAlign: 'center',
+    marginBottom: 20,
+    lineHeight: 20,
+  },
   chainButton: {
-    backgroundColor: '#1565C0',
-    padding: 12,
-    borderRadius: 6,
+    backgroundColor: '#003a8c', // primary
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 12,
     alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 8,
   },
   chainButtonText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
+    color: '#ffffff',
+    fontSize: scaleFontSize(14),
+    fontWeight: '700',
   },
   chainList: {
     marginBottom: 16,
   },
   chainIssuerCard: {
-    backgroundColor: '#f8f9fa',
-    borderRadius: 6,
-    padding: 12,
+    backgroundColor: '#fcf9f8', // surface
+    borderRadius: 12,
+    padding: 16,
     marginBottom: 8,
-    borderLeftWidth: 3,
-    borderLeftColor: '#90CAF9',
+    borderLeftWidth: 4,
+    borderLeftColor: '#b8cbff', // primary-container
   },
   chainRootCard: {
-    borderLeftColor: '#1565C0',
-    backgroundColor: '#e8f0fe',
+    borderLeftColor: '#003a8c', // primary
+    backgroundColor: '#f6f3f2', // surface-container-low
   },
   chainIssuerHeader: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 12,
   },
-  chainIssuerIcon: {
-    fontSize: 20,
-    marginRight: 10,
+  chainIssuerIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    backgroundColor: '#d9e2ff', // primary-fixed
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   chainIssuerInfo: {
     flex: 1,
   },
   chainIssuerName: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
+    fontSize: scaleFontSize(15),
+    fontWeight: '700',
+    color: '#1b1b1c',
   },
   chainIssuerDid: {
-    fontSize: 11,
-    color: '#666',
+    fontSize: scaleFontSize(11),
+    color: '#434653',
     fontFamily: 'monospace',
     marginTop: 2,
   },
+  chainParentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+    marginLeft: 52,
+    gap: 4,
+  },
   chainParentLabel: {
-    fontSize: 11,
-    color: '#888',
-    marginTop: 4,
-    marginLeft: 30,
+    fontSize: scaleFontSize(11),
+    color: '#737784',
+    fontFamily: 'monospace',
   },
   chainConnector: {
     alignItems: 'center',
-    marginVertical: 2,
+    marginVertical: 4,
   },
-  chainConnectorText: {
-    fontSize: 16,
-    color: '#90CAF9',
+  connectorLine: {
+    width: 2,
+    height: 16,
+    backgroundColor: '#e5e2e1',
   },
   chainRegisterSection: {
     borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
-    paddingTop: 16,
+    borderTopColor: '#e5e2e1',
+    paddingTop: 20,
+    marginTop: 8,
   },
   chainRegisterTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 12,
+    fontSize: scaleFontSize(15),
+    fontWeight: '700',
+    color: '#1b1b1c',
+    marginBottom: 16,
   },
   parentSelectorLabel: {
-    fontSize: 13,
-    color: '#555',
-    marginBottom: 6,
+    fontSize: scaleFontSize(13),
+    color: '#434653',
+    marginBottom: 8,
+    fontWeight: '600',
   },
   parentSelectorRow: {
     flexDirection: 'row',
     marginBottom: 4,
-    maxHeight: 40,
   },
   parentChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    backgroundColor: '#f0f0f0',
-    borderWidth: 1,
-    borderColor: '#ddd',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: '#e5e2e1', // surface-container-highest
     marginRight: 8,
+    gap: 6,
   },
   parentChipSelected: {
-    backgroundColor: '#1565C0',
-    borderColor: '#1565C0',
+    backgroundColor: '#003a8c', // primary
+  },
+  parentChipIcon: {
+    marginTop: -1,
   },
   parentChipText: {
-    fontSize: 12,
-    color: '#333',
-  },
-  parentChipTextSelected: {
-    color: '#fff',
+    fontSize: scaleFontSize(13),
+    color: '#434653',
     fontWeight: '600',
   },
+  parentChipTextSelected: {
+    color: '#ffffff',
+  },
   parentSelectedHint: {
-    fontSize: 11,
-    color: '#888',
-    marginTop: 4,
-    fontStyle: 'italic',
+    fontSize: scaleFontSize(11),
+    color: '#737784',
+    marginTop: 8,
+    marginBottom: 4,
   },
   input: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 4,
-    padding: 12,
-    fontSize: 16,
-    backgroundColor: '#fff',
+    backgroundColor: '#e5e2e1', // surface-container-highest
+    borderRadius: 8,
+    padding: 16,
+    fontSize: scaleFontSize(14),
+    color: '#1b1b1c',
+    // No borders
   },
 });
 

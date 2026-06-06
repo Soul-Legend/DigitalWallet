@@ -7,6 +7,7 @@ import {
   TextInput,
   TouchableOpacity,
 } from 'react-native';
+import {MaterialIcons} from '@expo/vector-icons';
 import {
   LoadingIndicator,
   ErrorMessage,
@@ -61,7 +62,7 @@ const HolderScreen: React.FC = () => {
         {/* Credential Input Section */}
         <View style={styles.inputSection}>
           <View style={styles.inputSectionHeader}>
-            <Text style={styles.addIcon}>⊕</Text>
+            <MaterialIcons name="add-circle" size={20} color="#003a8c" />
             <Text style={styles.sectionTitle}>Adicionar Credencial</Text>
           </View>
           <Text style={styles.inputDescription}>
@@ -82,7 +83,7 @@ const HolderScreen: React.FC = () => {
             style={[styles.saveButton, isLoading && styles.buttonDisabled]}
             onPress={handleStoreCredential}
             disabled={isLoading}>
-            <Text style={styles.saveButtonIcon}>💾</Text>
+            <MaterialIcons name="save" size={18} color="#ffffff" />
             <Text style={styles.saveButtonText}>
               {isLoading ? 'Processando...' : 'Salvar na Carteira'}
             </Text>
@@ -162,8 +163,9 @@ const HolderScreen: React.FC = () => {
                 <TouchableOpacity
                   style={styles.presentButton}
                   onPress={handleCopyOutput}>
+                  <MaterialIcons name="content-copy" size={20} color="#6e5700" />
                   <Text style={styles.presentButtonText}>
-                    📋 Copiar Apresentação
+                    Copiar Apresentação
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -208,19 +210,24 @@ const HolderScreen: React.FC = () => {
                 ]}
                 onPress={handlePrevious}
                 disabled={currentIndex === 0}>
+                <MaterialIcons
+                  name="arrow-back"
+                  size={18}
+                  color={currentIndex === 0 ? '#737784' : '#ffffff'}
+                />
                 <Text
                   style={[
                     styles.navButtonText,
                     currentIndex === 0 && styles.navButtonTextDisabled,
                   ]}>
-                  ← Anterior
+                  Anterior
                 </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
                 style={styles.deleteButton}
                 onPress={handleDeleteCredential}>
-                <Text style={styles.deleteButtonText}>🗑️ Excluir</Text>
+                <MaterialIcons name="delete" size={18} color="#ba1a1a" />
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -237,14 +244,28 @@ const HolderScreen: React.FC = () => {
                     currentIndex === credentials.length - 1 &&
                       styles.navButtonTextDisabled,
                   ]}>
-                  Próxima →
+                  Próxima
                 </Text>
+                <MaterialIcons
+                  name="arrow-forward"
+                  size={18}
+                  color={
+                    currentIndex === credentials.length - 1
+                      ? '#737784'
+                      : '#ffffff'
+                  }
+                />
               </TouchableOpacity>
             </View>
           </View>
         ) : (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyStateIcon}>📋</Text>
+            <MaterialIcons
+              name="account-balance-wallet"
+              size={64}
+              color="#e5e2e1"
+              style={styles.emptyStateIcon}
+            />
             <Text style={styles.emptyStateText}>
               Nenhuma credencial armazenada
             </Text>
@@ -267,17 +288,17 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   title: {
-    fontSize: 32,
-    fontWeight: 'bold',
+    fontSize: 34,
+    fontWeight: '800',
     color: '#003a8c', // primary
-    marginBottom: 8,
-    letterSpacing: -0.5,
+    marginBottom: 12,
+    letterSpacing: -0.8,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: 15,
     color: '#434653', // on-surface-variant
     marginBottom: 32,
-    lineHeight: 24,
+    lineHeight: 22,
   },
   // Input Section
   inputSection: {
@@ -292,14 +313,9 @@ const styles = StyleSheet.create({
     gap: 8,
     marginBottom: 8,
   },
-  addIcon: {
-    fontSize: 20,
-    color: '#003a8c',
-    fontWeight: 'bold',
-  },
   sectionTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontWeight: '700',
     color: '#003a8c', // primary
   },
   inputDescription: {
@@ -321,20 +337,22 @@ const styles = StyleSheet.create({
   },
   saveButton: {
     backgroundColor: '#003a8c', // primary
-    borderRadius: 8,
-    padding: 14,
+    borderRadius: 12,
+    padding: 16,
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'center',
     gap: 8,
-  },
-  saveButtonIcon: {
-    fontSize: 14,
+    shadowColor: '#003a8c',
+    shadowOffset: {width: 0, height: 4},
+    shadowOpacity: 0.25,
+    shadowRadius: 16,
+    elevation: 3,
   },
   saveButtonText: {
     color: '#ffffff',
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: 16,
+    fontWeight: '700',
   },
   buttonDisabled: {
     opacity: 0.5,
@@ -352,7 +370,7 @@ const styles = StyleSheet.create({
   },
   credentialsSectionTitle: {
     fontSize: 22,
-    fontWeight: 'bold',
+    fontWeight: '700',
     color: '#003a8c',
     marginBottom: 16,
   },
@@ -365,7 +383,7 @@ const styles = StyleSheet.create({
   credentialCounter: {
     fontSize: 14,
     color: '#434653',
-    fontWeight: '500',
+    fontWeight: '600',
   },
   navigationControls: {
     flexDirection: 'row',
@@ -376,10 +394,13 @@ const styles = StyleSheet.create({
   },
   navButton: {
     flex: 1,
+    flexDirection: 'row',
     backgroundColor: '#003a8c',
     borderRadius: 8,
     padding: 12,
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
   },
   navButtonDisabled: {
     backgroundColor: '#e5e2e1', // surface-container-highest
@@ -393,16 +414,12 @@ const styles = StyleSheet.create({
     color: '#737784', // outline
   },
   deleteButton: {
-    backgroundColor: '#ba1a1a', // error
+    backgroundColor: '#ffdad6', // error-container
     borderRadius: 8,
     padding: 12,
     alignItems: 'center',
-    minWidth: 100,
-  },
-  deleteButtonText: {
-    color: '#ffffff',
-    fontSize: 14,
-    fontWeight: '600',
+    justifyContent: 'center',
+    minWidth: 48,
   },
   emptyState: {
     alignItems: 'center',
@@ -411,7 +428,6 @@ const styles = StyleSheet.create({
     marginTop: 32,
   },
   emptyStateIcon: {
-    fontSize: 64,
     marginBottom: 16,
   },
   emptyStateText: {
@@ -452,14 +468,22 @@ const styles = StyleSheet.create({
   },
   presentButton: {
     backgroundColor: '#fecc03', // secondary-container
-    borderRadius: 8,
-    padding: 14,
+    borderRadius: 12,
+    padding: 16,
     alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 8,
+    shadowColor: '#745b00',
+    shadowOffset: {width: 0, height: 4},
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 3,
   },
   presentButtonText: {
     color: '#6e5700', // on-secondary-container
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: 16,
+    fontWeight: '700',
   },
 });
 
