@@ -4,6 +4,8 @@ docs/libs_Docs
 
 # Circuit proving keys (5-50 MB each, environment-specific, see android/app/src/main/assets/zkeys/README.md)
 *.zkey
+# But DO track the bundled zkeys required for the Android APK
+!android/app/src/main/assets/zkeys/*.zkey
 
 # OSX
 .DS_Store
