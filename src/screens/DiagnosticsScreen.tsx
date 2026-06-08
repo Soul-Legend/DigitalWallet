@@ -114,12 +114,19 @@ export default function DiagnosticsScreen(): React.JSX.Element {
   const [state, dispatch] = useReducer(reducer, initialState);
   const registeredRef = useRef(false);
 
+  const [zkpEnginePreference, setZkpEnginePreference] = React.useState<'mopro' | 'snarkjs'>('mopro');
+
   useEffect(() => {
     if (!registeredRef.current) {
       registerAllRuntimeTests();
       registeredRef.current = true;
     }
   }, []);
+
+  // Sync engine preference
+  useEffect(() => {
+    zkProofServiceInstance.setEnginePreference(zkpEnginePreference);
+  }, [zkpEnginePreference]);
 
   const categories = RuntimeTestRunner.getCategories();
 
@@ -262,6 +269,51 @@ export default function DiagnosticsScreen(): React.JSX.Element {
           {Platform.OS} {Platform.Version} • __DEV__=
           {String(typeof __DEV__ !== 'undefined' && __DEV__)}
         </Text>
+      </View>
+
+      {/* ZKP Engine Preference Toggle */}
+      <View style={styles.engineToggleSection}>
+        <Text style={styles.engineToggleTitle}>Motor ZKP (Provas Zero-Knowledge)</Text>
+        <View style={styles.engineToggleButtons}>
+          <TouchableOpacity
+            style={[
+              styles.engineButton,
+              zkpEnginePreference === 'mopro' && styles.engineButtonActive,
+            ]}
+            onPress={() => setZkpEnginePreference('mopro')}>
+            <MaterialIcons
+              name="bolt"
+              size={18}
+              color={zkpEnginePreference === 'mopro' ? '#ffffff' : '#003a8c'}
+            />
+            <Text
+              style={[
+                styles.engineButtonText,
+                zkpEnginePreference === 'mopro' && styles.engineButtonTextActive,
+              ]}>
+              Mopro (Nativo)
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.engineButton,
+              zkpEnginePreference === 'snarkjs' && styles.engineButtonActive,
+            ]}
+            onPress={() => setZkpEnginePreference('snarkjs')}>
+            <MaterialIcons
+              name="javascript"
+              size={22}
+              color={zkpEnginePreference === 'snarkjs' ? '#ffffff' : '#003a8c'}
+            />
+            <Text
+              style={[
+                styles.engineButtonText,
+                zkpEnginePreference === 'snarkjs' && styles.engineButtonTextActive,
+              ]}>
+              SnarkJS (JS)
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Controls */}
@@ -435,6 +487,50 @@ const styles = StyleSheet.create({
     fontSize: scaleFontSize(12),
     color: '#737784',
     fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+  },
+  engineToggleSection: {
+    backgroundColor: '#ffffff',
+    marginHorizontal: 24,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: '#e5e2e1',
+  },
+  engineToggleTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#003a8c',
+    marginBottom: 12,
+  },
+  engineToggleButtons: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  engineButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+    backgroundColor: '#f6f3f2',
+    borderWidth: 1,
+    borderColor: '#e5e2e1',
+  },
+  engineButtonActive: {
+    backgroundColor: '#003a8c',
+    borderColor: '#003a8c',
+  },
+  engineButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#003a8c',
+  },
+  engineButtonTextActive: {
+    color: '#ffffff',
   },
   controls: {
     flexDirection: 'row',

@@ -47,6 +47,8 @@ const HolderScreen: React.FC = () => {
     handleCancelConsent,
     handleTransportModeChange,
     handleCopyOutput,
+    zkpEnginePreference,
+    setZkpEnginePreference,
   } = useHolderState();
 
   return (
@@ -58,6 +60,51 @@ const HolderScreen: React.FC = () => {
           Gerencie suas credenciais acadêmicas e profissionais emitidas por
           instituições confiáveis.
         </Text>
+
+        {/* ZKP Engine Preference Toggle */}
+        <View style={styles.engineToggleSection}>
+          <Text style={styles.engineToggleTitle}>Motor ZKP (Provas Zero-Knowledge)</Text>
+          <View style={styles.engineToggleButtons}>
+            <TouchableOpacity
+              style={[
+                styles.engineButton,
+                zkpEnginePreference === 'mopro' && styles.engineButtonActive,
+              ]}
+              onPress={() => setZkpEnginePreference('mopro')}>
+              <MaterialIcons
+                name="bolt"
+                size={18}
+                color={zkpEnginePreference === 'mopro' ? '#ffffff' : '#003a8c'}
+              />
+              <Text
+                style={[
+                  styles.engineButtonText,
+                  zkpEnginePreference === 'mopro' && styles.engineButtonTextActive,
+                ]}>
+                Mopro (Nativo - Rápido)
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.engineButton,
+                zkpEnginePreference === 'snarkjs' && styles.engineButtonActive,
+              ]}
+              onPress={() => setZkpEnginePreference('snarkjs')}>
+              <MaterialIcons
+                name="javascript"
+                size={22}
+                color={zkpEnginePreference === 'snarkjs' ? '#ffffff' : '#003a8c'}
+              />
+              <Text
+                style={[
+                  styles.engineButtonText,
+                  zkpEnginePreference === 'snarkjs' && styles.engineButtonTextActive,
+                ]}>
+                SnarkJS (Fallback JS)
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
 
         {/* Credential Input Section */}
         <View style={styles.inputSection}>
@@ -297,8 +344,50 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 15,
     color: '#434653', // on-surface-variant
-    marginBottom: 32,
+    marginBottom: 24,
     lineHeight: 22,
+  },
+  // Engine Toggle Section
+  engineToggleSection: {
+    backgroundColor: '#f6f3f2',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 24,
+  },
+  engineToggleTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#003a8c',
+    marginBottom: 12,
+  },
+  engineToggleButtons: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  engineButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#e5e2e1',
+  },
+  engineButtonActive: {
+    backgroundColor: '#003a8c',
+    borderColor: '#003a8c',
+  },
+  engineButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#003a8c',
+  },
+  engineButtonTextActive: {
+    color: '#ffffff',
   },
   // Input Section
   inputSection: {

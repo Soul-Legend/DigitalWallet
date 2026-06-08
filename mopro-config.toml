@@ -1,0 +1,14 @@
+[build]
+backend = "arkworks"
+
+[[circuit]]
+dir = "zkp/circuits"
+name = "age_range"
+
+[[circuit]]
+dir = "zkp/circuits"
+name = "status_check"
+
+[[circuit]]
+dir = "zkp/circuits"
+name = "nullifier"

@@ -1,6 +1,7 @@
 import {Platform} from 'react-native';
 import StorageService from './StorageService';
 import TrustChainService from './TrustChainService';
+import ZKProofServiceInstance from './ZKProofService';
 import {useAppStore} from '../stores/useAppStore';
 import type {
   RuntimeTestCase,
@@ -46,6 +47,16 @@ class RuntimeTestRunner {
     const startedAt = new Date().toISOString();
     const suiteStart = Date.now();
     const results: RuntimeTestResult[] = [];
+
+    // Provision zkey files from APK assets before running any tests.
+    // Without this, ZKProofService.getZkeyPath() fails with "Arquivo zkey
+    // não encontrado" for all ZKP-dependent tests (age proofs, election
+    // nullifiers, status checks).
+    try {
+      await ZKProofServiceInstance.provisionBundledZkeys();
+    } catch {
+      // Non-fatal — tests that don't need ZKP will still run.
+    }
 
     for (let i = 0; i < tests.length; i++) {
       const test = tests[i];

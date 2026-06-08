@@ -3,8 +3,8 @@
     "passed": 78,
     "failed": 11,
     "skipped": 0,
-    "durationMs": 74654,
-    "startedAt": "2026-06-06T03:32:25.691Z",
+    "durationMs": 90073,
+    "startedAt": "2026-06-06T04:56:05.713Z",
     "deviceInfo": {
         "os": "android",
         "version": 36,
@@ -16,275 +16,275 @@
             "name": "Generate did:key holder identity",
             "category": "identity",
             "status": "passed",
-            "durationMs": 35
+            "durationMs": 42
         },
         {
             "id": "identity-did-web",
             "name": "Generate did:web issuer identity",
             "category": "identity",
             "status": "passed",
-            "durationMs": 48
+            "durationMs": 36
         },
         {
             "id": "identity-key-storage",
             "name": "Key pairs stored and retrievable",
             "category": "identity",
             "status": "passed",
-            "durationMs": 34
+            "durationMs": 27
         },
         {
             "id": "identity-unique-keys",
             "name": "Holder and issuer have unique keys",
             "category": "identity",
             "status": "passed",
-            "durationMs": 48
+            "durationMs": 69
         },
         {
             "id": "flow-full-sdjwt",
             "name": "Full SD-JWT flow: identity → issue → store → present → verify",
             "category": "integration",
             "status": "passed",
-            "durationMs": 185
+            "durationMs": 188
         },
         {
             "id": "flow-multiple-credentials",
             "name": "Store and manage multiple credentials",
             "category": "integration",
             "status": "passed",
-            "durationMs": 162
+            "durationMs": 156
         },
         {
             "id": "flow-invalid-credential",
             "name": "Reject invalid credential format",
             "category": "integration",
             "status": "passed",
-            "durationMs": 2
+            "durationMs": 1
         },
         {
             "id": "flow-tampered-presentation",
             "name": "Detect tampered presentation data",
             "category": "integration",
             "status": "passed",
-            "durationMs": 147
+            "durationMs": 157
         },
         {
             "id": "flow-anoncreds",
             "name": "Full AnonCreds flow: identity → issue → parse",
             "category": "integration",
             "status": "passed",
-            "durationMs": 1941
+            "durationMs": 4462
         },
         {
             "id": "ru-grant-access",
             "name": "RU access granted with selective disclosure",
             "category": "presentation",
             "status": "passed",
-            "durationMs": 161
+            "durationMs": 156
         },
         {
             "id": "ru-deny-no-exemption",
             "name": "RU access denied — no exemption",
             "category": "presentation",
             "status": "passed",
-            "durationMs": 155
+            "durationMs": 164
         },
         {
             "id": "ru-deny-inactive",
             "name": "RU access denied — inactive student",
             "category": "presentation",
             "status": "passed",
-            "durationMs": 142
+            "durationMs": 155
         },
         {
             "id": "ru-optional-attrs",
             "name": "Optional attribute selection in PEX request",
             "category": "presentation",
             "status": "passed",
-            "durationMs": 145
+            "durationMs": 148
         },
         {
             "id": "election-full-flow",
             "name": "Election flow with nullifier + duplicate prevention",
             "category": "verification",
             "status": "failed",
-            "durationMs": 10622,
+            "durationMs": 1286,
             "error": "Falha ao gerar prova de status",
-            "stackTrace": "CryptoError: Falha ao gerar prova de status\n    at construct (native)\n    at apply (native)\n    at _construct (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:1651:67)\n    at Wrapper (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:1623:25)\n    at construct (native)\n    at _callSuper (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:455527:170)\n    at CryptoError (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:455539:25)\n    at ?anon_0_ (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:542162:48)\n    at throw (native)\n    at asyncGeneratorStep (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:1262:19)\n    at _throw (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:1279:29)\n    at tryCallOne (address at InternalBytecode.js:1:1180)\n    at anonymous (address at InternalBytecode.js:1:1874)\n    at apply (native)\n    at anonymous (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:39985:26)\n    at _callTimer (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:39904:17)\n    at _callReactNativeMicrotasksPass (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:39934:17)\n    at callReactNativeMicrotasks (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:40097:44)\n    at __callReactNativeMicrotasks (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2438:48)\n    at anonymous (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2249:45)\n    at __guard (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2421:15)\n    at flushedQueue (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2248:21)\n    at invokeCallbackAndReturnFlushedQueue (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2242:33)"
+            "stackTrace": "CryptoError: Falha ao gerar prova de status\n    at construct (native)\n    at apply (native)\n    at _construct (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:1651:67)\n    at Wrapper (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:1623:25)\n    at construct (native)\n    at _callSuper (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:455531:170)\n    at CryptoError (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:455543:25)\n    at ?anon_0_ (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:489493:48)\n    at throw (native)\n    at asyncGeneratorStep (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:1262:19)\n    at _throw (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:1279:29)\n    at tryCallOne (address at InternalBytecode.js:1:1180)\n    at anonymous (address at InternalBytecode.js:1:1874)\n    at apply (native)\n    at anonymous (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:39985:26)\n    at _callTimer (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:39904:17)\n    at _callReactNativeMicrotasksPass (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:39934:17)\n    at callReactNativeMicrotasks (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:40097:44)\n    at __callReactNativeMicrotasks (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2438:48)\n    at anonymous (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2249:45)\n    at __guard (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2421:15)\n    at flushedQueue (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2248:21)\n    at invokeCallbackAndReturnFlushedQueue (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2242:33)"
         },
         {
             "id": "election-deterministic-nullifier",
             "name": "Deterministic nullifiers for same credential+election",
             "category": "verification",
             "status": "failed",
-            "durationMs": 1581,
+            "durationMs": 4641,
             "error": "Falha ao gerar prova de status",
-            "stackTrace": "CryptoError: Falha ao gerar prova de status\n    at construct (native)\n    at apply (native)\n    at _construct (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:1651:67)\n    at Wrapper (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:1623:25)\n    at construct (native)\n    at _callSuper (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:455527:170)\n    at CryptoError (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:455539:25)\n    at ?anon_0_ (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:542162:48)\n    at throw (native)\n    at asyncGeneratorStep (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:1262:19)\n    at _throw (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:1279:29)\n    at tryCallOne (address at InternalBytecode.js:1:1180)\n    at anonymous (address at InternalBytecode.js:1:1874)\n    at apply (native)\n    at anonymous (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:39985:26)\n    at _callTimer (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:39904:17)\n    at _callReactNativeMicrotasksPass (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:39934:17)\n    at callReactNativeMicrotasks (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:40097:44)\n    at __callReactNativeMicrotasks (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2438:48)\n    at anonymous (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2249:45)\n    at __guard (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2421:15)\n    at flushedQueue (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2248:21)\n    at invokeCallbackAndReturnFlushedQueue (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2242:33)"
+            "stackTrace": "CryptoError: Falha ao gerar prova de status\n    at construct (native)\n    at apply (native)\n    at _construct (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:1651:67)\n    at Wrapper (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:1623:25)\n    at construct (native)\n    at _callSuper (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:455531:170)\n    at CryptoError (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:455543:25)\n    at ?anon_0_ (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:489493:48)\n    at throw (native)\n    at asyncGeneratorStep (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:1262:19)\n    at _throw (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:1279:29)\n    at tryCallOne (address at InternalBytecode.js:1:1180)\n    at anonymous (address at InternalBytecode.js:1:1874)\n    at apply (native)\n    at anonymous (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:39985:26)\n    at _callTimer (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:39904:17)\n    at _callReactNativeMicrotasksPass (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:39934:17)\n    at callReactNativeMicrotasks (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:40097:44)\n    at __callReactNativeMicrotasks (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2438:48)\n    at anonymous (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2249:45)\n    at __guard (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2421:15)\n    at flushedQueue (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2248:21)\n    at invokeCallbackAndReturnFlushedQueue (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2242:33)"
         },
         {
             "id": "election-different-elections",
             "name": "Different elections produce different nullifiers",
             "category": "verification",
             "status": "failed",
-            "durationMs": 1890,
+            "durationMs": 13984,
             "error": "Falha ao gerar prova de status",
-            "stackTrace": "CryptoError: Falha ao gerar prova de status\n    at construct (native)\n    at apply (native)\n    at _construct (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:1651:67)\n    at Wrapper (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:1623:25)\n    at construct (native)\n    at _callSuper (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:455527:170)\n    at CryptoError (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:455539:25)\n    at ?anon_0_ (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:542162:48)\n    at throw (native)\n    at asyncGeneratorStep (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:1262:19)\n    at _throw (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:1279:29)\n    at tryCallOne (address at InternalBytecode.js:1:1180)\n    at anonymous (address at InternalBytecode.js:1:1874)\n    at apply (native)\n    at anonymous (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:39985:26)\n    at _callTimer (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:39904:17)\n    at _callReactNativeMicrotasksPass (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:39934:17)\n    at callReactNativeMicrotasks (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:40097:44)\n    at __callReactNativeMicrotasks (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2438:48)\n    at anonymous (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2249:45)\n    at __guard (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2421:15)\n    at flushedQueue (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2248:21)\n    at invokeCallbackAndReturnFlushedQueue (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2242:33)"
+            "stackTrace": "CryptoError: Falha ao gerar prova de status\n    at construct (native)\n    at apply (native)\n    at _construct (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:1651:67)\n    at Wrapper (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:1623:25)\n    at construct (native)\n    at _callSuper (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:455531:170)\n    at CryptoError (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:455543:25)\n    at ?anon_0_ (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:489493:48)\n    at throw (native)\n    at asyncGeneratorStep (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:1262:19)\n    at _throw (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:1279:29)\n    at tryCallOne (address at InternalBytecode.js:1:1180)\n    at anonymous (address at InternalBytecode.js:1:1874)\n    at apply (native)\n    at anonymous (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:39985:26)\n    at _callTimer (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:39904:17)\n    at _callReactNativeMicrotasksPass (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:39934:17)\n    at callReactNativeMicrotasks (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:40097:44)\n    at __callReactNativeMicrotasks (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2438:48)\n    at anonymous (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2249:45)\n    at __guard (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2421:15)\n    at flushedQueue (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2248:21)\n    at invokeCallbackAndReturnFlushedQueue (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2242:33)"
         },
         {
             "id": "election-inactive-rejected",
             "name": "Inactive student rejected from voting",
             "category": "verification",
             "status": "failed",
-            "durationMs": 6669,
+            "durationMs": 4007,
             "error": "Falha ao gerar prova de status",
-            "stackTrace": "CryptoError: Falha ao gerar prova de status\n    at construct (native)\n    at apply (native)\n    at _construct (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:1651:67)\n    at Wrapper (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:1623:25)\n    at construct (native)\n    at _callSuper (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:455527:170)\n    at CryptoError (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:455539:25)\n    at ?anon_0_ (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:542162:48)\n    at throw (native)\n    at asyncGeneratorStep (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:1262:19)\n    at _throw (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:1279:29)\n    at tryCallOne (address at InternalBytecode.js:1:1180)\n    at anonymous (address at InternalBytecode.js:1:1874)\n    at apply (native)\n    at anonymous (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:39985:26)\n    at _callTimer (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:39904:17)\n    at _callReactNativeMicrotasksPass (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:39934:17)\n    at callReactNativeMicrotasks (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:40097:44)\n    at __callReactNativeMicrotasks (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2438:48)\n    at anonymous (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2249:45)\n    at __guard (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2421:15)\n    at flushedQueue (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2248:21)\n    at invokeCallbackAndReturnFlushedQueue (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2242:33)"
+            "stackTrace": "CryptoError: Falha ao gerar prova de status\n    at construct (native)\n    at apply (native)\n    at _construct (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:1651:67)\n    at Wrapper (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:1623:25)\n    at construct (native)\n    at _callSuper (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:455531:170)\n    at CryptoError (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:455543:25)\n    at ?anon_0_ (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:489493:48)\n    at throw (native)\n    at asyncGeneratorStep (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:1262:19)\n    at _throw (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:1279:29)\n    at tryCallOne (address at InternalBytecode.js:1:1180)\n    at anonymous (address at InternalBytecode.js:1:1874)\n    at apply (native)\n    at anonymous (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:39985:26)\n    at _callTimer (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:39904:17)\n    at _callReactNativeMicrotasksPass (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:39934:17)\n    at callReactNativeMicrotasks (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:40097:44)\n    at __callReactNativeMicrotasks (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2438:48)\n    at anonymous (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2249:45)\n    at __guard (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2421:15)\n    at flushedQueue (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2248:21)\n    at invokeCallbackAndReturnFlushedQueue (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2242:33)"
         },
         {
             "id": "age-over-18",
             "name": "Age >= 18 passes (born 2000)",
             "category": "zkp",
             "status": "failed",
-            "durationMs": 13154,
+            "durationMs": 6677,
             "error": "Falha ao gerar prova de faixa etária",
-            "stackTrace": "CryptoError: Falha ao gerar prova de faixa etária\n    at construct (native)\n    at apply (native)\n    at _construct (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:1651:67)\n    at Wrapper (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:1623:25)\n    at construct (native)\n    at _callSuper (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:455527:170)\n    at CryptoError (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:455539:25)\n    at ?anon_0_ (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:542104:48)\n    at throw (native)\n    at asyncGeneratorStep (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:1262:19)\n    at _throw (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:1279:29)\n    at tryCallOne (address at InternalBytecode.js:1:1180)\n    at anonymous (address at InternalBytecode.js:1:1874)\n    at apply (native)\n    at anonymous (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:39985:26)\n    at _callTimer (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:39904:17)\n    at _callReactNativeMicrotasksPass (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:39934:17)\n    at callReactNativeMicrotasks (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:40097:44)\n    at __callReactNativeMicrotasks (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2438:48)\n    at anonymous (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2249:45)\n    at __guard (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2421:15)\n    at flushedQueue (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2248:21)\n    at invokeCallbackAndReturnFlushedQueue (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2242:33)"
+            "stackTrace": "CryptoError: Falha ao gerar prova de faixa etária\n    at construct (native)\n    at apply (native)\n    at _construct (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:1651:67)\n    at Wrapper (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:1623:25)\n    at construct (native)\n    at _callSuper (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:455531:170)\n    at CryptoError (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:455543:25)\n    at ?anon_0_ (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:489435:48)\n    at throw (native)\n    at asyncGeneratorStep (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:1262:19)\n    at _throw (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:1279:29)\n    at tryCallOne (address at InternalBytecode.js:1:1180)\n    at anonymous (address at InternalBytecode.js:1:1874)\n    at apply (native)\n    at anonymous (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:39985:26)\n    at _callTimer (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:39904:17)\n    at _callReactNativeMicrotasksPass (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:39934:17)\n    at callReactNativeMicrotasks (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:40097:44)\n    at __callReactNativeMicrotasks (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2438:48)\n    at anonymous (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2249:45)\n    at __guard (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2421:15)\n    at flushedQueue (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2248:21)\n    at invokeCallbackAndReturnFlushedQueue (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2242:33)"
         },
         {
             "id": "age-underage",
             "name": "Underage rejected (born 2010)",
             "category": "zkp",
             "status": "failed",
-            "durationMs": 2135,
+            "durationMs": 4276,
             "error": "Falha ao gerar prova de faixa etária",
-            "stackTrace": "CryptoError: Falha ao gerar prova de faixa etária\n    at construct (native)\n    at apply (native)\n    at _construct (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:1651:67)\n    at Wrapper (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:1623:25)\n    at construct (native)\n    at _callSuper (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:455527:170)\n    at CryptoError (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:455539:25)\n    at ?anon_0_ (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:542104:48)\n    at throw (native)\n    at asyncGeneratorStep (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:1262:19)\n    at _throw (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:1279:29)\n    at tryCallOne (address at InternalBytecode.js:1:1180)\n    at anonymous (address at InternalBytecode.js:1:1874)\n    at apply (native)\n    at anonymous (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:39985:26)\n    at _callTimer (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:39904:17)\n    at _callReactNativeMicrotasksPass (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:39934:17)\n    at callReactNativeMicrotasks (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:40097:44)\n    at __callReactNativeMicrotasks (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2438:48)\n    at anonymous (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2249:45)\n    at __guard (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2421:15)\n    at flushedQueue (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2248:21)\n    at invokeCallbackAndReturnFlushedQueue (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2242:33)"
+            "stackTrace": "CryptoError: Falha ao gerar prova de faixa etária\n    at construct (native)\n    at apply (native)\n    at _construct (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:1651:67)\n    at Wrapper (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:1623:25)\n    at construct (native)\n    at _callSuper (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:455531:170)\n    at CryptoError (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:455543:25)\n    at ?anon_0_ (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:489435:48)\n    at throw (native)\n    at asyncGeneratorStep (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:1262:19)\n    at _throw (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:1279:29)\n    at tryCallOne (address at InternalBytecode.js:1:1180)\n    at anonymous (address at InternalBytecode.js:1:1874)\n    at apply (native)\n    at anonymous (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:39985:26)\n    at _callTimer (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:39904:17)\n    at _callReactNativeMicrotasksPass (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:39934:17)\n    at callReactNativeMicrotasks (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:40097:44)\n    at __callReactNativeMicrotasks (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2438:48)\n    at anonymous (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2249:45)\n    at __guard (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2421:15)\n    at flushedQueue (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2248:21)\n    at invokeCallbackAndReturnFlushedQueue (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2242:33)"
         },
         {
             "id": "age-boundary-18",
             "name": "Exactly 18 years old passes (boundary)",
             "category": "zkp",
             "status": "failed",
-            "durationMs": 2727,
+            "durationMs": 9024,
             "error": "Falha ao gerar prova de faixa etária",
-            "stackTrace": "CryptoError: Falha ao gerar prova de faixa etária\n    at construct (native)\n    at apply (native)\n    at _construct (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:1651:67)\n    at Wrapper (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:1623:25)\n    at construct (native)\n    at _callSuper (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:455527:170)\n    at CryptoError (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:455539:25)\n    at ?anon_0_ (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:542104:48)\n    at throw (native)\n    at asyncGeneratorStep (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:1262:19)\n    at _throw (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:1279:29)\n    at tryCallOne (address at InternalBytecode.js:1:1180)\n    at anonymous (address at InternalBytecode.js:1:1874)\n    at apply (native)\n    at anonymous (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:39985:26)\n    at _callTimer (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:39904:17)\n    at _callReactNativeMicrotasksPass (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:39934:17)\n    at callReactNativeMicrotasks (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:40097:44)\n    at __callReactNativeMicrotasks (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2438:48)\n    at anonymous (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2249:45)\n    at __guard (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2421:15)\n    at flushedQueue (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2248:21)\n    at invokeCallbackAndReturnFlushedQueue (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2242:33)"
+            "stackTrace": "CryptoError: Falha ao gerar prova de faixa etária\n    at construct (native)\n    at apply (native)\n    at _construct (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:1651:67)\n    at Wrapper (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:1623:25)\n    at construct (native)\n    at _callSuper (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:455531:170)\n    at CryptoError (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:455543:25)\n    at ?anon_0_ (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:489435:48)\n    at throw (native)\n    at asyncGeneratorStep (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:1262:19)\n    at _throw (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:1279:29)\n    at tryCallOne (address at InternalBytecode.js:1:1180)\n    at anonymous (address at InternalBytecode.js:1:1874)\n    at apply (native)\n    at anonymous (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:39985:26)\n    at _callTimer (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:39904:17)\n    at _callReactNativeMicrotasksPass (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:39934:17)\n    at callReactNativeMicrotasks (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:40097:44)\n    at __callReactNativeMicrotasks (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2438:48)\n    at anonymous (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2249:45)\n    at __guard (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2421:15)\n    at flushedQueue (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2248:21)\n    at invokeCallbackAndReturnFlushedQueue (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2242:33)"
         },
         {
             "id": "age-threshold-30-fail",
             "name": "Age >= 30 fails for 29-year-old",
             "category": "zkp",
             "status": "failed",
-            "durationMs": 1689,
+            "durationMs": 3589,
             "error": "Falha ao gerar prova de faixa etária",
-            "stackTrace": "CryptoError: Falha ao gerar prova de faixa etária\n    at construct (native)\n    at apply (native)\n    at _construct (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:1651:67)\n    at Wrapper (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:1623:25)\n    at construct (native)\n    at _callSuper (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:455527:170)\n    at CryptoError (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:455539:25)\n    at ?anon_0_ (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:542104:48)\n    at throw (native)\n    at asyncGeneratorStep (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:1262:19)\n    at _throw (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:1279:29)\n    at tryCallOne (address at InternalBytecode.js:1:1180)\n    at anonymous (address at InternalBytecode.js:1:1874)\n    at apply (native)\n    at anonymous (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:39985:26)\n    at _callTimer (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:39904:17)\n    at _callReactNativeMicrotasksPass (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:39934:17)\n    at callReactNativeMicrotasks (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:40097:44)\n    at __callReactNativeMicrotasks (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2438:48)\n    at anonymous (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2249:45)\n    at __guard (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2421:15)\n    at flushedQueue (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2248:21)\n    at invokeCallbackAndReturnFlushedQueue (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2242:33)"
+            "stackTrace": "CryptoError: Falha ao gerar prova de faixa etária\n    at construct (native)\n    at apply (native)\n    at _construct (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:1651:67)\n    at Wrapper (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:1623:25)\n    at construct (native)\n    at _callSuper (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:455531:170)\n    at CryptoError (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:455543:25)\n    at ?anon_0_ (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:489435:48)\n    at throw (native)\n    at asyncGeneratorStep (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:1262:19)\n    at _throw (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:1279:29)\n    at tryCallOne (address at InternalBytecode.js:1:1180)\n    at anonymous (address at InternalBytecode.js:1:1874)\n    at apply (native)\n    at anonymous (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:39985:26)\n    at _callTimer (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:39904:17)\n    at _callReactNativeMicrotasksPass (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:39934:17)\n    at callReactNativeMicrotasks (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:40097:44)\n    at __callReactNativeMicrotasks (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2438:48)\n    at anonymous (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2249:45)\n    at __guard (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2421:15)\n    at flushedQueue (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2248:21)\n    at invokeCallbackAndReturnFlushedQueue (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2242:33)"
         },
         {
             "id": "lab-grant-access",
             "name": "Lab access granted when student has permission",
             "category": "verification",
             "status": "passed",
-            "durationMs": 162
+            "durationMs": 183
         },
         {
             "id": "lab-deny-access",
             "name": "Lab access denied — no permission",
             "category": "verification",
             "status": "passed",
-            "durationMs": 170
+            "durationMs": 241
         },
         {
             "id": "lab-building-access",
             "name": "Building access granted when has permission",
             "category": "verification",
             "status": "passed",
-            "durationMs": 212
+            "durationMs": 275
         },
         {
             "id": "lab-empty-arrays",
             "name": "Empty access arrays deny access",
             "category": "verification",
             "status": "passed",
-            "durationMs": 144
+            "durationMs": 260
         },
         {
             "id": "crypto-signature-verify",
             "name": "Ed25519 presentation signature independently verifiable",
             "category": "crypto",
             "status": "passed",
-            "durationMs": 162
+            "durationMs": 247
         },
         {
             "id": "crypto-tamper-attributes",
             "name": "Tampered attributes detected via signature",
             "category": "crypto",
             "status": "passed",
-            "durationMs": 166
+            "durationMs": 259
         },
         {
             "id": "crypto-tamper-holder",
             "name": "Tampered holder DID detected via signature",
             "category": "crypto",
             "status": "passed",
-            "durationMs": 206
+            "durationMs": 246
         },
         {
             "id": "crypto-hash-deterministic",
             "name": "Hash obfuscation is deterministic",
             "category": "crypto",
             "status": "passed",
-            "durationMs": 144
+            "durationMs": 210
         },
         {
             "id": "crypto-hash-independent-verify",
             "name": "Attribute hashes independently verifiable",
             "category": "crypto",
             "status": "passed",
-            "durationMs": 112
+            "durationMs": 217
         },
         {
             "id": "crypto-trust-chain-certs",
             "name": "Trust chain certificate signatures verifiable",
             "category": "crypto",
             "status": "passed",
-            "durationMs": 80
+            "durationMs": 142
         },
         {
             "id": "crypto-sign-verify-roundtrip",
             "name": "Sign and verify with stored key pair",
             "category": "crypto",
             "status": "passed",
-            "durationMs": 60
+            "durationMs": 67
         },
         {
             "id": "trust-2level-chain",
             "name": "2-level trust chain (root → department)",
             "category": "trust-chain",
             "status": "passed",
-            "durationMs": 239
+            "durationMs": 301
         },
         {
             "id": "trust-3level-chain",
             "name": "3-level trust chain (root → center → department)",
             "category": "trust-chain",
             "status": "passed",
-            "durationMs": 284
+            "durationMs": 419
         },
         {
             "id": "trust-untrusted-issuer",
             "name": "Untrusted issuer rejected when chain is configured",
             "category": "trust-chain",
             "status": "passed",
-            "durationMs": 155
+            "durationMs": 314
         },
         {
             "id": "trust-no-chain-backwards-compat",
             "name": "No trust chain — backwards compatible",
             "category": "trust-chain",
             "status": "passed",
-            "durationMs": 206
+            "durationMs": 259
         },
         {
             "id": "trust-root-as-issuer",
             "name": "Root issuer itself issues valid credential",
             "category": "trust-chain",
             "status": "passed",
-            "durationMs": 179
+            "durationMs": 343
         },
         {
             "id": "validate-missing-field",
@@ -312,7 +312,7 @@
             "name": "validateStudentData rejects invalid enrollment status",
             "category": "credential",
             "status": "passed",
-            "durationMs": 1
+            "durationMs": 0
         },
         {
             "id": "validate-valid-data-passes",
@@ -326,7 +326,7 @@
             "name": "computeCompositeHash produces deterministic hex output",
             "category": "crypto",
             "status": "passed",
-            "durationMs": 1
+            "durationMs": 2
         },
         {
             "id": "crypto-composite-hash-bytes",
@@ -347,14 +347,14 @@
             "name": "deleteCredential rejects out-of-bounds index",
             "category": "credential",
             "status": "passed",
-            "durationMs": 112
+            "durationMs": 144
         },
         {
             "id": "storage-issuer-keys",
             "name": "Issuer keys stored and retrievable",
             "category": "identity",
             "status": "passed",
-            "durationMs": 52
+            "durationMs": 46
         },
         {
             "id": "scenario-generate-challenge-ru",
@@ -375,14 +375,14 @@
             "name": "generateChallenge builds PEX with resource_id for lab",
             "category": "verification",
             "status": "passed",
-            "durationMs": 1
+            "durationMs": 0
         },
         {
             "id": "scenario-generate-challenge-invalid",
             "name": "generateChallenge rejects unknown scenario",
             "category": "verification",
             "status": "passed",
-            "durationMs": 1
+            "durationMs": 0
         },
         {
             "id": "didweb-port-encoding",
@@ -396,7 +396,7 @@
             "name": "did:web strips https:// prefix",
             "category": "identity",
             "status": "passed",
-            "durationMs": 1
+            "durationMs": 0
         },
         {
             "id": "didweb-path-segments",
@@ -410,81 +410,81 @@
             "name": "did:web rejects invalid domains",
             "category": "identity",
             "status": "passed",
-            "durationMs": 0
+            "durationMs": 1
         },
         {
             "id": "trust-root-idempotent",
             "name": "initializeRootIssuer is idempotent",
             "category": "trust-chain",
             "status": "passed",
-            "durationMs": 13
+            "durationMs": 20
         },
         {
             "id": "trust-is-trusted-issuer",
             "name": "isTrustedIssuer checks chain membership",
             "category": "trust-chain",
             "status": "passed",
-            "durationMs": 60
+            "durationMs": 62
         },
         {
             "id": "storage-concurrent-writes",
             "name": "Concurrent credential stores serialize correctly",
             "category": "credential",
             "status": "passed",
-            "durationMs": 223
+            "durationMs": 300
         },
         {
             "id": "storage-nullifier-dedup",
             "name": "storeNullifier deduplicates identical nullifiers",
             "category": "verification",
             "status": "passed",
-            "durationMs": 6
+            "durationMs": 8
         },
         {
             "id": "age-threshold-21-pass",
             "name": "Age >= 21 passes for 29-year-old",
             "category": "zkp",
             "status": "failed",
-            "durationMs": 3890,
+            "durationMs": 5355,
             "error": "Falha ao gerar prova de faixa etária",
-            "stackTrace": "CryptoError: Falha ao gerar prova de faixa etária\n    at construct (native)\n    at apply (native)\n    at _construct (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:1651:67)\n    at Wrapper (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:1623:25)\n    at construct (native)\n    at _callSuper (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:455527:170)\n    at CryptoError (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:455539:25)\n    at ?anon_0_ (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:542104:48)\n    at throw (native)\n    at asyncGeneratorStep (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:1262:19)\n    at _throw (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:1279:29)\n    at tryCallOne (address at InternalBytecode.js:1:1180)\n    at anonymous (address at InternalBytecode.js:1:1874)\n    at apply (native)\n    at anonymous (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:39985:26)\n    at _callTimer (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:39904:17)\n    at _callReactNativeMicrotasksPass (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:39934:17)\n    at callReactNativeMicrotasks (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:40097:44)\n    at __callReactNativeMicrotasks (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2438:48)\n    at anonymous (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2249:45)\n    at __guard (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2421:15)\n    at flushedQueue (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2248:21)\n    at invokeCallbackAndReturnFlushedQueue (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2242:33)"
+            "stackTrace": "CryptoError: Falha ao gerar prova de faixa etária\n    at construct (native)\n    at apply (native)\n    at _construct (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:1651:67)\n    at Wrapper (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:1623:25)\n    at construct (native)\n    at _callSuper (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:455531:170)\n    at CryptoError (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:455543:25)\n    at ?anon_0_ (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:489435:48)\n    at throw (native)\n    at asyncGeneratorStep (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:1262:19)\n    at _throw (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:1279:29)\n    at tryCallOne (address at InternalBytecode.js:1:1180)\n    at anonymous (address at InternalBytecode.js:1:1874)\n    at apply (native)\n    at anonymous (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:39985:26)\n    at _callTimer (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:39904:17)\n    at _callReactNativeMicrotasksPass (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:39934:17)\n    at callReactNativeMicrotasks (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:40097:44)\n    at __callReactNativeMicrotasks (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2438:48)\n    at anonymous (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2249:45)\n    at __guard (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2421:15)\n    at flushedQueue (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2248:21)\n    at invokeCallbackAndReturnFlushedQueue (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2242:33)"
         },
         {
             "id": "age-threshold-25-pass",
             "name": "Age >= 25 passes for 29-year-old",
             "category": "zkp",
             "status": "failed",
-            "durationMs": 5239,
+            "durationMs": 1600,
             "error": "Falha ao gerar prova de faixa etária",
-            "stackTrace": "CryptoError: Falha ao gerar prova de faixa etária\n    at construct (native)\n    at apply (native)\n    at _construct (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:1651:67)\n    at Wrapper (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:1623:25)\n    at construct (native)\n    at _callSuper (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:455527:170)\n    at CryptoError (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:455539:25)\n    at ?anon_0_ (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:542104:48)\n    at throw (native)\n    at asyncGeneratorStep (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:1262:19)\n    at _throw (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:1279:29)\n    at tryCallOne (address at InternalBytecode.js:1:1180)\n    at anonymous (address at InternalBytecode.js:1:1874)\n    at apply (native)\n    at anonymous (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:39985:26)\n    at _callTimer (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:39904:17)\n    at _callReactNativeMicrotasksPass (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:39934:17)\n    at callReactNativeMicrotasks (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:40097:44)\n    at __callReactNativeMicrotasks (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2438:48)\n    at anonymous (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2249:45)\n    at __guard (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2421:15)\n    at flushedQueue (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2248:21)\n    at invokeCallbackAndReturnFlushedQueue (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2242:33)"
+            "stackTrace": "CryptoError: Falha ao gerar prova de faixa etária\n    at construct (native)\n    at apply (native)\n    at _construct (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:1651:67)\n    at Wrapper (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:1623:25)\n    at construct (native)\n    at _callSuper (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:455531:170)\n    at CryptoError (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:455543:25)\n    at ?anon_0_ (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:489435:48)\n    at throw (native)\n    at asyncGeneratorStep (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:1262:19)\n    at _throw (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:1279:29)\n    at tryCallOne (address at InternalBytecode.js:1:1180)\n    at anonymous (address at InternalBytecode.js:1:1874)\n    at apply (native)\n    at anonymous (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:39985:26)\n    at _callTimer (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:39904:17)\n    at _callReactNativeMicrotasksPass (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:39934:17)\n    at callReactNativeMicrotasks (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:40097:44)\n    at __callReactNativeMicrotasks (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2438:48)\n    at anonymous (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2249:45)\n    at __guard (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2421:15)\n    at flushedQueue (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2248:21)\n    at invokeCallbackAndReturnFlushedQueue (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2242:33)"
         },
         {
             "id": "crypto-tampered-cert",
             "name": "Tampered certificate payload detected",
             "category": "crypto",
             "status": "passed",
-            "durationMs": 74
+            "durationMs": 202
         },
         {
             "id": "lab-privacy-check",
             "name": "Lab access flow does not disclose PII (CPF, nome, curso, status)",
             "category": "verification",
             "status": "passed",
-            "durationMs": 168
+            "durationMs": 162
         },
         {
             "id": "lab-multiple-iteration",
             "name": "Multiple individual lab access checks",
             "category": "verification",
             "status": "passed",
-            "durationMs": 288
+            "durationMs": 336
         },
         {
             "id": "ru-tamper-detection",
             "name": "RU selective disclosure detects attribute tampering",
             "category": "presentation",
             "status": "passed",
-            "durationMs": 157
+            "durationMs": 172
         },
         {
             "id": "canonicalize-cycle-detection",
@@ -505,7 +505,7 @@
             "name": "canonicalize rejects Infinity and NaN",
             "category": "crypto",
             "status": "passed",
-            "durationMs": 1
+            "durationMs": 0
         },
         {
             "id": "canonicalize-rejects-function",
@@ -575,14 +575,14 @@
             "name": "evaluatePredicate rejects invalid operator",
             "category": "verification",
             "status": "passed",
-            "durationMs": 0
+            "durationMs": 1
         },
         {
             "id": "predicate-date-to-age",
             "name": "evaluatePredicate converts date to age for numeric comparison",
             "category": "verification",
             "status": "passed",
-            "durationMs": 0
+            "durationMs": 1
         },
         {
             "id": "is-date-attribute",
@@ -596,7 +596,7 @@
             "name": "CryptoError carries operation and details",
             "category": "integration",
             "status": "passed",
-            "durationMs": 0
+            "durationMs": 1
         },
         {
             "id": "error-classes-validation",
@@ -624,7 +624,7 @@
             "name": "ErrorHandler returns Portuguese message for validation errors",
             "category": "integration",
             "status": "passed",
-            "durationMs": 1
+            "durationMs": 4
         },
         {
             "id": "error-handler-storage-message",
@@ -645,16 +645,16 @@
             "name": "Nullifier uses SHA-256 composite hash when circuit unavailable",
             "category": "zkp",
             "status": "passed",
-            "durationMs": 103
+            "durationMs": 97
         },
         {
             "id": "nullifier-fallback-election-flow",
             "name": "Full election flow works with fallback nullifier",
             "category": "zkp",
             "status": "failed",
-            "durationMs": 1192,
+            "durationMs": 7668,
             "error": "Falha ao gerar prova de status",
-            "stackTrace": "CryptoError: Falha ao gerar prova de status\n    at construct (native)\n    at apply (native)\n    at _construct (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:1651:67)\n    at Wrapper (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:1623:25)\n    at construct (native)\n    at _callSuper (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:455527:170)\n    at CryptoError (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:455539:25)\n    at ?anon_0_ (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:542162:48)\n    at throw (native)\n    at asyncGeneratorStep (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:1262:19)\n    at _throw (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:1279:29)\n    at tryCallOne (address at InternalBytecode.js:1:1180)\n    at anonymous (address at InternalBytecode.js:1:1874)\n    at apply (native)\n    at anonymous (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:39985:26)\n    at _callTimer (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:39904:17)\n    at _callReactNativeMicrotasksPass (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:39934:17)\n    at callReactNativeMicrotasks (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:40097:44)\n    at __callReactNativeMicrotasks (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2438:48)\n    at anonymous (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2249:45)\n    at __guard (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2421:15)\n    at flushedQueue (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2248:21)\n    at invokeCallbackAndReturnFlushedQueue (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2242:33)"
+            "stackTrace": "CryptoError: Falha ao gerar prova de status\n    at construct (native)\n    at apply (native)\n    at _construct (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:1651:67)\n    at Wrapper (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:1623:25)\n    at construct (native)\n    at _callSuper (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:455531:170)\n    at CryptoError (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:455543:25)\n    at ?anon_0_ (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:489493:48)\n    at throw (native)\n    at asyncGeneratorStep (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:1262:19)\n    at _throw (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:1279:29)\n    at tryCallOne (address at InternalBytecode.js:1:1180)\n    at anonymous (address at InternalBytecode.js:1:1874)\n    at apply (native)\n    at anonymous (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:39985:26)\n    at _callTimer (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:39904:17)\n    at _callReactNativeMicrotasksPass (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:39934:17)\n    at callReactNativeMicrotasks (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:40097:44)\n    at __callReactNativeMicrotasks (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2438:48)\n    at anonymous (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2249:45)\n    at __guard (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2421:15)\n    at flushedQueue (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2248:21)\n    at invokeCallbackAndReturnFlushedQueue (http://192.168.15.21:8081/index.bundle//&platform=android&dev=true&hot=false&transform.engine=hermes&transform.bytecode=1&transform.routerRoot=app&unstable_transformProfile=hermes-stable:2242:33)"
         }
     ]
 }

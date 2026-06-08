@@ -28,6 +28,7 @@ const KNOWN_ROUTES: ReadonlyArray<keyof RootStackParamList> = [
   'Verificador',
   'Logs',
   'Glossario',
+  'Diagnostics',
 ];
 
 describe('HomeScreen — navigation contract', () => {

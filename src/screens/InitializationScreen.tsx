@@ -13,6 +13,7 @@ import {RootStackParamList} from '../App';
 import {MaterialIcons} from '@expo/vector-icons';
 import DIDService from '../services/DIDService';
 import StorageService from '../services/StorageService';
+import zkProofServiceInstance from '../services/ZKProofService';
 import {useAppStore} from '../stores/useAppStore';
 
 type InitializationScreenNavigationProp = NativeStackNavigationProp<
@@ -57,6 +58,9 @@ const InitializationScreen: React.FC<Props> = ({navigation}) => {
   const checkFirstLaunch = async () => {
     try {
       setInitState('checking');
+
+      // Ensure ZK proof keys are provisioned (idempotent operation)
+      await zkProofServiceInstance.provisionBundledZkeys();
 
       // Check if holder DID already exists
       const existingDID = await StorageService.getHolderDID();
