@@ -114,7 +114,6 @@ export default function DiagnosticsScreen(): React.JSX.Element {
   const [state, dispatch] = useReducer(reducer, initialState);
   const registeredRef = useRef(false);
 
-  const [zkpEnginePreference, setZkpEnginePreference] = React.useState<'mopro' | 'snarkjs'>('mopro');
 
   useEffect(() => {
     if (!registeredRef.current) {
@@ -123,10 +122,6 @@ export default function DiagnosticsScreen(): React.JSX.Element {
     }
   }, []);
 
-  // Sync engine preference
-  useEffect(() => {
-    zkProofServiceInstance.setEnginePreference(zkpEnginePreference);
-  }, [zkpEnginePreference]);
 
   const categories = RuntimeTestRunner.getCategories();
 
@@ -271,50 +266,7 @@ export default function DiagnosticsScreen(): React.JSX.Element {
         </Text>
       </View>
 
-      {/* ZKP Engine Preference Toggle */}
-      <View style={styles.engineToggleSection}>
-        <Text style={styles.engineToggleTitle}>Motor ZKP (Provas Zero-Knowledge)</Text>
-        <View style={styles.engineToggleButtons}>
-          <TouchableOpacity
-            style={[
-              styles.engineButton,
-              zkpEnginePreference === 'mopro' && styles.engineButtonActive,
-            ]}
-            onPress={() => setZkpEnginePreference('mopro')}>
-            <MaterialIcons
-              name="bolt"
-              size={18}
-              color={zkpEnginePreference === 'mopro' ? '#ffffff' : '#003a8c'}
-            />
-            <Text
-              style={[
-                styles.engineButtonText,
-                zkpEnginePreference === 'mopro' && styles.engineButtonTextActive,
-              ]}>
-              Mopro (Nativo)
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[
-              styles.engineButton,
-              zkpEnginePreference === 'snarkjs' && styles.engineButtonActive,
-            ]}
-            onPress={() => setZkpEnginePreference('snarkjs')}>
-            <MaterialIcons
-              name="javascript"
-              size={22}
-              color={zkpEnginePreference === 'snarkjs' ? '#ffffff' : '#003a8c'}
-            />
-            <Text
-              style={[
-                styles.engineButtonText,
-                zkpEnginePreference === 'snarkjs' && styles.engineButtonTextActive,
-              ]}>
-              SnarkJS (JS)
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+
 
       {/* Controls */}
       <View style={styles.controls}>

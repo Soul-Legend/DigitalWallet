@@ -12,7 +12,7 @@ import type {ILogService} from '../types';
 import {utf8ToBytes} from './encoding';
 
 /**
- * ZKProofService - Handles Zero-Knowledge Proof operations using mopro-ffi or snarkjs
+ * ZKProofService - Handles Zero-Knowledge Proof operations using mopro-ffi
  */
 
 // Circuit zkey file names (must be placed in the app's assets or downloaded)
@@ -29,33 +29,16 @@ const CIRCUIT_WASMS: Record<string, string> = {
   nullifier: 'nullifier.wasm',
 };
 
-export type ZKPEnginePreference = 'mopro' | 'snarkjs';
-
 class ZKProofService {
   private zkeyBasePath: string;
   private zkeyCache: Map<string, string> = new Map();
   private wasmCache: Map<string, string> = new Map();
   private readonly logger: ILogService;
-  private preferredEngine: ZKPEnginePreference = 'mopro';
 
   constructor(logger: ILogService = LogServiceInstance) {
     this.logger = logger;
     // Use the app's document directory for zkey and wasm files
     this.zkeyBasePath = `${RNFS.DocumentDirectoryPath}/zkeys`;
-  }
-
-  /**
-   * Sets the preferred ZKP engine.
-   */
-  setEnginePreference(engine: ZKPEnginePreference) {
-    this.preferredEngine = engine;
-  }
-
-  /**
-   * Gets the preferred ZKP engine.
-   */
-  getEnginePreference(): ZKPEnginePreference {
-    return this.preferredEngine;
   }
 
   /**
@@ -176,7 +159,7 @@ class ZKProofService {
   }
 
   /**
-   * Internal generator with engine selection and fallback logic
+   * Internal generator using mopro-ffi
    */
   private async generateProofWithEngine(
     circuitName: string,

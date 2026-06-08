@@ -31,8 +31,6 @@ export function useHolderState() {
   const [transportMode, setTransportMode] = useState<TransportMode>('clipboard');
   const [presentationOutput, setPresentationOutput] = useState<string | null>(null);
 
-  // ZKP Engine Preference
-  const [zkpEnginePreference, setZkpEnginePreference] = useState<'mopro' | 'snarkjs'>('mopro');
 
   const loadCredentials = useCallback(async () => {
     try {
@@ -65,12 +63,6 @@ export function useHolderState() {
     loadCredentials();
   }, [setCurrentModule, loadCredentials]);
 
-  // Sync engine preference
-  useEffect(() => {
-    import('../../services/ZKProofService').then(module => {
-      module.default.setEnginePreference(zkpEnginePreference);
-    });
-  }, [zkpEnginePreference]);
 
   const handleStoreCredential = useCallback(async () => {
     if (!credentialInput.trim()) {
@@ -329,8 +321,5 @@ export function useHolderState() {
     handleTransportModeChange,
     handleCopyOutput,
 
-    // Engine Preference
-    zkpEnginePreference,
-    setZkpEnginePreference,
   };
 }
