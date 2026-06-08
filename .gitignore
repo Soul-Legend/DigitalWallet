@@ -78,3 +78,7 @@ junit.xml
 *.lock
 
 build/generated
+
+# Temporary artifacts
+temp_apk/
+app.zip
