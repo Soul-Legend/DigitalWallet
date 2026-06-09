@@ -154,8 +154,9 @@ export function useHolderState() {
     );
   }, [currentIndex, loadCredentials]);
 
-  const handleProcessRequest = useCallback(async () => {
-    if (!requestInput.trim()) {
+  const handleProcessRequest = useCallback(async (overrideData?: string | any) => {
+    const inputToProcess = typeof overrideData === 'string' ? overrideData : requestInput;
+    if (!inputToProcess.trim()) {
       setError('Por favor, cole uma requisição PEX válida');
       return;
     }
@@ -172,11 +173,11 @@ export function useHolderState() {
     try {
       const credential = credentials[currentIndex];
       const consent = await PresentationService.processPEXRequest(
-        requestInput.trim(),
+        inputToProcess.trim(),
         credential,
       );
 
-      const validatedRequest = PresentationService.validatePEXFormat(requestInput.trim());
+      const validatedRequest = PresentationService.validatePEXFormat(inputToProcess.trim());
       setCurrentRequest(validatedRequest);
       setConsentData(consent);
       setSelectedAttributes([...consent.required_attributes]);
@@ -338,6 +339,7 @@ export function useHolderState() {
     success,
     credentials,
     currentIndex,
+    setCurrentIndex,
     isLoadingCredentials,
 
     // Presentation state

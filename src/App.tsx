@@ -1,5 +1,5 @@
 import React, {useRef, useCallback} from 'react';
-import {Animated, Easing} from 'react-native';
+import {Animated, Easing, StatusBar} from 'react-native';
 import {NavigationContainer, useFocusEffect} from '@react-navigation/native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
@@ -125,21 +125,7 @@ function MainTabNavigator(): React.JSX.Element {
     <Tab.Navigator
       initialRouteName="Home"
       screenOptions={({route}) => ({
-        headerStyle: {
-          backgroundColor: NAV_COLORS.headerBg,
-          shadowColor: 'rgba(0, 26, 69, 0.2)',
-          shadowOffset: {width: 0, height: 4},
-          shadowOpacity: 1,
-          shadowRadius: 12,
-          elevation: 8,
-        },
-        headerTintColor: NAV_COLORS.white,
-        headerTitleStyle: {
-          fontWeight: '700' as const,
-          fontSize: 18,
-          letterSpacing: -0.3,
-        },
-        headerShadowVisible: false,
+        headerShown: false,
         tabBarIcon: ({color, size}) => {
           const iconName = TAB_ICONS[route.name] || 'help-outline';
           return <MaterialIcons name={iconName} size={size} color={color} />;
@@ -209,6 +195,7 @@ function MainTabNavigator(): React.JSX.Element {
 function App(): React.JSX.Element {
   return (
     <SafeAreaProvider>
+      <StatusBar barStyle="dark-content" backgroundColor="#fcf9f8" />
       <NavigationContainer>
         <Stack.Navigator
           initialRouteName="Initialization"

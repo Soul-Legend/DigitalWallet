@@ -169,8 +169,9 @@ const VerifierScreen: React.FC = () => {
     }
   };
 
-  const handleValidatePresentation = async () => {
-    if (!presentationInput.trim()) {
+  const handleValidatePresentation = async (overrideData?: string | any) => {
+    const inputToProcess = typeof overrideData === 'string' ? overrideData : presentationInput;
+    if (!inputToProcess.trim()) {
       setError('Por favor, cole uma apresentação válida');
       return;
     }
@@ -192,7 +193,7 @@ const VerifierScreen: React.FC = () => {
     setIsResultModalVisible(false);
 
     try {
-      const presentation = JSON.parse(presentationInput.trim());
+      const presentation = JSON.parse(inputToProcess.trim());
       const pexRequest = JSON.parse(generatedRequest);
       const VerificationService = (await import('../services/VerificationService')).default;
       const result = await VerificationService.validatePresentation(
@@ -450,7 +451,7 @@ const VerifierScreen: React.FC = () => {
             setIsScannerVisible(false);
             setPresentationInput(data);
             setTimeout(() => {
-              setTransportMode('clipboard');
+              handleValidatePresentation(data);
             }, 300);
           }}
           title="Ler Apresentação"

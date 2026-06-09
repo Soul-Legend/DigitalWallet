@@ -361,10 +361,10 @@ const IssuerScreen: React.FC = () => {
 
           <View style={styles.labInputContainer}>
             <TextInput
-              style={[styles.input, styles.labInput]}
+              style={[styles.input, { flex: 1 }]}
               value={labInput}
               onChangeText={setLabInput}
-              placeholder="Ex: Laboratório de Química Geral"
+              placeholder="Ex: Lab. Química Geral"
               placeholderTextColor="#737784"
               editable={!isLoading}
               onSubmitEditing={handleAddLab}
@@ -408,7 +408,7 @@ const IssuerScreen: React.FC = () => {
 
           <View style={styles.labInputContainer}>
             <TextInput
-              style={[styles.input, styles.labInput]}
+              style={[styles.input, { flex: 1 }]}
               value={buildingInput}
               onChangeText={setBuildingInput}
               placeholder="Ex: Prédio da Reitoria"
@@ -709,10 +709,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     marginBottom: 16,
     gap: 8,
-  },
-  labInput: {
-    flex: 1,
-    paddingVertical: 12, // slightly smaller padding for inline input
   },
   labAddButton: {
     backgroundColor: '#003a8c', // primary

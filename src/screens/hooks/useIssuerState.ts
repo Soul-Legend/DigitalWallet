@@ -98,8 +98,10 @@ export function useIssuerState() {
 
   const handleAddLab = useCallback(() => {
     const trimmed = labInput.trim();
-    if (trimmed && !formData.acesso_laboratorios?.includes(trimmed)) {
-      updateField('acesso_laboratorios', [...(formData.acesso_laboratorios || []), trimmed]);
+    if (trimmed) {
+      if (!formData.acesso_laboratorios?.includes(trimmed)) {
+        updateField('acesso_laboratorios', [...(formData.acesso_laboratorios || []), trimmed]);
+      }
       setLabInput('');
     }
   }, [labInput, formData.acesso_laboratorios, updateField]);
@@ -116,8 +118,10 @@ export function useIssuerState() {
 
   const handleAddBuilding = useCallback(() => {
     const trimmed = buildingInput.trim();
-    if (trimmed && !formData.acesso_predios?.includes(trimmed)) {
-      updateField('acesso_predios', [...(formData.acesso_predios || []), trimmed]);
+    if (trimmed) {
+      if (!formData.acesso_predios?.includes(trimmed)) {
+        updateField('acesso_predios', [...(formData.acesso_predios || []), trimmed]);
+      }
       setBuildingInput('');
     }
   }, [buildingInput, formData.acesso_predios, updateField]);

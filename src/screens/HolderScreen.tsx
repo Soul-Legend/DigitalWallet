@@ -6,6 +6,8 @@ import {
   ScrollView,
   TextInput,
   TouchableOpacity,
+  FlatList,
+  Dimensions,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import {
@@ -23,6 +25,8 @@ import { useState } from 'react';
 
 const HolderScreen: React.FC = () => {
   const [isScannerVisible, setIsScannerVisible] = useState(false);
+  const [isAddExpanded, setIsAddExpanded] = useState(false);
+  const [isProcessExpanded, setIsProcessExpanded] = useState(false);
   const {
     credentialInput,
     setCredentialInput,
@@ -31,6 +35,7 @@ const HolderScreen: React.FC = () => {
     success,
     credentials,
     currentIndex,
+    setCurrentIndex,
     isLoadingCredentials,
     requestInput,
     setRequestInput,
@@ -66,33 +71,48 @@ const HolderScreen: React.FC = () => {
 
         {/* Credential Input Section */}
         <View style={styles.inputSection}>
-          <View style={styles.inputSectionHeader}>
-            <MaterialIcons name="add-circle" size={20} color="#003a8c" />
-            <Text style={styles.sectionTitle}>Adicionar Credencial</Text>
-          </View>
-          <Text style={styles.inputDescription}>
-            Cole o JSON da sua credencial verificável para adicioná-la à sua
-            carteira com segurança.
-          </Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Insira o JSON da Credencial aqui..."
-            placeholderTextColor="#737784"
-            multiline
-            numberOfLines={4}
-            value={credentialInput}
-            onChangeText={setCredentialInput}
-            editable={!isLoading}
-          />
-          <TouchableOpacity
-            style={[styles.saveButton, isLoading && styles.buttonDisabled]}
-            onPress={handleStoreCredential}
-            disabled={isLoading}>
-            <MaterialIcons name="save" size={18} color="#ffffff" />
-            <Text style={styles.saveButtonText}>
-              {isLoading ? 'Processando...' : 'Salvar na Carteira'}
-            </Text>
+          <TouchableOpacity 
+            style={styles.collapsibleHeader} 
+            activeOpacity={0.7}
+            onPress={() => setIsAddExpanded(!isAddExpanded)}>
+            <View style={styles.inputSectionHeader}>
+              <MaterialIcons name="add-circle" size={20} color="#003a8c" />
+              <Text style={styles.sectionTitle}>Adicionar Credencial</Text>
+            </View>
+            <MaterialIcons 
+              name={isAddExpanded ? 'expand-less' : 'expand-more'} 
+              size={24} 
+              color="#003a8c" 
+            />
           </TouchableOpacity>
+          
+          {isAddExpanded && (
+            <View style={styles.collapsibleContent}>
+              <Text style={styles.inputDescription}>
+                Cole o JSON da sua credencial verificável para adicioná-la à sua
+                carteira com segurança.
+              </Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Insira o JSON da Credencial aqui..."
+                placeholderTextColor="#737784"
+                multiline
+                numberOfLines={4}
+                value={credentialInput}
+                onChangeText={setCredentialInput}
+                editable={!isLoading}
+              />
+              <TouchableOpacity
+                style={[styles.saveButton, isLoading && styles.buttonDisabled]}
+                onPress={handleStoreCredential}
+                disabled={isLoading}>
+                <MaterialIcons name="save" size={18} color="#ffffff" />
+                <Text style={styles.saveButtonText}>
+                  {isLoading ? 'Processando...' : 'Salvar na Carteira'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
 
         {/* Loading Indicator */}
@@ -117,54 +137,69 @@ const HolderScreen: React.FC = () => {
             />
 
             <View style={styles.requestSection}>
-              <Text style={styles.sectionTitle}>
-                Processar Requisição de Apresentação
-              </Text>
-              <Text style={styles.inputDescription}>
-                {transportMode === 'qrcode'
-                  ? 'Leia o QR Code da requisição PEX no dispositivo verificador'
-                  : 'Cole uma requisição PEX para criar uma apresentação'}
-              </Text>
+              <TouchableOpacity 
+                style={styles.collapsibleHeader} 
+                activeOpacity={0.7}
+                onPress={() => setIsProcessExpanded(!isProcessExpanded)}>
+                <Text style={styles.sectionTitle}>
+                  Processar Apresentação
+                </Text>
+                <MaterialIcons 
+                  name={isProcessExpanded ? 'expand-less' : 'expand-more'} 
+                  size={24} 
+                  color="#003a8c" 
+                />
+              </TouchableOpacity>
 
-              {transportMode === 'qrcode' ? (
-                <TouchableOpacity
-                  style={[
-                    styles.saveButton,
-                    isProcessingRequest && styles.buttonDisabled,
-                  ]}
-                  onPress={() => setIsScannerVisible(true)}
-                  disabled={isProcessingRequest}>
-                  <MaterialIcons name="qr-code-scanner" size={18} color="#ffffff" />
-                  <Text style={styles.saveButtonText}>
-                    Abrir Câmera
+              {isProcessExpanded && (
+                <View style={styles.collapsibleContent}>
+                  <Text style={styles.inputDescription}>
+                    {transportMode === 'qrcode'
+                      ? 'Leia o QR Code da requisição PEX no dispositivo verificador'
+                      : 'Cole uma requisição PEX para criar uma apresentação'}
                   </Text>
-                </TouchableOpacity>
-              ) : (
-                <>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Cole a requisição PEX aqui"
-                    placeholderTextColor="#737784"
-                    multiline
-                    numberOfLines={4}
-                    value={requestInput}
-                    onChangeText={setRequestInput}
-                    editable={!isProcessingRequest}
-                  />
-                  <TouchableOpacity
-                    style={[
-                      styles.saveButton,
-                      isProcessingRequest && styles.buttonDisabled,
-                    ]}
-                    onPress={handleProcessRequest}
-                    disabled={isProcessingRequest}>
-                    <Text style={styles.saveButtonText}>
-                      {isProcessingRequest
-                        ? 'Processando...'
-                        : 'Processar Requisição'}
-                    </Text>
-                  </TouchableOpacity>
-                </>
+
+                  {transportMode === 'qrcode' ? (
+                    <TouchableOpacity
+                      style={[
+                        styles.saveButton,
+                        isProcessingRequest && styles.buttonDisabled,
+                      ]}
+                      onPress={() => setIsScannerVisible(true)}
+                      disabled={isProcessingRequest}>
+                      <MaterialIcons name="qr-code-scanner" size={18} color="#ffffff" />
+                      <Text style={styles.saveButtonText}>
+                        Abrir Câmera
+                      </Text>
+                    </TouchableOpacity>
+                  ) : (
+                    <>
+                      <TextInput
+                        style={styles.input}
+                        placeholder="Cole a requisição PEX aqui"
+                        placeholderTextColor="#737784"
+                        multiline
+                        numberOfLines={4}
+                        value={requestInput}
+                        onChangeText={setRequestInput}
+                        editable={!isProcessingRequest}
+                      />
+                      <TouchableOpacity
+                        style={[
+                          styles.saveButton,
+                          isProcessingRequest && styles.buttonDisabled,
+                        ]}
+                        onPress={handleProcessRequest}
+                        disabled={isProcessingRequest}>
+                        <Text style={styles.saveButtonText}>
+                          {isProcessingRequest
+                            ? 'Processando...'
+                            : 'Processar Requisição'}
+                        </Text>
+                      </TouchableOpacity>
+                    </>
+                  )}
+                </View>
               )}
             </View>
 
@@ -216,20 +251,8 @@ const HolderScreen: React.FC = () => {
           onScan={(data) => {
             setIsScannerVisible(false);
             setRequestInput(data);
-            // We set a small timeout to allow modal to close before processing
             setTimeout(() => {
-              // The handleProcessRequest relies on the updated state.
-              // We simulate what it does by passing the data directly if possible,
-              // but since handleProcessRequest uses the state `requestInput`,
-              // we can just call handleProcessRequest, though state updates are async.
-              // A more robust way: useHolderState could return a process(data) function,
-              // but for now, the user can press "Processar" after it populates the input,
-              // or we can just switch back to clipboard mode to show it.
-              // Wait, if transportMode is qrcode, the TextInput is hidden!
-              // So if we don't process immediately, the user won't see it.
-              // Actually, since `requestInput` state is populated, we could call a special function
-              // or just trigger the logic. Let's just switch mode to clipboard so they can see/edit and process.
-              handleTransportModeChange('clipboard');
+              handleProcessRequest(data);
             }, 300);
           }}
           title="Ler Requisição PEX"
@@ -251,69 +274,39 @@ const HolderScreen: React.FC = () => {
               </Text>
             </View>
 
-            {/* Credential Card */}
-            <CredentialCard
-              credential={credentials[currentIndex]}
-              onPresent={handlePresentCredential}
-              onCopy={handleCopyCredential}
+            {/* Credential Carousel */}
+            <FlatList
+              data={credentials}
+              keyExtractor={(_, index) => index.toString()}
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              onMomentumScrollEnd={(event) => {
+                const screenWidth = Dimensions.get('window').width;
+                const cardWidth = screenWidth - 48; // content padding 24*2
+                const newIndex = Math.round(event.nativeEvent.contentOffset.x / cardWidth);
+                if (newIndex !== currentIndex) {
+                  setCurrentIndex(newIndex);
+                }
+              }}
+              renderItem={({item}) => (
+                <View style={{ width: Dimensions.get('window').width - 48, paddingBottom: 16 }}>
+                  <CredentialCard
+                    credential={item}
+                    onPresent={handlePresentCredential}
+                    onCopy={handleCopyCredential}
+                  />
+                  <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 12 }}>
+                    <TouchableOpacity
+                      style={[styles.deleteButton, {flexDirection: 'row', gap: 6}]}
+                      onPress={handleDeleteCredential}>
+                      <MaterialIcons name="delete" size={18} color="#ba1a1a" />
+                      <Text style={{color: '#ba1a1a', fontWeight: '600'}}>Excluir Credencial</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              )}
             />
-
-            {/* Navigation Controls */}
-            <View style={styles.navigationControls}>
-              <TouchableOpacity
-                style={[
-                  styles.navButton,
-                  currentIndex === 0 && styles.navButtonDisabled,
-                ]}
-                onPress={handlePrevious}
-                disabled={currentIndex === 0}>
-                <MaterialIcons
-                  name="arrow-back"
-                  size={18}
-                  color={currentIndex === 0 ? '#737784' : '#ffffff'}
-                />
-                <Text
-                  style={[
-                    styles.navButtonText,
-                    currentIndex === 0 && styles.navButtonTextDisabled,
-                  ]}>
-                  Anterior
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.deleteButton}
-                onPress={handleDeleteCredential}>
-                <MaterialIcons name="delete" size={18} color="#ba1a1a" />
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[
-                  styles.navButton,
-                  currentIndex === credentials.length - 1 &&
-                  styles.navButtonDisabled,
-                ]}
-                onPress={handleNext}
-                disabled={currentIndex === credentials.length - 1}>
-                <Text
-                  style={[
-                    styles.navButtonText,
-                    currentIndex === credentials.length - 1 &&
-                    styles.navButtonTextDisabled,
-                  ]}>
-                  Próxima
-                </Text>
-                <MaterialIcons
-                  name="arrow-forward"
-                  size={18}
-                  color={
-                    currentIndex === credentials.length - 1
-                      ? '#737784'
-                      : '#ffffff'
-                  }
-                />
-              </TouchableOpacity>
-            </View>
           </View>
         ) : (
           <View style={styles.emptyState}>
@@ -327,7 +320,7 @@ const HolderScreen: React.FC = () => {
               Nenhuma credencial armazenada
             </Text>
             <Text style={styles.emptyStateSubtext}>
-              Cole uma credencial acima para começar
+              Adicione uma credencial para começar
             </Text>
           </View>
         )}
@@ -411,6 +404,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     marginBottom: 8,
+  },
+  collapsibleHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  collapsibleContent: {
+    marginTop: 16,
   },
   sectionTitle: {
     fontSize: 20,

@@ -18,15 +18,13 @@ const TRANSPORT_OPTIONS: {
 }[] = [
   {
     mode: 'clipboard',
-    label: 'Clipboard',
+    label: 'Texto (Colar)',
     icon: 'content-copy',
-    description: 'Copiar/Colar manual',
   },
   {
     mode: 'qrcode',
-    label: 'QR Code',
+    label: 'Câmera (QR)',
     icon: 'qr-code-scanner',
-    description: 'Leitura via câmera',
   },
 ];
 
@@ -37,7 +35,7 @@ const TransportModeSelector: React.FC<TransportModeSelectorProps> = ({
 }) => {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Modo de Transporte</Text>
+      <Text style={styles.title}>Como você deseja inserir os dados?</Text>
       <View style={styles.optionsRow}>
         {TRANSPORT_OPTIONS.map(option => {
           const isSelected = selectedMode === option.mode;
@@ -54,7 +52,7 @@ const TransportModeSelector: React.FC<TransportModeSelectorProps> = ({
               activeOpacity={0.8}>
               <MaterialIcons
                 name={option.icon}
-                size={28}
+                size={16}
                 color={isSelected ? '#003a8c' : '#737784'}
                 style={styles.optionIcon}
               />
@@ -64,13 +62,6 @@ const TransportModeSelector: React.FC<TransportModeSelectorProps> = ({
                   isSelected && styles.optionLabelSelected,
                 ]}>
                 {option.label}
-              </Text>
-              <Text
-                style={[
-                  styles.optionDescription,
-                  isSelected && styles.optionDescriptionSelected,
-                ]}>
-                {option.description}
               </Text>
             </TouchableOpacity>
           );
@@ -82,61 +73,50 @@ const TransportModeSelector: React.FC<TransportModeSelectorProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#ffffff', // surface-container-lowest
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 24,
-    // Ambient shadow
-    shadowColor: '#1b1b1c',
-    shadowOffset: {width: 0, height: 4},
-    shadowOpacity: 0.04,
-    shadowRadius: 24,
-    elevation: 2,
+    marginBottom: 16,
   },
   title: {
-    fontSize: scaleFontSize(16),
+    fontSize: scaleFontSize(12),
     fontWeight: '700',
-    color: '#003a8c', // primary
-    marginBottom: 16,
-    letterSpacing: 0.2,
+    color: '#737784',
+    marginBottom: 8,
+    textTransform: 'uppercase',
   },
   optionsRow: {
     flexDirection: 'row',
-    gap: 12,
+    backgroundColor: '#e5e2e1', // surface-container-highest
+    borderRadius: 8,
+    padding: 4,
   },
   option: {
     flex: 1,
-    backgroundColor: '#f6f3f2', // surface-container-low
-    borderRadius: 12,
-    padding: 16,
+    flexDirection: 'row',
+    justifyContent: 'center',
     alignItems: 'center',
-    // No borders
+    paddingVertical: 8,
+    borderRadius: 6,
+    gap: 6,
   },
   optionSelected: {
-    backgroundColor: '#d9e2ff', // primary-fixed
+    backgroundColor: '#ffffff',
+    shadowColor: '#1b1b1c',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 1,
   },
   optionDisabled: {
     opacity: 0.5,
   },
   optionIcon: {
-    marginBottom: 8,
+    marginBottom: 0,
   },
   optionLabel: {
-    fontSize: scaleFontSize(14),
-    fontWeight: '700',
-    color: '#434653', // on-surface-variant
-    marginBottom: 4,
+    fontSize: scaleFontSize(13),
+    fontWeight: '600',
+    color: '#434653',
   },
   optionLabelSelected: {
-    color: '#001a41', // on-primary-fixed
-  },
-  optionDescription: {
-    fontSize: scaleFontSize(11),
-    color: '#737784', // outline
-    textAlign: 'center',
-    lineHeight: scaleFontSize(16),
-  },
-  optionDescriptionSelected: {
     color: '#003a8c', // primary
   },
 });

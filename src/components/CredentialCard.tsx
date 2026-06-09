@@ -1,5 +1,5 @@
-import React from 'react';
-import {View, Text, StyleSheet, ScrollView, TouchableOpacity} from 'react-native';
+import React, {useState} from 'react';
+import {View, Text, StyleSheet, TouchableOpacity} from 'react-native';
 import {MaterialIcons} from '@expo/vector-icons';
 import {VerifiableCredential} from '../types';
 import {scaleFontSize} from '../utils/theme';
@@ -35,6 +35,7 @@ const CredentialCard: React.FC<CredentialCardProps> = ({credential, onPresent, o
   };
 
   const isActive = credentialSubject.status_matricula === 'Ativo';
+  const [isExpanded, setIsExpanded] = useState(false);
 
   return (
     <View style={styles.card}>
@@ -96,8 +97,24 @@ const CredentialCard: React.FC<CredentialCardProps> = ({credential, onPresent, o
         </View>
       </View>
 
+      {/* Accordion Toggle */}
+      <TouchableOpacity
+        style={styles.accordionToggle}
+        onPress={() => setIsExpanded(!isExpanded)}
+        activeOpacity={0.7}>
+        <Text style={styles.accordionToggleText}>
+          {isExpanded ? 'Ocultar Detalhes' : 'Ver Mais Detalhes'}
+        </Text>
+        <MaterialIcons
+          name={isExpanded ? 'expand-less' : 'expand-more'}
+          size={20}
+          color="#003a8c"
+        />
+      </TouchableOpacity>
+
       {/* Expandable Details */}
-      <ScrollView style={styles.detailsScroll} nestedScrollEnabled>
+      {isExpanded && (
+        <View style={styles.detailsContainer}>
         {/* Academic Data */}
         <View style={styles.detailSection}>
           <Text style={styles.detailSectionTitle}>Dados Acadêmicos</Text>
@@ -165,7 +182,8 @@ const CredentialCard: React.FC<CredentialCardProps> = ({credential, onPresent, o
             </Text>
           </View>
         </View>
-      </ScrollView>
+        </View>
+      )}
 
       {/* Action Buttons */}
       <View style={styles.actionButtons}>
@@ -181,7 +199,7 @@ const CredentialCard: React.FC<CredentialCardProps> = ({credential, onPresent, o
       {/* DID Footer */}
       <View style={styles.footer}>
         <Text style={styles.footerLabel}>DID do Titular</Text>
-        <Text style={styles.footerDid} numberOfLines={1}>
+        <Text style={styles.footerDid}>
           {credentialSubject.id}
         </Text>
       </View>
@@ -201,7 +219,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.04,
     shadowRadius: 24,
     elevation: 2,
-    maxHeight: 600,
   },
   accentBar: {
     height: 4,
@@ -295,10 +312,24 @@ const styles = StyleSheet.create({
     fontSize: scaleFontSize(14),
     fontWeight: '600',
   },
-  detailsScroll: {
-    maxHeight: 200,
-    paddingHorizontal: 20,
+  accordionToggle: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#f6f3f2',
     marginTop: 8,
+    gap: 4,
+  },
+  accordionToggleText: {
+    color: '#003a8c',
+    fontSize: scaleFontSize(14),
+    fontWeight: '600',
+  },
+  detailsContainer: {
+    paddingHorizontal: 20,
+    paddingTop: 8,
   },
   detailSection: {
     marginBottom: 20,
