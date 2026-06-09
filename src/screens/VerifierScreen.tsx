@@ -9,7 +9,14 @@ import {
   Clipboard,
 } from 'react-native';
 import {useAppStore} from '../stores/useAppStore';
-import {LoadingIndicator, ErrorMessage, SuccessMessage, TransportModeSelector} from '../components';
+import {
+  LoadingIndicator,
+  ErrorMessage,
+  SuccessMessage,
+  TransportModeSelector,
+  ScannerModal,
+  ValidationResultModal,
+} from '../components';
 import {Scenario, PresentationExchangeRequest, ValidationResult} from '../types';
 import {TransportMode} from '../services/TransportService';
 import CryptoService from '../services/CryptoService';
@@ -70,6 +77,8 @@ const VerifierScreen: React.FC = () => {
   const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
   const [labInput, setLabInput] = useState('');
   const [transportMode, setTransportMode] = useState<TransportMode>('clipboard');
+  const [isScannerVisible, setIsScannerVisible] = useState(false);
+  const [isResultModalVisible, setIsResultModalVisible] = useState(false);
 
   useEffect(() => {
     setCurrentModule('verificador');
@@ -92,6 +101,7 @@ const VerifierScreen: React.FC = () => {
     setError(null);
     setSuccess(null);
     setIsGenerating(true);
+    setIsResultModalVisible(false);
 
     try {
       const request = generatePEXRequest(liveScenario);
@@ -179,6 +189,7 @@ const VerifierScreen: React.FC = () => {
     setError(null);
     setSuccess(null);
     setValidationResult(null);
+    setIsResultModalVisible(false);
 
     try {
       const presentation = JSON.parse(presentationInput.trim());
@@ -190,6 +201,7 @@ const VerifierScreen: React.FC = () => {
       );
 
       setValidationResult(result);
+      setIsResultModalVisible(true);
 
       if (result.valid) {
         setSuccess('Apresentação validada com sucesso!');
@@ -218,6 +230,7 @@ const VerifierScreen: React.FC = () => {
     setError(null);
     setSuccess(null);
     setLabInput('');
+    setIsResultModalVisible(false);
   };
 
   return (
@@ -365,23 +378,35 @@ const VerifierScreen: React.FC = () => {
             {generatedRequest && (
               <View style={styles.presentationSection}>
                 <View style={styles.presentationHeaderRow}>
-                  <MaterialIcons name="qr-code-scanner" size={32} color="#003a8c" />
+                  <MaterialIcons name="verified-user" size={32} color="#003a8c" />
                   <Text style={styles.sectionTitleModal}>Validar Apresentação</Text>
                 </View>
                 <Text style={styles.sectionSubtitle}>
-                  Insira o token de apresentação (JWT/JSON) fornecido pelo
-                  titular da credencial.
+                  {transportMode === 'qrcode'
+                    ? 'Leia o QR Code da apresentação exibida no dispositivo Titular.'
+                    : 'Insira o token de apresentação (JWT/JSON) fornecido pelo titular da credencial.'}
                 </Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="eyJhbGciOiJFUzI1NiIs..."
-                  placeholderTextColor="#737784"
-                  multiline
-                  numberOfLines={6}
-                  value={presentationInput}
-                  onChangeText={setPresentationInput}
-                  editable={!isValidating}
-                />
+
+                {transportMode === 'qrcode' ? (
+                  <TouchableOpacity
+                    style={[styles.saveButton, isValidating && styles.buttonDisabled]}
+                    onPress={() => setIsScannerVisible(true)}
+                    disabled={isValidating}>
+                    <MaterialIcons name="qr-code-scanner" size={18} color="#ffffff" />
+                    <Text style={styles.saveButtonText}>Abrir Câmera</Text>
+                  </TouchableOpacity>
+                ) : (
+                  <TextInput
+                    style={styles.input}
+                    placeholder="eyJhbGciOiJFUzI1NiIs..."
+                    placeholderTextColor="#737784"
+                    multiline
+                    numberOfLines={6}
+                    value={presentationInput}
+                    onChangeText={setPresentationInput}
+                    editable={!isValidating}
+                  />
+                )}
                 <View style={styles.validateActions}>
                   <TouchableOpacity
                     style={styles.clearInputButton}
@@ -408,87 +433,6 @@ const VerifierScreen: React.FC = () => {
             {isValidating && (
               <LoadingIndicator message="Validando apresentação..." />
             )}
-
-            {/* Validation Result */}
-            {validationResult && (
-              <View
-                style={[
-                  styles.validationResult,
-                  validationResult.valid
-                    ? styles.validationSuccess
-                    : styles.validationFailure,
-                ]}>
-                <View style={styles.validationHeader}>
-                  <View
-                    style={[
-                      styles.validationIconCircle,
-                      {
-                        backgroundColor: validationResult.valid
-                          ? '#8ffb85' // tertiary-fixed
-                          : '#ffdad6', // error-container
-                      },
-                    ]}>
-                    <MaterialIcons
-                      name={validationResult.valid ? 'verified' : 'cancel'}
-                      size={32}
-                      color={validationResult.valid ? '#002202' : '#93000a'}
-                    />
-                  </View>
-                  <View style={styles.validationHeaderText}>
-                    <Text
-                      style={[
-                        styles.validationTitle,
-                        {
-                          color: validationResult.valid
-                            ? '#006511'
-                            : '#ba1a1a',
-                        },
-                      ]}>
-                      {validationResult.valid
-                        ? 'Apresentação Válida'
-                        : 'Apresentação Inválida'}
-                    </Text>
-                    <Text style={styles.validationSubtitle}>
-                      {validationResult.valid
-                        ? 'Assinaturas criptográficas verificadas com sucesso.'
-                        : 'Verificação falhou.'}
-                    </Text>
-                  </View>
-                </View>
-
-                {/* Trust Chain Status */}
-                {validationResult.trust_chain_valid !== undefined && (
-                  <View style={styles.trustChainStatus}>
-                    <MaterialIcons
-                      name={validationResult.trust_chain_valid ? 'link' : 'link-off'}
-                      size={20}
-                      color={validationResult.trust_chain_valid ? '#006511' : '#ba1a1a'}
-                    />
-                    <Text
-                      style={[
-                        styles.trustChainText,
-                        validationResult.trust_chain_valid
-                          ? styles.trustChainValid
-                          : styles.trustChainInvalid,
-                      ]}>
-                      {validationResult.trust_chain_valid
-                        ? 'Cadeia de confiança verificada'
-                        : 'Emissor fora da cadeia de confiança'}
-                    </Text>
-                  </View>
-                )}
-
-                {validationResult.errors && validationResult.errors.length > 0 && (
-                  <View style={styles.validationErrors}>
-                    {validationResult.errors.map((err, idx) => (
-                      <Text key={idx} style={styles.validationErrorText}>
-                        • {err}
-                      </Text>
-                    ))}
-                  </View>
-                )}
-              </View>
-            )}
           </>
         )}
 
@@ -497,6 +441,29 @@ const VerifierScreen: React.FC = () => {
 
         {/* Success Message */}
         {success && <SuccessMessage message={success} />}
+
+        {/* Scanner Modal */}
+        <ScannerModal
+          visible={isScannerVisible}
+          onClose={() => setIsScannerVisible(false)}
+          onScan={(data) => {
+            setIsScannerVisible(false);
+            setPresentationInput(data);
+            setTimeout(() => {
+              setTransportMode('clipboard');
+            }, 300);
+          }}
+          title="Ler Apresentação"
+          subtitle="Alinhe o QR Code da tela do Titular"
+        />
+
+        {/* Validation Result Modal */}
+        <ValidationResultModal
+          visible={isResultModalVisible}
+          onClose={() => setIsResultModalVisible(false)}
+          result={validationResult}
+          scenario={selectedScenario}
+        />
       </View>
     </ScrollView>
   );
@@ -736,6 +703,26 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   validateButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  saveButton: {
+    backgroundColor: '#003a8c', // primary
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 8,
+    shadowColor: '#003a8c',
+    shadowOffset: {width: 0, height: 4},
+    shadowOpacity: 0.25,
+    shadowRadius: 16,
+    elevation: 3,
+    marginBottom: 20,
+  },
+  saveButtonText: {
     color: '#ffffff',
     fontSize: 16,
     fontWeight: '700',

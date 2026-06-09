@@ -6,3 +6,5 @@ export {default as ConsentModal} from './ConsentModal';
 export {default as AttributeSelector} from './AttributeSelector';
 export {default as LogEntry} from './LogEntry';
 export {default as TransportModeSelector} from './TransportModeSelector';
+export {default as ScannerModal} from './ScannerModal';
+export {default as ValidationResultModal} from './ValidationResultModal';
