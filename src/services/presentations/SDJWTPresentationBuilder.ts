@@ -6,10 +6,7 @@ import {
 import type {ICryptoService, ILogService, IStorageService} from '../../types';
 import {ValidationError} from '../ErrorHandler';
 import {canonicalize} from '../encoding';
-import {
-  extractDisclosedAttributes,
-  obfuscateNonDisclosedAttributes,
-} from '../PresentationHelpers';
+import { base64UrlToBytes } from '../encoding';
 
 /**
  * Builds the canonical byte string the holder signs over a SD-JWT
@@ -24,7 +21,6 @@ export function canonicalPresentationSigningInput(
     '@context': presentation['@context'],
     challenge: presentation.proof?.challenge ?? null,
     disclosed_attributes: presentation.disclosed_attributes ?? {},
-    hashed_attributes: hashedAttributes,
     holder: presentation.holder,
     type: presentation.type,
     verifiableCredential: presentation.verifiableCredential,
@@ -70,14 +66,37 @@ export class SDJWTPresentationBuilder {
         true,
       );
 
-      const disclosedAttributes = extractDisclosedAttributes(
-        credential,
-        selectedAttributes,
-      );
-      const obfuscatedAttributes = await obfuscateNonDisclosedAttributes(
-        credential,
-        selectedAttributes,
-      );
+      const rawJwt = credential._sd_jwt;
+      if (!rawJwt) {
+        throw new ValidationError(
+          'Credencial não possui o token SD-JWT original',
+          'credential',
+          credential,
+        );
+      }
+      
+      const parts = rawJwt.split('~');
+      const token = parts[0];
+      const disclosures = parts.slice(1);
+      
+      const selectedDisclosures: string[] = [];
+      const disclosedAttributes: Record<string, any> = {};
+      
+      for (const disclosureB64 of disclosures) {
+        if (!disclosureB64) continue;
+        try {
+          const disclosureStr = new TextDecoder().decode(base64UrlToBytes(disclosureB64));
+          const parsed = JSON.parse(disclosureStr);
+          const [, key, value] = parsed;
+          if (selectedAttributes.includes(key)) {
+             selectedDisclosures.push(disclosureB64);
+             disclosedAttributes[key] = value;
+          }
+        } catch (e) {
+        }
+      }
+      
+      const sdJwtPresentation = `${token}~${selectedDisclosures.join('~')}~`;
 
       const presentation: VerifiablePresentation = {
         '@context': [
@@ -86,7 +105,7 @@ export class SDJWTPresentationBuilder {
         ],
         type: ['VerifiablePresentation', 'PresentationSubmission'],
         holder: credential.credentialSubject.id,
-        verifiableCredential: credential,
+        verifiableCredential: sdJwtPresentation,
         proof: {
           type: 'JsonWebSignature2020',
           created: new Date().toISOString(),
@@ -96,11 +115,9 @@ export class SDJWTPresentationBuilder {
         },
         disclosed_attributes: disclosedAttributes,
       };
-      (presentation as any).hashed_attributes = obfuscatedAttributes;
 
       const signingInput = canonicalPresentationSigningInput(
         presentation,
-        obfuscatedAttributes,
       );
       const signature = await this.crypto.signData(
         signingInput,
@@ -116,7 +133,7 @@ export class SDJWTPresentationBuilder {
           parameters: {
             action: 'presentation_created',
             disclosed_count: selectedAttributes.length,
-            obfuscated_count: Object.keys(obfuscatedAttributes).length,
+            obfuscated_count: disclosures.length - selectedDisclosures.length,
             holder: credential.credentialSubject.id,
           },
         },

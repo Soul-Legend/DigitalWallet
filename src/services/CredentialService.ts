@@ -135,7 +135,7 @@ class CredentialService {
       // Generate new issuer identity
       const {did, publicKey} = await this.didService.generateIssuerIdentity(
         'ufsc.br',
-        'identidade-academica',
+        'identidade-academica'
       );
 
       return {did, publicKey};
@@ -281,10 +281,41 @@ class CredentialService {
         );
       }
 
+      // SD-JWT logic: create disclosures and hashes
+      const sanitizedCredential = JSON.parse(JSON.stringify(credential));
+      const subjectKeys = Object.keys(sanitizedCredential.credentialSubject);
+      const _sd: string[] = [];
+      const disclosures: string[] = [];
+      
+      for (const key of subjectKeys) {
+        if (key !== 'id') {
+          const value = sanitizedCredential.credentialSubject[key];
+          const salt = this.cryptoService.generateNonce();
+          
+          const disclosureArray = [salt, key, value];
+          const disclosureStr = JSON.stringify(disclosureArray);
+          const disclosureB64 = stringToBase64Url(disclosureStr);
+          disclosures.push(disclosureB64);
+          
+          const hashHex = await this.cryptoService.computeHash(disclosureStr, 'emissor');
+          const hashBytes = new Uint8Array(hashHex.length / 2);
+          for (let i = 0; i < hashHex.length; i += 2) {
+             hashBytes[i / 2] = parseInt(hashHex.substring(i, i + 2), 16);
+          }
+          const hashB64 = bytesToBase64Url(hashBytes);
+          _sd.push(hashB64);
+          
+          delete sanitizedCredential.credentialSubject[key];
+        }
+      }
+      
+      _sd.sort();
+      sanitizedCredential.credentialSubject._sd = _sd;
+
       // Build JWT payload
       const nowSeconds = Math.floor(Date.now() / 1000);
       const payload = {
-        vc: credential,
+        vc: sanitizedCredential,
         iss: issuerDID,
         sub: credential.credentialSubject.id,
         iat: nowSeconds,
@@ -326,7 +357,9 @@ class CredentialService {
       }
 
       const signatureBase64 = bytesToBase64Url(signatureBytes);
-      return `${headerBase64}.${payloadBase64}.${signatureBase64}`;
+      const jwt = `${headerBase64}.${payloadBase64}.${signatureBase64}`;
+      
+      return `${jwt}~${disclosures.join('~')}~`;
     } catch (error) {
       throw new CryptoError(
         `Failed to sign credential as SD-JWT: ${error instanceof Error ? error.message : String(error)}`,
@@ -475,14 +508,19 @@ class CredentialService {
    */
   private async parseSDJWT(jwt: string): Promise<VerifiableCredential> {
     try {
+      // Split SD-JWT string
+      const tokenParts = jwt.split('~');
+      const token = tokenParts[0];
+      const disclosures = tokenParts.slice(1);
+
       // Split JWT into parts
-      const parts = jwt.split('.');
+      const parts = token.split('.');
 
       if (parts.length !== 3) {
         throw new ValidationError(
           'JWT deve conter 3 partes (header.payload.signature)',
           'jwt',
-          jwt.substring(0, 50),
+          token.substring(0, 50),
         );
       }
 
@@ -503,6 +541,35 @@ class CredentialService {
       }
 
       const credential = payload.vc as VerifiableCredential;
+
+      // decode and verify disclosures
+      const _sd = credential.credentialSubject._sd || [];
+      for (const disclosureB64 of disclosures) {
+        if (!disclosureB64) continue;
+        
+        try {
+          const disclosureBytes = base64UrlToBytes(disclosureB64);
+          const disclosureStr = new TextDecoder().decode(disclosureBytes);
+          
+          const hashHex = await this.cryptoService.computeHash(disclosureStr, 'titular');
+          const hashBytes = new Uint8Array(hashHex.length / 2);
+          for (let i = 0; i < hashHex.length; i += 2) {
+             hashBytes[i / 2] = parseInt(hashHex.substring(i, i + 2), 16);
+          }
+          const hashB64 = bytesToBase64Url(hashBytes);
+          
+          if (_sd.includes(hashB64)) {
+             const parsed = JSON.parse(disclosureStr);
+             const [, key, value] = parsed;
+             credential.credentialSubject[key] = value;
+          }
+        } catch (err) {
+          // invalid disclosure, ignore
+        }
+      }
+      
+      delete credential.credentialSubject._sd;
+      credential._sd_jwt = jwt;
 
       // Validate credential structure
       this.validateCredentialStructure(credential);

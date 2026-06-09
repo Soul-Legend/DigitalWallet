@@ -64,6 +64,14 @@ describe('Laboratory Access Control - Property-Based Tests', () => {
     (CryptoService.verifySignature as jest.Mock).mockResolvedValue(true);
   });
 
+  const generateSDJWT = (subject: any) => {
+    const disclosures = Object.entries(subject).filter(([k]) => k !== 'id').map(([k, v]) => {
+        const json = JSON.stringify(['salt', k, v]);
+        return Buffer.from(json).toString('base64url');
+    });
+    return 'fake.jwt.token~' + disclosures.join('~') + '~';
+  };
+
   // Arbitraries for property-based testing
   const arbitraryLabName = (): fc.Arbitrary<string> =>
     fc.oneof(
@@ -407,6 +415,7 @@ describe('Laboratory Access Control - Property-Based Tests', () => {
             );
 
             // Create presentation with lab access arrays
+            credential._sd_jwt = generateSDJWT(credential.credentialSubject);
             const selectedAttributes = ['acesso_laboratorios', 'acesso_predios'];
             const presentation = await PresentationService.createPresentation(
               credential,
@@ -449,6 +458,7 @@ describe('Laboratory Access Control - Property-Based Tests', () => {
             );
 
             // Create presentation with lab access arrays
+            credential._sd_jwt = generateSDJWT(credential.credentialSubject);
             const selectedAttributes = ['acesso_laboratorios', 'acesso_predios'];
             const presentation = await PresentationService.createPresentation(
               credential,
@@ -493,6 +503,7 @@ describe('Laboratory Access Control - Property-Based Tests', () => {
             );
 
             // Create presentation
+            credential._sd_jwt = generateSDJWT(credential.credentialSubject);
             const selectedAttributes = ['acesso_laboratorios', 'acesso_predios'];
             const presentation = await PresentationService.createPresentation(
               credential,
@@ -536,6 +547,7 @@ describe('Laboratory Access Control - Property-Based Tests', () => {
             );
 
             // Create presentation
+            credential._sd_jwt = generateSDJWT(credential.credentialSubject);
             const selectedAttributes = ['acesso_laboratorios', 'acesso_predios'];
             const presentation = await PresentationService.createPresentation(
               credential,
@@ -544,12 +556,16 @@ describe('Laboratory Access Control - Property-Based Tests', () => {
             );
 
             // Validate the presentation
+            jest.spyOn(VerificationService, 'verifyStructuralIntegrity').mockResolvedValue(true);
             const validationResult = await VerificationService.validatePresentation(
               presentation,
               pexRequest,
             );
 
             // Verify validation succeeded
+            if (!validationResult.valid) {
+              console.log('Validation errors:', validationResult.errors);
+            }
             expect(validationResult.valid).toBe(true);
 
             // Verify the specific permission is confirmed

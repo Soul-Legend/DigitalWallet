@@ -3,7 +3,7 @@ import PresentationService from '../PresentationService';
 import VerificationService from '../VerificationService';
 import CryptoService from '../CryptoService';
 import StorageService from '../StorageService';
-import {canonicalAttributeHashInput} from '../encoding';
+import {canonicalAttributeHashInput, stringToBase64Url, bytesToBase64Url, base64UrlToBytes} from '../encoding';
 import {
   VerifiableCredential,
   StudentData,
@@ -132,6 +132,50 @@ describe('Restaurante Universitário - Property-Based Tests', () => {
    * revealed attribute hashes against the issuer's root signature, and
    * mismatched hashes SHALL result in access denial.
    */
+
+  async function prepareCredentialSDJWT(credential: VerifiableCredential): Promise<void> {
+    const sanitizedCredential = JSON.parse(JSON.stringify(credential));
+    const subjectKeys = Object.keys(sanitizedCredential.credentialSubject);
+    const _sd: string[] = [];
+    const disclosures: string[] = [];
+
+    for (const key of subjectKeys) {
+      if (key !== 'id') {
+        const value = sanitizedCredential.credentialSubject[key];
+        const salt = 'mock-nonce-1234567890abcdef';
+        const disclosureStr = JSON.stringify([salt, key, value]);
+        const disclosureB64 = stringToBase64Url(disclosureStr);
+        disclosures.push(disclosureB64);
+        
+        const hashHex = await CryptoService.computeHash(disclosureStr, 'emissor');
+        const hashBytes = new Uint8Array(hashHex.length / 2);
+        for (let i = 0; i < hashHex.length; i += 2) {
+           hashBytes[i / 2] = parseInt(hashHex.substring(i, i + 2), 16);
+        }
+        const hashB64 = bytesToBase64Url(hashBytes);
+        _sd.push(hashB64);
+        
+        delete sanitizedCredential.credentialSubject[key];
+      }
+    }
+
+    _sd.sort();
+    sanitizedCredential.credentialSubject._sd = _sd;
+
+    const payload = {
+      vc: sanitizedCredential,
+      iss: credential.issuer,
+      sub: credential.credentialSubject.id,
+    };
+
+    const headerBase64 = stringToBase64Url(JSON.stringify({alg: 'EdDSA', typ: 'JWT'}));
+    const payloadBase64 = stringToBase64Url(JSON.stringify(payload));
+    const signatureBase64 = stringToBase64Url('mock-signature');
+    const jwt = `${headerBase64}.${payloadBase64}.${signatureBase64}`;
+
+    credential._sd_jwt = `${jwt}~${disclosures.join('~')}~`;
+  }
+
   // Feature: carteira-identidade-academica, Property 23: SD-JWT Hash Verification
   describe('Property 23: SD-JWT Hash Verification', () => {
     it('should verify hashes of non-disclosed attributes match credential values', async () => {
@@ -139,6 +183,7 @@ describe('Restaurante Universitário - Property-Based Tests', () => {
         fc.asyncProperty(
           arbitraryCredential(),
           async (credential) => {
+            await prepareCredentialSDJWT(credential);
             // Generate RU PEX request (only requests status_matricula and isencao_ru)
             const pexRequest = await VerificationService.generateChallenge('ru');
 
@@ -160,35 +205,21 @@ describe('Restaurante Universitário - Property-Based Tests', () => {
               credential.credentialSubject.isencao_ru,
             );
 
-            // Verify presentation has hashed attributes for non-disclosed fields
-            const hashedAttributes = (presentation as any).hashed_attributes;
-            expect(hashedAttributes).toBeDefined();
-
-            // All attributes except status_matricula and isencao_ru should be hashed
-            const allAttributes = Object.keys(credential.credentialSubject).filter(
-              key => key !== 'id',
-            );
-            const nonDisclosedAttributes = allAttributes.filter(
-              attr => !selectedAttributes.includes(attr),
-            );
-
-            // Verify each non-disclosed attribute has a hash
-            for (const attr of nonDisclosedAttributes) {
-              expect(hashedAttributes[attr]).toBeDefined();
-              expect(typeof hashedAttributes[attr]).toBe('string');
-              expect(hashedAttributes[attr].length).toBeGreaterThan(0);
+            const sdJwtStr = presentation.verifiableCredential as string;
+            const disclosures = sdJwtStr.split('~').slice(1);
+            
+            // Should contain only the selected attributes
+            const revealedKeys = [];
+            for (const b64 of disclosures) {
+               if (!b64) continue;
+               const decoded = new TextDecoder().decode(base64UrlToBytes(b64));
+               const [, key] = JSON.parse(decoded);
+               revealedKeys.push(key);
             }
-
-            // Verify the hashes match the expected values (canonical form
-            // shared between holder + verifier — see encoding.ts).
-            for (const attr of nonDisclosedAttributes) {
-              const value = (credential.credentialSubject as any)[attr];
-              const expectedHash = await CryptoService.computeHash(
-                canonicalAttributeHashInput(attr, value),
-                'titular',
-              );
-              expect(hashedAttributes[attr]).toBe(expectedHash);
-            }
+            
+            expect(revealedKeys).toContain('status_matricula');
+            expect(revealedKeys).toContain('isencao_ru');
+            expect(revealedKeys.length).toBe(2);
 
             return true;
           },
@@ -202,6 +233,7 @@ describe('Restaurante Universitário - Property-Based Tests', () => {
         fc.asyncProperty(
           arbitraryCredential(),
           async (credential) => {
+            await prepareCredentialSDJWT(credential);
             // Generate RU PEX request
             const pexRequest = await VerificationService.generateChallenge('ru');
 
@@ -235,6 +267,7 @@ describe('Restaurante Universitário - Property-Based Tests', () => {
         fc.asyncProperty(
           arbitraryCredential(),
           async (credential) => {
+            await prepareCredentialSDJWT(credential);
             // Generate RU PEX request
             const pexRequest = await VerificationService.generateChallenge('ru');
 
@@ -246,16 +279,17 @@ describe('Restaurante Universitário - Property-Based Tests', () => {
               selectedAttributes,
             );
 
-            // Tamper with a hashed attribute
-            const hashedAttributes = (presentation as any).hashed_attributes;
-            const attributeKeys = Object.keys(hashedAttributes);
-
-            // Skip if no hashed attributes (edge case)
-            fc.pre(attributeKeys.length > 0);
-
-            // Tamper with the first hashed attribute
-            const tamperedKey = attributeKeys[0];
-            hashedAttributes[tamperedKey] = 'tampered-hash-value-0000000000000000';
+            // Tamper with a disclosed attribute
+            let tamperedToken = presentation.verifiableCredential as string;
+            const parts = tamperedToken.split('~');
+            if (parts.length > 2) {
+               const disclosureB64 = parts[1];
+               const disclosureStr = new TextDecoder().decode(base64UrlToBytes(disclosureB64));
+               const parsed = JSON.parse(disclosureStr);
+               parsed[2] = "Inativo_Tampered"; // Modify value
+               parts[1] = stringToBase64Url(JSON.stringify(parsed));
+            }
+            presentation.verifiableCredential = parts.join('~');
 
             // Validate the presentation
             const validationResult = await VerificationService.validatePresentation(
@@ -270,7 +304,7 @@ describe('Restaurante Universitário - Property-Based Tests', () => {
 
             // Error message should indicate hash mismatch
             const errorMessage = validationResult.errors!.join(' ');
-            expect(errorMessage.toLowerCase()).toMatch(/hash|inválid|integridade/);
+            expect(errorMessage.toLowerCase()).toMatch(/hash|não encontrado|inválida/);
 
             return true;
           },
@@ -284,6 +318,7 @@ describe('Restaurante Universitário - Property-Based Tests', () => {
         fc.asyncProperty(
           arbitraryCredential(),
           async (credential) => {
+            await prepareCredentialSDJWT(credential);
             // Generate RU PEX request
             const pexRequest = await VerificationService.generateChallenge('ru');
 
@@ -322,6 +357,7 @@ describe('Restaurante Universitário - Property-Based Tests', () => {
         fc.asyncProperty(
           arbitraryCredential(),
           async (credential) => {
+            await prepareCredentialSDJWT(credential);
             // Generate RU PEX request
             const pexRequest = await VerificationService.generateChallenge('ru');
 
@@ -365,6 +401,7 @@ describe('Restaurante Universitário - Property-Based Tests', () => {
         fc.asyncProperty(
           arbitraryCredential(),
           async (credential) => {
+            await prepareCredentialSDJWT(credential);
             // Generate RU PEX request
             const pexRequest = await VerificationService.generateChallenge('ru');
 
@@ -397,6 +434,7 @@ describe('Restaurante Universitário - Property-Based Tests', () => {
         fc.asyncProperty(
           arbitraryCredential(),
           async (credential) => {
+            await prepareCredentialSDJWT(credential);
             // Generate RU PEX request
             const pexRequest = await VerificationService.generateChallenge('ru');
 
@@ -435,6 +473,7 @@ describe('Restaurante Universitário - Property-Based Tests', () => {
         fc.asyncProperty(
           arbitraryCredential(),
           async (credential) => {
+            await prepareCredentialSDJWT(credential);
             // Generate RU PEX request
             const pexRequest = await VerificationService.generateChallenge('ru');
 
@@ -459,13 +498,11 @@ describe('Restaurante Universitário - Property-Based Tests', () => {
               expect.arrayContaining(selectedAttributes),
             );
 
-            // All other attributes should be hashed
-            const hashedAttributes = (presentation as any).hashed_attributes;
-            const allAttributes = Object.keys(credential.credentialSubject).filter(
-              key => key !== 'id',
-            );
-            const nonDisclosedCount = allAttributes.length - selectedAttributes.length;
-            expect(Object.keys(hashedAttributes).length).toBe(nonDisclosedCount);
+            // All other attributes should be omitted
+            const sdJwtStr = presentation.verifiableCredential as string;
+            const disclosures = sdJwtStr.split('~').slice(1).filter(Boolean);
+            
+            expect(disclosures.length).toBe(selectedAttributes.length);
 
             return true;
           },

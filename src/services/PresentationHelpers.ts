@@ -1,6 +1,6 @@
 import {VerifiableCredential} from '../types';
 import type {ICryptoService, ILogService, IStorageService, IZKProofService} from '../types';
-import {ValidationError} from './ErrorHandler';
+import {ValidationError, CryptoError} from './ErrorHandler';
 import LogServiceInstance from './LogService';
 import CryptoServiceInstance from './CryptoService';
 import StorageServiceInstance from './StorageService';
@@ -260,26 +260,33 @@ export async function generateNullifier(
   try {
     const isAvailable = await deps.zkProof.isCircuitAvailable('nullifier');
 
-    if (isAvailable) {
-      const proofResult = await deps.zkProof.generateNullifierProof(
-        holderPrivateKey,
-        electionId,
+    if (!isAvailable) {
+      deps.logger.captureEvent(
+        'zkp_generation',
+        'titular',
+        {parameters: {action: 'nullifier_generation_failed', reason: 'circuit_unavailable'}},
+        false,
+        new Error('Circuito nullifier indisponível')
       );
-      const nullifier = deps.zkProof.extractNullifier(proofResult);
-      if (nullifier) {
-        return nullifier;
-      }
+      throw new CryptoError(
+        'Circuito ZKP para nullifier indisponível. O fallback inseguro foi desativado.',
+        'zkp',
+        {circuit: 'nullifier'}
+      );
     }
 
-    // Fallback: compute deterministic hash if circuit not available
-    const nullifier = await deps.crypto.computeCompositeHash(
-      [holderPrivateKey, electionId],
-      'titular',
+    const proofResult = await deps.zkProof.generateNullifierProof(
+      holderPrivateKey,
+      electionId,
     );
+    const nullifier = deps.zkProof.extractNullifier(proofResult);
+    if (!nullifier) {
+      throw new CryptoError('Falha ao extrair o nullifier da prova ZKP gerada.', 'zkp');
+    }
     return nullifier;
   } catch (error) {
     deps.logger.captureEvent(
-      'hash_computation',
+      'zkp_generation',
       'titular',
       {parameters: {action: 'nullifier_generation_failed'}},
       false,

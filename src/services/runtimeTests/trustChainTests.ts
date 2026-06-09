@@ -35,6 +35,7 @@ const trustChainTests: RuntimeTestCase[] = [
     name: '2-level trust chain (root → department)',
     category: 'trust-chain',
     run: async () => {
+      await TrustChainService.reset();
       const {did: holderDID} = await DIDService.generateHolderIdentity('key');
       const {did: issuerDID} = await DIDService.generateIssuerIdentity('cagr.ufsc.br');
       assertEqual(issuerDID, 'did:web:cagr.ufsc.br', 'issuerDID');
@@ -82,6 +83,7 @@ const trustChainTests: RuntimeTestCase[] = [
     name: '3-level trust chain (root → center → department)',
     category: 'trust-chain',
     run: async () => {
+      await TrustChainService.reset();
       const {did: holderDID} = await DIDService.generateHolderIdentity('key');
       const {did: issuerDID} = await DIDService.generateIssuerIdentity('ine.ufsc.br');
       assertEqual(issuerDID, 'did:web:ine.ufsc.br', 'issuerDID');
@@ -133,6 +135,7 @@ const trustChainTests: RuntimeTestCase[] = [
     name: 'Untrusted issuer rejected when chain is configured',
     category: 'trust-chain',
     run: async () => {
+      await TrustChainService.reset();
       const {did: holderDID} = await DIDService.generateHolderIdentity('key');
       await DIDService.generateIssuerIdentity('evil-university.com');
 
@@ -161,6 +164,7 @@ const trustChainTests: RuntimeTestCase[] = [
     name: 'No trust chain — backwards compatible',
     category: 'trust-chain',
     run: async () => {
+      await TrustChainService.reset();
       const {did: holderDID} = await DIDService.generateHolderIdentity('key');
       await DIDService.generateIssuerIdentity('ufsc.br');
 
@@ -186,6 +190,7 @@ const trustChainTests: RuntimeTestCase[] = [
     name: 'Root issuer itself issues valid credential',
     category: 'trust-chain',
     run: async () => {
+      await TrustChainService.reset();
       const {did: holderDID} = await DIDService.generateHolderIdentity('key');
       const {did: issuerDID} = await DIDService.generateIssuerIdentity('ufsc.br');
 

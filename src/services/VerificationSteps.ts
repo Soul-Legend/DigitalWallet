@@ -7,6 +7,7 @@ import {
 } from '../types';
 import TrustChainService from './TrustChainService';
 import {VerificationStepName} from '../utils/constants';
+import {base64UrlToBytes} from './encoding';
 
 /**
  * Interface for the VerificationService methods needed by steps.
@@ -39,11 +40,29 @@ export function createTrustChainStep(): IVerificationStep {
   return {
     name: VerificationStepName.TRUST_CHAIN,
     async validate(presentation, _pexRequest, context): Promise<StepResult> {
-      const credential =
-        typeof presentation.verifiableCredential === 'string'
-          ? JSON.parse(presentation.verifiableCredential)
-          : presentation.verifiableCredential;
-      const issuerDid = credential.issuer;
+      let credential: any;
+      if (typeof presentation.verifiableCredential === 'string') {
+        if (presentation.verifiableCredential.includes('~')) {
+           const tokenStr = presentation.verifiableCredential.split('~')[0];
+           const payloadB64 = tokenStr.split('.')[1];
+           try {
+               const bytes = base64UrlToBytes(payloadB64);
+               const decoded = new TextDecoder().decode(bytes);
+               credential = JSON.parse(decoded).vc || {};
+           } catch (e) {
+               credential = { issuer: '' };
+           }
+        } else {
+           try {
+             credential = JSON.parse(presentation.verifiableCredential);
+           } catch {
+             credential = { issuer: '' };
+           }
+        }
+      } else {
+        credential = presentation.verifiableCredential;
+      }
+      const issuerDid = credential.issuer || credential.iss || '';
       const allIssuers = await TrustChainService.getAllIssuers();
       if (allIssuers.length === 0) {
         return {valid: true}; // Trust chain not configured — skip

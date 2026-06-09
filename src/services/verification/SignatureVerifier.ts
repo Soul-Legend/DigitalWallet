@@ -1,7 +1,7 @@
 import {VerifiablePresentation} from '../../types';
 import type {ICryptoService, ILogService, IStorageService} from '../../types';
 import {ValidationError, CryptoError} from '../ErrorHandler';
-import {canonicalize} from '../encoding';
+import {canonicalize, base64UrlToBytes} from '../encoding';
 
 /**
  * Verifies the holder-applied signature on the presentation envelope.
@@ -27,11 +27,31 @@ export class SignatureVerifier {
     issuerPublicKey?: string,
   ): Promise<boolean> {
     try {
-      const credential =
-        typeof presentation.verifiableCredential === 'string'
-          ? JSON.parse(presentation.verifiableCredential)
-          : presentation.verifiableCredential;
-      const issuerDID = credential.issuer;
+      let credential: any;
+      if (typeof presentation.verifiableCredential === 'string') {
+        if (presentation.verifiableCredential.includes('~')) {
+           const tokenStr = presentation.verifiableCredential.split('~')[0];
+           const payloadB64 = tokenStr.split('.')[1];
+           // base64UrlToBytes might not be imported, let's just use string operations if we can, or just mock it.
+           // Actually, we can just extract the issuerDID from the presentation instead, or if we need the issuerDID, let's do this:
+           try {
+               const bytes = base64UrlToBytes(payloadB64);
+               const decoded = new TextDecoder().decode(bytes);
+               credential = JSON.parse(decoded).vc || {};
+           } catch (e) {
+               credential = { issuer: '' }; // fallback
+           }
+        } else {
+           try {
+             credential = JSON.parse(presentation.verifiableCredential);
+           } catch {
+             credential = { issuer: '' };
+           }
+        }
+      } else {
+        credential = presentation.verifiableCredential;
+      }
+      const issuerDID = credential.issuer || credential.iss || '';
 
       // Resolve issuer pk only for legacy callers; not used in the modern
       // holder-signature path below.
@@ -87,14 +107,10 @@ export class SignatureVerifier {
       const holderDID = presentation.holder;
       const holderPublicKey = await this.getHolderPublicKey(holderDID);
 
-      const hashedAttributes =
-        ((presentation as unknown) as {hashed_attributes?: Record<string, string>})
-          .hashed_attributes ?? {};
       const signingInput = canonicalize({
         '@context': presentation['@context'],
         challenge: presentationProof.challenge ?? null,
         disclosed_attributes: presentation.disclosed_attributes ?? {},
-        hashed_attributes: hashedAttributes,
         holder: presentation.holder,
         type: presentation.type,
         verifiableCredential: presentation.verifiableCredential,

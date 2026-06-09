@@ -97,7 +97,6 @@ describe('E2E: Crypto Round-Trip Verification', () => {
         '@context': presentation['@context'],
         challenge: presentation.proof.challenge ?? null,
         disclosed_attributes: presentation.disclosed_attributes ?? {},
-        hashed_attributes: (presentation as any).hashed_attributes ?? {},
         holder: presentation.holder,
         type: presentation.type,
         verifiableCredential: presentation.verifiableCredential,
@@ -139,7 +138,6 @@ describe('E2E: Crypto Round-Trip Verification', () => {
         holder: tampered.holder,
         verifiableCredential: tampered.verifiableCredential,
         disclosed_attributes: tampered.disclosed_attributes,
-        hashed_attributes: tampered.hashed_attributes,
       });
 
       const holderPublicKey = await StorageService.getHolderPublicKey();
@@ -175,7 +173,6 @@ describe('E2E: Crypto Round-Trip Verification', () => {
         holder: tampered.holder,
         verifiableCredential: tampered.verifiableCredential,
         disclosed_attributes: tampered.disclosed_attributes,
-        hashed_attributes: tampered.hashed_attributes,
       });
 
       const holderPublicKey = await StorageService.getHolderPublicKey();
@@ -187,61 +184,6 @@ describe('E2E: Crypto Round-Trip Verification', () => {
         holderPublicKey!,
       );
       expect(isValid).toBe(false);
-    });
-  });
-
-  describe('Hash Obfuscation (Real SHA-256)', () => {
-    it('should produce deterministic hashes for non-disclosed attributes', async () => {
-      const {did: holderDID} = await DIDService.generateHolderIdentity('key');
-      await DIDService.generateIssuerIdentity('ufsc.br');
-
-      const token = await CredentialService.issueCredential(studentData, holderDID, 'sd-jwt');
-      const parsed = await CredentialService.validateAndParseCredential(token);
-
-      // Create two presentations with same inputs
-      const p1 = await PresentationService.createPresentation(
-        parsed, ruRequest, ['status_matricula', 'isencao_ru'],
-      );
-      const p2 = await PresentationService.createPresentation(
-        parsed, ruRequest, ['status_matricula', 'isencao_ru'],
-      );
-
-      // Hashed (obfuscated) attributes should be deterministic
-      const hashes1 = (p1 as any).hashed_attributes;
-      const hashes2 = (p2 as any).hashed_attributes;
-
-      expect(hashes1).toBeDefined();
-      expect(hashes2).toBeDefined();
-
-      // Same attribute values should produce same hashes
-      for (const key of Object.keys(hashes1)) {
-        expect(hashes1[key]).toBe(hashes2[key]);
-      }
-    });
-
-    it('should independently verify attribute hashes', async () => {
-      const {did: holderDID} = await DIDService.generateHolderIdentity('key');
-      await DIDService.generateIssuerIdentity('ufsc.br');
-
-      const token = await CredentialService.issueCredential(studentData, holderDID, 'sd-jwt');
-      const parsed = await CredentialService.validateAndParseCredential(token);
-      const presentation = await PresentationService.createPresentation(
-        parsed, ruRequest, ['status_matricula', 'isencao_ru'],
-      );
-
-      const hashedAttrs = (presentation as any).hashed_attributes;
-      expect(hashedAttrs).toBeDefined();
-
-      // The CPF should be hashed (not disclosed)
-      expect(hashedAttrs.cpf).toBeDefined();
-
-      // Independently compute the hash of the CPF value using the canonical
-      // (length-prefixed JSON-array) encoding shared by holder + verifier.
-      const expectedHash = await CryptoService.computeHash(
-        canonicalAttributeHashInput('cpf', studentData.cpf),
-        'titular',
-      );
-      expect(hashedAttrs.cpf).toBe(expectedHash);
     });
   });
 

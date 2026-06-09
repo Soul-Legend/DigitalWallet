@@ -7,7 +7,11 @@ import type {
   IZKProofService,
 } from '../../types';
 import {ValidationError, CryptoError} from '../ErrorHandler';
-import {canonicalAttributeHashInput} from '../encoding';
+import {
+  canonicalAttributeHashInput,
+  base64UrlToBytes,
+  bytesToBase64Url,
+} from '../encoding';
 import {extractRequiredAttributes, extractRequestedAttributes} from './PexHelpers';
 
 /**
@@ -35,12 +39,22 @@ export class IntegrityVerifier {
     pexRequest: PresentationExchangeRequest,
   ): Promise<boolean> {
     try {
-      const credential =
-        typeof presentation.verifiableCredential === 'string'
-          ? JSON.parse(presentation.verifiableCredential)
-          : presentation.verifiableCredential;
+      let credential: any;
+      if (typeof presentation.verifiableCredential === 'string') {
+        if (presentation.verifiableCredential.includes('~')) {
+          credential = presentation.verifiableCredential;
+        } else {
+          try {
+            credential = JSON.parse(presentation.verifiableCredential);
+          } catch {
+            credential = presentation.verifiableCredential;
+          }
+        }
+      } else {
+        credential = presentation.verifiableCredential;
+      }
 
-      const isSDJWT = presentation.disclosed_attributes !== undefined;
+      const isSDJWT = (typeof credential === 'string' && credential.includes('~')) || presentation.disclosed_attributes !== undefined;
       const isZKP = presentation.zkp_proofs !== undefined;
 
       let valid: boolean;
@@ -87,52 +101,76 @@ export class IntegrityVerifier {
     pexRequest: PresentationExchangeRequest,
   ): Promise<boolean> {
     try {
-      const disclosed = presentation.disclosed_attributes || {};
-      const hashed = (presentation as any).hashed_attributes || {};
+      if (typeof credential !== 'string' || !credential.includes('~')) {
+        throw new ValidationError('Formato SD-JWT inválido ou ausente', 'credential', credential);
+      }
+      
+      const parts = credential.split('~');
+      const token = parts[0];
+      const disclosures = parts.slice(1);
+      
+      const jwtParts = token.split('.');
+      if (jwtParts.length !== 3) {
+        throw new ValidationError('JWT inválido na credencial SD-JWT', 'jwt', token);
+      }
+      
+      // Extract Payload and Verify Issuer Signature
+      const payloadBytes = base64UrlToBytes(jwtParts[1]);
+      const payload = JSON.parse(new TextDecoder().decode(payloadBytes));
+      const vc = payload.vc;
+      
+      const issuerPublicKey = await this.storage.getIssuerPublicKey();
+      if (!issuerPublicKey) {
+        throw new CryptoError('Chave pública do emissor não encontrada', 'verification', {});
+      }
+      
+      const dataToVerify = new TextEncoder().encode(`${jwtParts[0]}.${jwtParts[1]}`);
+      
+      const sigBytes = base64UrlToBytes(jwtParts[2]);
+      const sigHex = Array.from(sigBytes)
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('');
+        
+      const validSig = await this.crypto.verifySignature(dataToVerify, sigHex, issuerPublicKey, 'verificador');
+      if (!validSig) {
+        throw new ValidationError('Assinatura do emissor inválida no SD-JWT', 'signature', {});
+      }
+      
+      const _sd = vc?.credentialSubject?._sd || [];
+      const disclosed: Record<string, any> = {};
+      
+      for (const disclosureB64 of disclosures) {
+        if (!disclosureB64) continue;
+        const disclosureBytes = base64UrlToBytes(disclosureB64);
+        const disclosureStr = new TextDecoder().decode(disclosureBytes);
+        
+        const hashHex = await this.crypto.computeHash(disclosureStr, 'verificador');
+        const hashBytes = new Uint8Array(hashHex.length / 2);
+        for (let i = 0; i < hashHex.length; i += 2) {
+             hashBytes[i / 2] = parseInt(hashHex.substring(i, i + 2), 16);
+        }
+        const hashB64 = bytesToBase64Url(hashBytes);
+        
+        if (!_sd.includes(hashB64)) {
+          throw new ValidationError(`Hash da disclosure não encontrado no _sd: ${hashB64}`, 'disclosure', disclosureStr);
+        }
+        
+        const [, key, value] = JSON.parse(disclosureStr);
+        disclosed[key] = value;
+      }
+      
       const required = extractRequiredAttributes(pexRequest);
-
       for (const attr of required) {
-        if (!(attr in disclosed)) {
+        if (!(attr in disclosed) && !(attr in vc.credentialSubject)) {
           throw new ValidationError(
             `Atributo requisitado ausente: ${attr}`,
             'attributes',
             attr,
           );
         }
-        const credValue = credential.credentialSubject[attr];
-        const discValue = disclosed[attr];
-        if (JSON.stringify(credValue) !== JSON.stringify(discValue)) {
-          throw new ValidationError(
-            `Atributo divulgado não corresponde à credencial: ${attr}`,
-            attr,
-            {credentialValue: credValue, disclosedValue: discValue},
-          );
-        }
       }
 
       await this.validatePEXFilters(pexRequest, disclosed);
-
-      for (const attr of Object.keys(hashed)) {
-        if (required.includes(attr)) {
-          throw new ValidationError(
-            `Atributo requisitado não deve estar ofuscado: ${attr}`,
-            attr,
-            attr,
-          );
-        }
-        const credValue = credential.credentialSubject[attr];
-        const expected = await this.crypto.computeHash(
-          canonicalAttributeHashInput(attr, credValue),
-          'verificador',
-        );
-        if (hashed[attr] !== expected) {
-          throw new ValidationError(
-            `Hash do atributo inválido: ${attr}`,
-            attr,
-            {expected, actual: hashed[attr]},
-          );
-        }
-      }
 
       return true;
     } catch (error) {
@@ -251,6 +289,18 @@ export class IntegrityVerifier {
               'zkp_proof',
               proof.predicate,
             );
+          }
+          
+          // HARD BINDING FIX: Garantir que a prova submetida contém a constante do Verificador
+          if (proof.predicate.value !== undefined && circuitName === 'age_range') {
+             const expectedValueStr = String(proof.predicate.value);
+             if (!proof.proof_data.public_inputs.includes(expectedValueStr)) {
+               throw new ValidationError(
+                 `O ZKP não corresponde ao limite exigido pelo Verificador. O public input não contém o threshold ${expectedValueStr}.`,
+                 'zkp_public_inputs',
+                 {expected: expectedValueStr, actual: proof.proof_data.public_inputs}
+               );
+             }
           }
           this.logger.captureEvent(
             'verification',

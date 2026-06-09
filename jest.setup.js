@@ -88,10 +88,10 @@ jest.mock('./src/services/ZKProofService', () => {
   return {
     __esModule: true,
     default: {
-      generateAgeRangeProof: jest.fn().mockResolvedValue({
+      generateAgeRangeProof: jest.fn().mockImplementation((birthdate, threshold) => Promise.resolve({
         proof: mockCircomProof,
-        inputs: ['1', '18'],
-      }),
+        inputs: ['1', String(threshold)],
+      })),
       generateStatusCheckProof: jest.fn().mockResolvedValue({
         proof: mockCircomProof,
         inputs: ['1'],

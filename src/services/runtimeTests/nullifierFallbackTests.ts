@@ -15,8 +15,8 @@ import {assertDefined, assertEqual, assert, assertMatch} from './assertions';
  */
 const nullifierFallbackTests: RuntimeTestCase[] = [
   {
-    id: 'nullifier-fallback-hash',
-    name: 'Nullifier uses SHA-256 composite hash when circuit unavailable',
+    id: 'nullifier-circuit-unavailable-fails',
+    name: 'Nullifier generation fails hard when circuit is unavailable',
     category: 'zkp',
     run: async () => {
       const originalIsAvailable = ZKProofServiceInstance.isCircuitAvailable;
@@ -31,28 +31,23 @@ const nullifierFallbackTests: RuntimeTestCase[] = [
 
         const electionId = `fallback_${Date.now()}`;
 
-        // generateNullifier tries ZK circuit first, falls back to compositeHash
-        const nullifier = await generateNullifier(privateKey!, electionId);
-        assertDefined(nullifier, 'nullifier');
-        assert(nullifier.length > 0, 'nullifier non-empty');
-        // SHA-256 hex output is 64 chars
-        assertMatch(nullifier, /^[0-9a-f]{64}$/, 'nullifier format');
-
-        // Deterministic: same inputs → same output
-        const nullifier2 = await generateNullifier(privateKey!, electionId);
-        assertEqual(nullifier, nullifier2, 'deterministic fallback nullifier');
-
-        // Different election → different nullifier
-        const nullifier3 = await generateNullifier(privateKey!, 'other_election');
-        assert(nullifier !== nullifier3, 'different election → different nullifier');
+        // generateNullifier must throw when circuit is unavailable to protect anonymity
+        let threw = false;
+        try {
+          await generateNullifier(privateKey!, electionId);
+        } catch (error: any) {
+          threw = true;
+          assertMatch(error.message, /indisponível/, 'Should throw indisponibilidade error');
+        }
+        assert(threw, 'Expected generateNullifier to throw error');
       } finally {
         ZKProofServiceInstance.isCircuitAvailable = originalIsAvailable;
       }
     },
   },
   {
-    id: 'nullifier-fallback-election-flow',
-    name: 'Full election flow works with fallback nullifier',
+    id: 'nullifier-flow-circuit-unavailable-fails',
+    name: 'Full election flow fails if nullifier circuit is unavailable',
     category: 'zkp',
     run: async () => {
       const originalIsAvailable = ZKProofServiceInstance.isCircuitAvailable;
@@ -92,24 +87,19 @@ const nullifierFallbackTests: RuntimeTestCase[] = [
           predicates: [{attribute: 'status_matricula', p_type: '==', value: 'Ativo'}],
         };
 
-        const presentation = await PresentationService.createZKPPresentation(
-          parsed,
-          req,
-          [{attribute: 'status_matricula', p_type: '==', value: 'Ativo'}],
-        );
-
-        assertDefined(presentation.nullifier, 'nullifier present');
-        assert(presentation.nullifier!.length > 0, 'nullifier non-empty');
-
-        // First vote succeeds
-        const first = await VerificationService.validatePresentation(presentation, req);
-        assert(first.valid, `First vote should pass. Errors: ${first.errors?.join(', ')}`);
-        assertEqual(first.nullifier_check, 'new', 'first vote is new');
-
-        // Second vote fails (duplicate)
-        const second = await VerificationService.validatePresentation(presentation, req);
-        assert(!second.valid, 'Duplicate vote should fail');
-        assertEqual(second.nullifier_check, 'duplicate', 'duplicate detected');
+        let threw = false;
+        try {
+          await PresentationService.createZKPPresentation(
+            parsed,
+            req,
+            [{attribute: 'status_matricula', p_type: '==', value: 'Ativo'}],
+          );
+        } catch (error: any) {
+          threw = true;
+          assertMatch(error.message, /indisponível/, 'Should throw indisponibilidade error during presentation creation');
+        }
+        
+        assert(threw, 'Expected presentation creation to fail');
       } finally {
         ZKProofServiceInstance.isCircuitAvailable = originalIsAvailable;
       }

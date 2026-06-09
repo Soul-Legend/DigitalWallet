@@ -59,7 +59,6 @@ const cryptoRoundTripTests: RuntimeTestCase[] = [
         '@context': presentation['@context'],
         challenge: presentation.proof.challenge ?? null,
         disclosed_attributes: presentation.disclosed_attributes ?? {},
-        hashed_attributes: (presentation as any).hashed_attributes ?? {},
         holder: presentation.holder,
         type: presentation.type,
         verifiableCredential: presentation.verifiableCredential,
@@ -103,7 +102,6 @@ const cryptoRoundTripTests: RuntimeTestCase[] = [
         '@context': tampered['@context'],
         challenge: tampered.proof.challenge ?? null,
         disclosed_attributes: tampered.disclosed_attributes ?? {},
-        hashed_attributes: (tampered as any).hashed_attributes ?? {},
         holder: tampered.holder,
         type: tampered.type,
         verifiableCredential: tampered.verifiableCredential,
@@ -145,7 +143,6 @@ const cryptoRoundTripTests: RuntimeTestCase[] = [
         '@context': tampered['@context'],
         challenge: tampered.proof.challenge ?? null,
         disclosed_attributes: tampered.disclosed_attributes ?? {},
-        hashed_attributes: (tampered as any).hashed_attributes ?? {},
         holder: tampered.holder,
         type: tampered.type,
         verifiableCredential: tampered.verifiableCredential,
@@ -161,77 +158,11 @@ const cryptoRoundTripTests: RuntimeTestCase[] = [
     },
   },
   {
-    id: 'crypto-hash-deterministic',
-    name: 'Hash obfuscation is deterministic',
-    category: 'crypto',
-    run: async () => {
-      const {did: holderDID} = await DIDService.generateHolderIdentity('key');
-      await DIDService.generateIssuerIdentity('ufsc.br');
-
-      const token = await CredentialService.issueCredential(
-        {...defaultStudentData, isencao_ru: true},
-        holderDID,
-        'sd-jwt',
-      );
-      const parsed = await CredentialService.validateAndParseCredential(token);
-
-      const p1 = await PresentationService.createPresentation(
-        parsed,
-        ruRequest,
-        ['status_matricula', 'isencao_ru'],
-      );
-      const p2 = await PresentationService.createPresentation(
-        parsed,
-        ruRequest,
-        ['status_matricula', 'isencao_ru'],
-      );
-
-      const hashes1 = (p1 as any).hashed_attributes;
-      const hashes2 = (p2 as any).hashed_attributes;
-      assertDefined(hashes1, 'hashed_attributes p1');
-      assertDefined(hashes2, 'hashed_attributes p2');
-
-      for (const key of Object.keys(hashes1)) {
-        assertEqual(hashes1[key], hashes2[key], `hash for ${key}`);
-      }
-    },
-  },
-  {
-    id: 'crypto-hash-independent-verify',
-    name: 'Attribute hashes independently verifiable',
-    category: 'crypto',
-    run: async () => {
-      const {did: holderDID} = await DIDService.generateHolderIdentity('key');
-      await DIDService.generateIssuerIdentity('ufsc.br');
-
-      const token = await CredentialService.issueCredential(
-        {...defaultStudentData, isencao_ru: true},
-        holderDID,
-        'sd-jwt',
-      );
-      const parsed = await CredentialService.validateAndParseCredential(token);
-      const presentation = await PresentationService.createPresentation(
-        parsed,
-        ruRequest,
-        ['status_matricula', 'isencao_ru'],
-      );
-
-      const hashedAttrs = (presentation as any).hashed_attributes;
-      assertDefined(hashedAttrs, 'hashed_attributes');
-      assertDefined(hashedAttrs.cpf, 'cpf hash');
-
-      const expectedHash = await CryptoService.computeHash(
-        canonicalAttributeHashInput('cpf', defaultStudentData.cpf),
-        'titular',
-      );
-      assertEqual(hashedAttrs.cpf, expectedHash, 'cpf hash matches independent computation');
-    },
-  },
-  {
     id: 'crypto-trust-chain-certs',
     name: 'Trust chain certificate signatures verifiable',
     category: 'crypto',
     run: async () => {
+      await TrustChainService.reset();
       const root = await TrustChainService.initializeRootIssuer(
         'did:web:ufsc.br',
         'UFSC Root',
