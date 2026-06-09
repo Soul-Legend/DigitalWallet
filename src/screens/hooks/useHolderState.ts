@@ -18,6 +18,7 @@ export function useHolderState() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [credentials, setCredentials] = useState<VerifiableCredential[]>([]);
+  const [rawCredentials, setRawCredentials] = useState<string[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLoadingCredentials, setIsLoadingCredentials] = useState(true);
 
@@ -49,6 +50,7 @@ export function useHolderState() {
       }
 
       setCredentials(parsedCredentials);
+      setRawCredentials(storedTokens);
       setCurrentIndex(parsedCredentials.length > 0 ? 0 : -1);
     } catch (err) {
       console.error('Failed to load credentials:', err);
@@ -222,10 +224,19 @@ export function useHolderState() {
 
     try {
       const credential = credentials[currentIndex];
+      const rawToken = rawCredentials[currentIndex];
       const hasPredicates = consentData.predicates && consentData.predicates.length > 0;
+      const isAnonCreds = credential.proof?.type === 'CLSignature2023';
 
       let presentation;
-      if (hasPredicates) {
+      if (isAnonCreds) {
+        presentation = await PresentationService.createAnonCredsPresentation(
+          rawToken,
+          currentRequest,
+          selectedAttributes,
+          (consentData.predicates as any) || [],
+        );
+      } else if (hasPredicates) {
         presentation = await PresentationService.createZKPPresentation(
           credential,
           currentRequest,
@@ -246,7 +257,13 @@ export function useHolderState() {
         Clipboard.setString(presentationJson);
         setSuccess('Apresentação criada e copiada para área de transferência!');
       } else {
-        setSuccess('Apresentação criada! Escaneie o QR Code abaixo com o verificador.');
+        if (presentationJson.length > 2900) {
+          setTransportMode('clipboard');
+          Clipboard.setString(presentationJson);
+          setSuccess('Apresentação muito grande para QR Code. Copiada para área de transferência!');
+        } else {
+          setSuccess('Apresentação criada! Escaneie o QR Code abaixo com o verificador.');
+        }
       }
       setRequestInput('');
       setCurrentRequest(null);
@@ -288,6 +305,30 @@ export function useHolderState() {
     }
   }, [presentationOutput]);
 
+  const handlePresentCredential = useCallback(() => {
+    if (rawCredentials[currentIndex]) {
+      const output = rawCredentials[currentIndex];
+      setPresentationOutput(output);
+      if (output.length > 2900) {
+        setTransportMode('clipboard');
+        Clipboard.setString(output);
+        setSuccess('Credencial muito grande para QR Code. Copiada para a área de transferência!');
+      } else {
+        setTransportMode('qrcode');
+        setSuccess('Credencial pronta para apresentação. Exibindo QR Code.');
+      }
+      setTimeout(() => setSuccess(null), 3000);
+    }
+  }, [rawCredentials, currentIndex]);
+
+  const handleCopyCredential = useCallback(() => {
+    if (rawCredentials[currentIndex]) {
+      Clipboard.setString(rawCredentials[currentIndex]);
+      setSuccess('Credencial copiada para área de transferência!');
+      setTimeout(() => setSuccess(null), 3000);
+    }
+  }, [rawCredentials, currentIndex]);
+
   return {
     // Credential state
     credentialInput,
@@ -320,6 +361,8 @@ export function useHolderState() {
     handleCancelConsent,
     handleTransportModeChange,
     handleCopyOutput,
+    handlePresentCredential,
+    handleCopyCredential,
 
   };
 }

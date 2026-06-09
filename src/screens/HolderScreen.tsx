@@ -15,11 +15,14 @@ import {
   CredentialCard,
   ConsentModal,
   TransportModeSelector,
+  ScannerModal,
 } from '../components';
 import QRCode from 'react-native-qrcode-svg';
 import {useHolderState} from './hooks/useHolderState';
+import {useState} from 'react';
 
 const HolderScreen: React.FC = () => {
+  const [isScannerVisible, setIsScannerVisible] = useState(false);
   const {
     credentialInput,
     setCredentialInput,
@@ -47,6 +50,8 @@ const HolderScreen: React.FC = () => {
     handleCancelConsent,
     handleTransportModeChange,
     handleCopyOutput,
+    handlePresentCredential,
+    handleCopyCredential,
   } = useHolderState();
 
   return (
@@ -116,31 +121,51 @@ const HolderScreen: React.FC = () => {
                 Processar Requisição de Apresentação
               </Text>
               <Text style={styles.inputDescription}>
-                Cole uma requisição PEX para criar uma apresentação
+                {transportMode === 'qrcode'
+                  ? 'Leia o QR Code da requisição PEX no dispositivo verificador'
+                  : 'Cole uma requisição PEX para criar uma apresentação'}
               </Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Cole a requisição PEX aqui"
-                placeholderTextColor="#737784"
-                multiline
-                numberOfLines={4}
-                value={requestInput}
-                onChangeText={setRequestInput}
-                editable={!isProcessingRequest}
-              />
-              <TouchableOpacity
-                style={[
-                  styles.saveButton,
-                  isProcessingRequest && styles.buttonDisabled,
-                ]}
-                onPress={handleProcessRequest}
-                disabled={isProcessingRequest}>
-                <Text style={styles.saveButtonText}>
-                  {isProcessingRequest
-                    ? 'Processando...'
-                    : 'Processar Requisição'}
-                </Text>
-              </TouchableOpacity>
+              
+              {transportMode === 'qrcode' ? (
+                <TouchableOpacity
+                  style={[
+                    styles.saveButton,
+                    isProcessingRequest && styles.buttonDisabled,
+                  ]}
+                  onPress={() => setIsScannerVisible(true)}
+                  disabled={isProcessingRequest}>
+                  <MaterialIcons name="qr-code-scanner" size={18} color="#ffffff" />
+                  <Text style={styles.saveButtonText}>
+                    Abrir Câmera
+                  </Text>
+                </TouchableOpacity>
+              ) : (
+                <>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Cole a requisição PEX aqui"
+                    placeholderTextColor="#737784"
+                    multiline
+                    numberOfLines={4}
+                    value={requestInput}
+                    onChangeText={setRequestInput}
+                    editable={!isProcessingRequest}
+                  />
+                  <TouchableOpacity
+                    style={[
+                      styles.saveButton,
+                      isProcessingRequest && styles.buttonDisabled,
+                    ]}
+                    onPress={handleProcessRequest}
+                    disabled={isProcessingRequest}>
+                    <Text style={styles.saveButtonText}>
+                      {isProcessingRequest
+                        ? 'Processando...'
+                        : 'Processar Requisição'}
+                    </Text>
+                  </TouchableOpacity>
+                </>
+              )}
             </View>
 
             {/* Presentation Output (QR Code or Text) */}
@@ -151,7 +176,8 @@ const HolderScreen: React.FC = () => {
                   <View style={styles.qrContainer}>
                     <QRCode
                       value={presentationOutput}
-                      size={220}
+                      size={300}
+                      ecl="L"
                       backgroundColor="#ffffff"
                       color="#003a8c"
                     />
@@ -183,6 +209,33 @@ const HolderScreen: React.FC = () => {
           onCancel={handleCancelConsent}
         />
 
+        {/* Scanner Modal */}
+        <ScannerModal
+          visible={isScannerVisible}
+          onClose={() => setIsScannerVisible(false)}
+          onScan={(data) => {
+            setIsScannerVisible(false);
+            setRequestInput(data);
+            // We set a small timeout to allow modal to close before processing
+            setTimeout(() => {
+              // The handleProcessRequest relies on the updated state.
+              // We simulate what it does by passing the data directly if possible,
+              // but since handleProcessRequest uses the state `requestInput`,
+              // we can just call handleProcessRequest, though state updates are async.
+              // A more robust way: useHolderState could return a process(data) function,
+              // but for now, the user can press "Processar" after it populates the input,
+              // or we can just switch back to clipboard mode to show it.
+              // Wait, if transportMode is qrcode, the TextInput is hidden!
+              // So if we don't process immediately, the user won't see it.
+              // Actually, since `requestInput` state is populated, we could call a special function
+              // or just trigger the logic. Let's just switch mode to clipboard so they can see/edit and process.
+              handleTransportModeChange('clipboard');
+            }, 300);
+          }}
+          title="Ler Requisição PEX"
+          subtitle="Alinhe o QR Code da tela do Verificador"
+        />
+
         {/* Credentials Display Section */}
         {isLoadingCredentials ? (
           <LoadingIndicator message="Carregando credenciais..." />
@@ -199,7 +252,11 @@ const HolderScreen: React.FC = () => {
             </View>
 
             {/* Credential Card */}
-            <CredentialCard credential={credentials[currentIndex]} />
+            <CredentialCard
+              credential={credentials[currentIndex]}
+              onPresent={handlePresentCredential}
+              onCopy={handleCopyCredential}
+            />
 
             {/* Navigation Controls */}
             <View style={styles.navigationControls}>

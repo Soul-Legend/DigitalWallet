@@ -6,9 +6,11 @@ import {scaleFontSize} from '../utils/theme';
 
 interface CredentialCardProps {
   credential: VerifiableCredential;
+  onPresent?: () => void;
+  onCopy?: () => void;
 }
 
-const CredentialCard: React.FC<CredentialCardProps> = ({credential}) => {
+const CredentialCard: React.FC<CredentialCardProps> = ({credential, onPresent, onCopy}) => {
   const {credentialSubject} = credential;
 
   const formatDate = (dateString: string): string => {
@@ -167,11 +169,11 @@ const CredentialCard: React.FC<CredentialCardProps> = ({credential}) => {
 
       {/* Action Buttons */}
       <View style={styles.actionButtons}>
-        <TouchableOpacity style={styles.presentButton} activeOpacity={0.8}>
+        <TouchableOpacity style={styles.presentButton} activeOpacity={0.8} onPress={onPresent}>
           <MaterialIcons name="qr-code-2" size={18} color="#6e5700" />
           <Text style={styles.presentButtonText}>Apresentar</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.copyButton} activeOpacity={0.8}>
+        <TouchableOpacity style={styles.copyButton} activeOpacity={0.8} onPress={onCopy}>
           <MaterialIcons name="content-copy" size={18} color="#434653" />
         </TouchableOpacity>
       </View>
