@@ -93,6 +93,42 @@ export function useIssuerState() {
   const [isChainLoading, setIsChainLoading] = useState(false);
   const [chainExpanded, setChainExpanded] = useState(false);
 
+  // Laboratory access state
+  const [labInput, setLabInput] = useState('');
+
+  const handleAddLab = useCallback(() => {
+    const trimmed = labInput.trim();
+    if (trimmed && !formData.acesso_laboratorios?.includes(trimmed)) {
+      updateField('acesso_laboratorios', [...(formData.acesso_laboratorios || []), trimmed]);
+      setLabInput('');
+    }
+  }, [labInput, formData.acesso_laboratorios, updateField]);
+
+  const handleRemoveLab = useCallback((labToRemove: string) => {
+    updateField(
+      'acesso_laboratorios',
+      (formData.acesso_laboratorios || []).filter(lab => lab !== labToRemove)
+    );
+  }, [formData.acesso_laboratorios, updateField]);
+
+  // Building access state
+  const [buildingInput, setBuildingInput] = useState('');
+
+  const handleAddBuilding = useCallback(() => {
+    const trimmed = buildingInput.trim();
+    if (trimmed && !formData.acesso_predios?.includes(trimmed)) {
+      updateField('acesso_predios', [...(formData.acesso_predios || []), trimmed]);
+      setBuildingInput('');
+    }
+  }, [buildingInput, formData.acesso_predios, updateField]);
+
+  const handleRemoveBuilding = useCallback((buildingToRemove: string) => {
+    updateField(
+      'acesso_predios',
+      (formData.acesso_predios || []).filter(building => building !== buildingToRemove)
+    );
+  }, [formData.acesso_predios, updateField]);
+
   useEffect(() => {
     setCurrentModule(Module.ISSUER);
   }, [setCurrentModule]);
@@ -112,9 +148,20 @@ export function useIssuerState() {
     setIsChainLoading(true);
     setGeneralError(null);
     try {
-      const issuerDid = await StorageService.getRawItem('issuer_did');
-      const rootDid = issuerDid || 'did:web:ufsc.br';
+      const rootDid = 'did:web:ufsc.br';
       await TrustChainService.initializeRootIssuer(rootDid, 'UFSC - Âncora Raiz');
+      
+      // Automatically register the child issuer (Identidade Acadêmica) to demonstrate a true trust chain
+      const rootKey = await TrustChainService.getIssuerPrivateKey(rootDid);
+      if (rootKey) {
+        await TrustChainService.registerChildIssuer(
+          rootDid,
+          rootKey,
+          `${rootDid}:identidade-academica`,
+          'Identidade Acadêmica'
+        );
+      }
+      
       await loadTrustChain();
       setSuccessMessage('Âncora raiz da cadeia de confiança inicializada!');
       addLog({
@@ -316,6 +363,18 @@ export function useIssuerState() {
     setSelectedParentDid,
     isChainLoading,
     chainExpanded,
+
+    // Laboratory access state
+    labInput,
+    setLabInput,
+    handleAddLab,
+    handleRemoveLab,
+
+    // Building access state
+    buildingInput,
+    setBuildingInput,
+    handleAddBuilding,
+    handleRemoveBuilding,
 
     // Actions
     handleInitializeRoot,

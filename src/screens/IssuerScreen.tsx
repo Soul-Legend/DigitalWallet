@@ -40,6 +40,14 @@ const IssuerScreen: React.FC = () => {
     handleIssueCredential,
     handleCopyCredential,
     toggleChainExpanded,
+    labInput,
+    setLabInput,
+    handleAddLab,
+    handleRemoveLab,
+    buildingInput,
+    setBuildingInput,
+    handleAddBuilding,
+    handleRemoveBuilding,
   } = useIssuerState();
 
   const benefits = [
@@ -314,6 +322,100 @@ const IssuerScreen: React.FC = () => {
           </View>
         </View>
 
+        {/* Laboratory Access Section */}
+        <View style={styles.benefitsCard}>
+          <View style={styles.benefitsHeader}>
+            <View style={styles.benefitsIconContainer}>
+              <MaterialIcons name="science" size={24} color="#003a8c" />
+            </View>
+            <Text style={styles.benefitsTitle}>Acesso a Laboratórios</Text>
+          </View>
+          <Text style={styles.benefitsDescription}>
+            Adicione os laboratórios aos quais este aluno tem acesso autorizado.
+          </Text>
+
+          <View style={styles.labInputContainer}>
+            <TextInput
+              style={[styles.input, styles.labInput]}
+              value={labInput}
+              onChangeText={setLabInput}
+              placeholder="Ex: Laboratório de Química Geral"
+              placeholderTextColor="#737784"
+              editable={!isLoading}
+              onSubmitEditing={handleAddLab}
+            />
+            <TouchableOpacity
+              style={styles.labAddButton}
+              onPress={handleAddLab}
+              disabled={isLoading || !labInput.trim()}>
+              <MaterialIcons name="add" size={24} color="#ffffff" />
+            </TouchableOpacity>
+          </View>
+
+          {formData.acesso_laboratorios && formData.acesso_laboratorios.length > 0 && (
+            <View style={styles.chipsContainer}>
+              {formData.acesso_laboratorios.map((lab, index) => (
+                <View key={index} style={styles.chip}>
+                  <Text style={styles.chipText}>{lab}</Text>
+                  <TouchableOpacity
+                    onPress={() => handleRemoveLab(lab)}
+                    disabled={isLoading}
+                    style={styles.chipRemoveButton}>
+                    <MaterialIcons name="close" size={16} color="#434653" />
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </View>
+          )}
+        </View>
+
+        {/* Building Access Section */}
+        <View style={styles.benefitsCard}>
+          <View style={styles.benefitsHeader}>
+            <View style={styles.benefitsIconContainer}>
+              <MaterialIcons name="domain" size={24} color="#003a8c" />
+            </View>
+            <Text style={styles.benefitsTitle}>Acesso a Prédios</Text>
+          </View>
+          <Text style={styles.benefitsDescription}>
+            Adicione os prédios aos quais este aluno tem acesso autorizado.
+          </Text>
+
+          <View style={styles.labInputContainer}>
+            <TextInput
+              style={[styles.input, styles.labInput]}
+              value={buildingInput}
+              onChangeText={setBuildingInput}
+              placeholder="Ex: Prédio da Reitoria"
+              placeholderTextColor="#737784"
+              editable={!isLoading}
+              onSubmitEditing={handleAddBuilding}
+            />
+            <TouchableOpacity
+              style={styles.labAddButton}
+              onPress={handleAddBuilding}
+              disabled={isLoading || !buildingInput.trim()}>
+              <MaterialIcons name="add" size={24} color="#ffffff" />
+            </TouchableOpacity>
+          </View>
+
+          {formData.acesso_predios && formData.acesso_predios.length > 0 && (
+            <View style={styles.chipsContainer}>
+              {formData.acesso_predios.map((building, index) => (
+                <View key={index} style={styles.chip}>
+                  <Text style={styles.chipText}>{building}</Text>
+                  <TouchableOpacity
+                    onPress={() => handleRemoveBuilding(building)}
+                    disabled={isLoading}
+                    style={styles.chipRemoveButton}>
+                    <MaterialIcons name="close" size={16} color="#434653" />
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </View>
+          )}
+        </View>
+
         {/* Benefits Section */}
         <View style={styles.benefitsCard}>
           <View style={styles.benefitsHeader}>
@@ -576,6 +678,44 @@ const styles = StyleSheet.create({
     color: '#002202', // on-tertiary-fixed
     fontSize: 14,
     fontWeight: '600',
+  },
+  // Laboratory Access
+  labInputContainer: {
+    flexDirection: 'row',
+    marginBottom: 16,
+    gap: 8,
+  },
+  labInput: {
+    flex: 1,
+    paddingVertical: 12, // slightly smaller padding for inline input
+  },
+  labAddButton: {
+    backgroundColor: '#003a8c', // primary
+    width: 48,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  chipsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#e5e2e1', // surface-container-highest
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 16,
+    gap: 6,
+  },
+  chipText: {
+    fontSize: 14,
+    color: '#1b1b1c',
+  },
+  chipRemoveButton: {
+    padding: 2,
   },
 });
 

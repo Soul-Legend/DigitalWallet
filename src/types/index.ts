@@ -32,6 +32,7 @@ export interface VerifiableCredential {
   expirationDate?: string;
   credentialSubject: StudentData & {id: string};
   proof: Proof;
+  _sd_jwt?: string;
 }
 
 export interface Proof {
