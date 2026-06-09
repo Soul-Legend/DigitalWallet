@@ -1,5 +1,6 @@
-import React from 'react';
-import {NavigationContainer} from '@react-navigation/native';
+import React, {useRef, useCallback} from 'react';
+import {Animated, Easing} from 'react-native';
+import {NavigationContainer, useFocusEffect} from '@react-navigation/native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
 import {SafeAreaProvider} from 'react-native-safe-area-context';
@@ -54,7 +55,8 @@ const NAV_COLORS = {
 
 // ── Tab Icon Mapping ────────────────────────────────────────────────
 const TAB_ICONS: Record<string, keyof typeof MaterialIcons.glyphMap> = {
-  Home: 'account-balance-wallet',
+  Home: 'menu',
+  Titular: 'account-balance-wallet',
   Emissor: 'add-moderator',
   Verificador: 'verified-user',
   Logs: 'history-edu',
@@ -62,18 +64,66 @@ const TAB_ICONS: Record<string, keyof typeof MaterialIcons.glyphMap> = {
 };
 
 const TAB_LABELS: Record<string, string> = {
-  Home: 'Vault',
+  Home: 'Menu',
+  Titular: 'Vault',
   Emissor: 'Issue',
   Verificador: 'Verify',
   Logs: 'Logs',
   Glossario: 'Glossary',
 };
 
+// ── Animations ───────────────────────────────────────────────────────
+const withTabAnimation = (WrappedComponent: React.ComponentType<any>) => {
+  return function AnimatedTabWrapper(props: any) {
+    const fadeAnim = useRef(new Animated.Value(0)).current;
+    const translateY = useRef(new Animated.Value(15)).current;
+
+    useFocusEffect(
+      useCallback(() => {
+        fadeAnim.setValue(0);
+        translateY.setValue(15);
+        Animated.parallel([
+          Animated.timing(fadeAnim, {
+            toValue: 1,
+            duration: 200,
+            easing: Easing.out(Easing.ease),
+            useNativeDriver: true,
+          }),
+          Animated.timing(translateY, {
+            toValue: 0,
+            duration: 250,
+            easing: Easing.out(Easing.ease),
+            useNativeDriver: true,
+          }),
+        ]).start();
+      }, [fadeAnim, translateY]),
+    );
+
+    return (
+      <Animated.View
+        style={{
+          flex: 1,
+          opacity: fadeAnim,
+          transform: [{translateY}],
+        }}>
+        <WrappedComponent {...props} />
+      </Animated.View>
+    );
+  };
+};
+
+const AnimatedHome = withTabAnimation(HomeScreen);
+const AnimatedHolder = withTabAnimation(HolderScreen);
+const AnimatedIssuer = withTabAnimation(IssuerScreen);
+const AnimatedVerifier = withTabAnimation(VerifierScreen);
+const AnimatedLogs = withTabAnimation(LogsScreen);
+const AnimatedGlossary = withTabAnimation(GlossaryScreen);
+
 // ── Bottom Tab Navigator ─────────────────────────────────────────────
 function MainTabNavigator(): React.JSX.Element {
   return (
     <Tab.Navigator
-      initialRouteName="Home"
+      initialRouteName="Titular"
       screenOptions={({route}) => ({
         headerStyle: {
           backgroundColor: NAV_COLORS.headerBg,
@@ -123,27 +173,32 @@ function MainTabNavigator(): React.JSX.Element {
       })}>
       <Tab.Screen
         name="Home"
-        component={HomeScreen}
-        options={{title: 'Carteira Identidade Acadêmica'}}
+        component={AnimatedHome}
+        options={{title: 'Menu Principal'}}
+      />
+      <Tab.Screen
+        name="Titular"
+        component={AnimatedHolder}
+        options={{title: 'Minha Carteira Acadêmica'}}
       />
       <Tab.Screen
         name="Emissor"
-        component={IssuerScreen}
+        component={AnimatedIssuer}
         options={{title: 'Nova Credencial Acadêmica'}}
       />
       <Tab.Screen
         name="Verificador"
-        component={VerifierScreen}
+        component={AnimatedVerifier}
         options={{title: 'Verificador de Credenciais'}}
       />
       <Tab.Screen
         name="Logs"
-        component={LogsScreen}
+        component={AnimatedLogs}
         options={{title: 'Atividades de Segurança'}}
       />
       <Tab.Screen
         name="Glossario"
-        component={GlossaryScreen}
+        component={AnimatedGlossary}
         options={{title: 'Glossário SSI'}}
       />
     </Tab.Navigator>
@@ -158,6 +213,7 @@ function App(): React.JSX.Element {
         <Stack.Navigator
           initialRouteName="Initialization"
           screenOptions={{
+            animation: 'slide_from_right',
             headerStyle: {
               backgroundColor: NAV_COLORS.headerBg,
             },
@@ -176,12 +232,6 @@ function App(): React.JSX.Element {
             name="MainTabs"
             component={MainTabNavigator}
             options={{headerShown: false}}
-          />
-          {/* Holder is accessed from Home via navigation, not a tab */}
-          <Stack.Screen
-            name="Titular"
-            component={HolderScreen}
-            options={{title: 'Minha Carteira Acadêmica'}}
           />
           <Stack.Screen
             name="Diagnostics"

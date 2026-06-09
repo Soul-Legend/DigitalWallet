@@ -40,7 +40,6 @@ const HomeScreen: React.FC<Props> = ({navigation}) => {
       icon: 'account-balance-wallet',
       iconBg: '#d9e2ff', // primary-fixed
       iconColor: '#003a8c',
-      isStackRoute: true,
     },
     {
       name: 'Emitir Credencial',
