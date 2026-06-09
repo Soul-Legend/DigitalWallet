@@ -15,6 +15,27 @@ import ErrorMessage from '../components/ErrorMessage';
 import TrustChainSection from '../components/TrustChainSection';
 import {useIssuerState} from './hooks/useIssuerState';
 
+const formatCPF = (text: string) => {
+  const numeric = text.replace(/\D/g, '');
+  return numeric
+    .replace(/(\d{3})(\d)/, '$1.$2')
+    .replace(/(\d{3})(\d)/, '$1.$2')
+    .replace(/(\d{3})(\d{1,2})/, '$1-$2')
+    .substring(0, 14);
+};
+
+const formatDataNascimento = (text: string) => {
+  const numeric = text.replace(/\D/g, '');
+  return numeric
+    .replace(/(\d{4})(\d)/, '$1-$2')
+    .replace(/(\d{4}-\d{2})(\d)/, '$1-$2')
+    .substring(0, 10);
+};
+
+const formatMatricula = (text: string) => {
+  return text.replace(/\D/g, '').substring(0, 15);
+};
+
 const IssuerScreen: React.FC = () => {
   const {
     formData,
@@ -221,11 +242,12 @@ const IssuerScreen: React.FC = () => {
             <TextInput
               style={[styles.input, errors.cpf && styles.inputError]}
               value={formData.cpf}
-              onChangeText={text => updateField('cpf', text)}
+              onChangeText={text => updateField('cpf', formatCPF(text))}
               placeholder="000.000.000-00"
               placeholderTextColor="#737784"
               keyboardType="numeric"
               editable={!isLoading}
+              maxLength={14}
             />
             {errors.cpf && <Text style={styles.errorText}>{errors.cpf}</Text>}
           </View>
@@ -235,9 +257,10 @@ const IssuerScreen: React.FC = () => {
             <TextInput
               style={[styles.input, errors.matricula && styles.inputError]}
               value={formData.matricula}
-              onChangeText={text => updateField('matricula', text)}
-              placeholder="Ex: 20241000"
+              onChangeText={text => updateField('matricula', formatMatricula(text))}
+              placeholder="Ex: 2203674"
               placeholderTextColor="#737784"
+              keyboardType="numeric"
               editable={!isLoading}
             />
             {errors.matricula && (
@@ -311,10 +334,12 @@ const IssuerScreen: React.FC = () => {
                 errors.data_nascimento && styles.inputError,
               ]}
               value={formData.data_nascimento}
-              onChangeText={text => updateField('data_nascimento', text)}
+              onChangeText={text => updateField('data_nascimento', formatDataNascimento(text))}
               placeholder="AAAA-MM-DD"
               placeholderTextColor="#737784"
+              keyboardType="numeric"
               editable={!isLoading}
+              maxLength={10}
             />
             {errors.data_nascimento && (
               <Text style={styles.errorText}>{errors.data_nascimento}</Text>

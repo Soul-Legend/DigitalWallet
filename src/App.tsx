@@ -123,7 +123,7 @@ const AnimatedGlossary = withTabAnimation(GlossaryScreen);
 function MainTabNavigator(): React.JSX.Element {
   return (
     <Tab.Navigator
-      initialRouteName="Titular"
+      initialRouteName="Home"
       screenOptions={({route}) => ({
         headerStyle: {
           backgroundColor: NAV_COLORS.headerBg,

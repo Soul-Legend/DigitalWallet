@@ -7,7 +7,7 @@ import {
   TextInput,
   TouchableOpacity,
 } from 'react-native';
-import {MaterialIcons} from '@expo/vector-icons';
+import { MaterialIcons } from '@expo/vector-icons';
 import {
   LoadingIndicator,
   ErrorMessage,
@@ -18,8 +18,8 @@ import {
   ScannerModal,
 } from '../components';
 import QRCode from 'react-native-qrcode-svg';
-import {useHolderState} from './hooks/useHolderState';
-import {useState} from 'react';
+import { useHolderState } from './hooks/useHolderState';
+import { useState } from 'react';
 
 const HolderScreen: React.FC = () => {
   const [isScannerVisible, setIsScannerVisible] = useState(false);
@@ -125,7 +125,7 @@ const HolderScreen: React.FC = () => {
                   ? 'Leia o QR Code da requisição PEX no dispositivo verificador'
                   : 'Cole uma requisição PEX para criar uma apresentação'}
               </Text>
-              
+
               {transportMode === 'qrcode' ? (
                 <TouchableOpacity
                   style={[
@@ -171,7 +171,7 @@ const HolderScreen: React.FC = () => {
             {/* Presentation Output (QR Code or Text) */}
             {presentationOutput && (
               <View style={styles.presentationOutputSection}>
-                <Text style={styles.sectionTitle}>Apresentação Gerada</Text>
+                <Text style={[styles.sectionTitle, styles.presentationTitle]}>Apresentação Gerada</Text>
                 {transportMode === 'qrcode' ? (
                   <View style={styles.qrContainer}>
                     <QRCode
@@ -291,7 +291,7 @@ const HolderScreen: React.FC = () => {
                 style={[
                   styles.navButton,
                   currentIndex === credentials.length - 1 &&
-                    styles.navButtonDisabled,
+                  styles.navButtonDisabled,
                 ]}
                 onPress={handleNext}
                 disabled={currentIndex === credentials.length - 1}>
@@ -299,7 +299,7 @@ const HolderScreen: React.FC = () => {
                   style={[
                     styles.navButtonText,
                     currentIndex === credentials.length - 1 &&
-                      styles.navButtonTextDisabled,
+                    styles.navButtonTextDisabled,
                   ]}>
                   Próxima
                 </Text>
@@ -443,7 +443,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     shadowColor: '#003a8c',
-    shadowOffset: {width: 0, height: 4},
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.25,
     shadowRadius: 16,
     elevation: 3,
@@ -547,10 +547,13 @@ const styles = StyleSheet.create({
     padding: 24,
     marginBottom: 24,
     shadowColor: '#1b1b1c',
-    shadowOffset: {width: 0, height: 4},
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.04,
     shadowRadius: 24,
     elevation: 2,
+  },
+  presentationTitle: {
+    marginBottom: 12,
   },
   qrContainer: {
     alignItems: 'center',
@@ -574,7 +577,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     shadowColor: '#745b00',
-    shadowOffset: {width: 0, height: 4},
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
     shadowRadius: 12,
     elevation: 3,

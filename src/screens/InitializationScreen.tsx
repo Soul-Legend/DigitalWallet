@@ -202,9 +202,6 @@ const InitializationScreen: React.FC<Props> = ({navigation}) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Subtle gradient overlay */}
-      <View style={styles.gradientOverlay} />
-
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Top Branding */}
         <View style={styles.branding}>
@@ -222,14 +219,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fcf9f8', // surface
-  },
-  gradientOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: '50%',
-    backgroundColor: 'rgba(0, 58, 140, 0.03)', // very subtle primary tint
   },
   branding: {
     flexDirection: 'row',
