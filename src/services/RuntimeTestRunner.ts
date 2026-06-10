@@ -15,6 +15,10 @@ import type {
 class RuntimeTestRunner {
   private tests: RuntimeTestCase[] = [];
 
+  clear(): void {
+    this.tests = [];
+  }
+
   register(tests: RuntimeTestCase[]): void {
     this.tests.push(...tests);
   }

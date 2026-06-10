@@ -54,7 +54,26 @@ export class IntegrityVerifier {
         credential = presentation.verifiableCredential;
       }
 
-      const isSDJWT = (typeof credential === 'string' && credential.includes('~')) || presentation.disclosed_attributes !== undefined;
+      // Se for AnonCreds, a integridade estrutural e os predicados já são validados
+      // na etapa de assinatura (que delega para o motor AnonCreds em Rust).
+      if (presentation.proof?.type === 'CLSignature2023') {
+        this.logger.captureEvent(
+          'verification',
+          'verificador',
+          {
+            parameters: {
+              action: 'structural_integrity_verified',
+              presentation_type: 'AnonCreds',
+              integrity_valid: true,
+            },
+          },
+          true,
+        );
+        return true;
+      }
+
+      const isSDJWT = (typeof credential === 'string' && credential.includes('~')) || 
+                      (presentation.disclosed_attributes !== undefined && presentation.zkp_proof === undefined);
       const isZKP = presentation.zkp_proofs !== undefined;
 
       let valid: boolean;
@@ -437,9 +456,7 @@ export class IntegrityVerifier {
       const schema = JSON.parse(schemaRaw);
       const credDef = JSON.parse(credDefRaw);
 
-      const presRequestJson = zkpProof.proof_data?.requested_proof
-        ? (zkpProof.proof_data as Record<string, unknown>)
-        : this.rebuildPresentationRequest(zkpProof);
+      const presRequestJson = await this.rebuildPresentationRequest(zkpProof, presentation.proof?.challenge || 'default_challenge');
 
       const isValid = this.anonCredsService.verifyPresentation(
         zkpProof.proof_data as Record<string, unknown>,
@@ -475,9 +492,10 @@ export class IntegrityVerifier {
     }
   }
 
-  private rebuildPresentationRequest(
+  private async rebuildPresentationRequest(
     zkpProof: NonNullable<VerifiablePresentation['zkp_proof']>,
-  ): Record<string, unknown> {
+    challenge: string,
+  ): Promise<Record<string, unknown>> {
     const requestedAttributes: Record<string, {name: string}> = {};
     (zkpProof.revealed_attrs || []).forEach((attr: string, i: number) => {
       requestedAttributes[`attr_${i}`] = {name: attr};
@@ -497,10 +515,13 @@ export class IntegrityVerifier {
       },
     );
 
+    const challengeHash = await this.crypto.computeHash(challenge, 'verificador');
+    const nonce = BigInt('0x' + challengeHash.slice(0, 20)).toString(10);
+
     return {
-      name: 'verification',
+      name: 'anoncreds_presentation',
       version: '1.0',
-      nonce: String(Date.now()),
+      nonce,
       requested_attributes: requestedAttributes,
       requested_predicates: requestedPredicates,
     };

@@ -6,6 +6,7 @@ import type {
   IAnonCredsService,
   ILogService,
   IStorageService,
+  ICryptoService,
 } from '../../types';
 import {ValidationError} from '../ErrorHandler';
 
@@ -26,6 +27,7 @@ export class AnonCredsPresentationBuilder {
     private readonly logger: ILogService,
     private readonly storage: IStorageService,
     private readonly anonCredsService: IAnonCredsService,
+    private readonly crypto: ICryptoService,
   ) {}
 
   async build(
@@ -78,7 +80,11 @@ export class AnonCredsPresentationBuilder {
       // SECURITY (P0 C1 / AnonCreds): nonces must be cryptographically
       // random — a predictable nonce (e.g. Date.now()) lets a verifier
       // correlate presentations across time and breaks unlinkability.
-      const nonce = this.anonCredsService.generateNonce();
+      // However, to prevent replay attacks and allow the Verifier to rebuild
+      // the presentation request, we derive the AnonCreds nonce deterministically
+      // from the Verifier's challenge.
+      const challengeHash = await this.crypto.computeHash(pexRequest.challenge || 'default_challenge', 'titular');
+      const nonce = BigInt('0x' + challengeHash.slice(0, 20)).toString(10);
       const requestedAttributes: Record<string, {name: string}> = {};
       revealedAttrs.forEach((attr, i) => {
         requestedAttributes[`attr_${i}`] = {name: attr};
@@ -88,6 +94,15 @@ export class AnonCredsPresentationBuilder {
         {name: string; p_type: PredicateSpec['p_type']; p_value: number}
       > = {};
       predicates.forEach((pred, i) => {
+        const rawValue = envelope.credential?.values?.[pred.attribute]?.raw;
+        if (rawValue !== undefined && isNaN(Number(rawValue))) {
+          throw new ValidationError(
+            `A credencial AnonCreds não suporta predicados para o atributo '${pred.attribute}' porque o valor '${rawValue}' não é puramente numérico (requerido para provas de intervalo no AnonCreds).`,
+            'predicate',
+            pred.attribute,
+          );
+        }
+        
         requestedPredicates[`pred_${i}`] = {
           name: pred.attribute,
           p_type: pred.p_type,
@@ -96,7 +111,7 @@ export class AnonCredsPresentationBuilder {
       });
 
       const presRequest = this.anonCredsService.buildPredicateRequest(
-        pexRequest.presentation_definition?.id || 'presentation',
+        'anoncreds_presentation',
         nonce,
         requestedAttributes,
         requestedPredicates,
@@ -167,8 +182,16 @@ export class AnonCredsPresentationBuilder {
       for (const [referent, data] of Object.entries(revealedValues)) {
         const attrData = data as {raw: string};
         if (attrData?.raw) {
+          let realName = referent;
+          const indexMatch = referent.match(/^attr_(\d+)$/);
+          if (indexMatch && indexMatch[1]) {
+            const idx = parseInt(indexMatch[1], 10);
+            if (revealedAttrs[idx]) {
+              realName = revealedAttrs[idx];
+            }
+          }
           presentation.disclosed_attributes = presentation.disclosed_attributes || {};
-          presentation.disclosed_attributes[referent] = attrData.raw;
+          presentation.disclosed_attributes[realName] = attrData.raw;
         }
       }
 

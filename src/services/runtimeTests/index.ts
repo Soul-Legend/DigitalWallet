@@ -14,6 +14,7 @@ import edgeCaseTests from './edgeCaseTests';
 import nullifierFallbackTests from './nullifierFallbackTests';
 
 export function registerAllRuntimeTests(): void {
+  RuntimeTestRunner.clear();
   RuntimeTestRunner.register(identityTests);
   RuntimeTestRunner.register(completeFlowTests);
   RuntimeTestRunner.register(ruSelectiveDisclosureTests);

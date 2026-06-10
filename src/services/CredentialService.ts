@@ -543,7 +543,8 @@ class CredentialService {
       const credential = payload.vc as VerifiableCredential;
 
       // decode and verify disclosures
-      const _sd = credential.credentialSubject._sd || [];
+      const subject = credential.credentialSubject as any;
+      const _sd = subject._sd || [];
       for (const disclosureB64 of disclosures) {
         if (!disclosureB64) continue;
         
@@ -561,14 +562,14 @@ class CredentialService {
           if (_sd.includes(hashB64)) {
              const parsed = JSON.parse(disclosureStr);
              const [, key, value] = parsed;
-             credential.credentialSubject[key] = value;
+             subject[key] = value;
           }
         } catch (err) {
           // invalid disclosure, ignore
         }
       }
       
-      delete credential.credentialSubject._sd;
+      delete subject._sd;
       credential._sd_jwt = jwt;
 
       // Validate credential structure

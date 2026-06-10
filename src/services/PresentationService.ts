@@ -55,6 +55,7 @@ class PresentationService {
       logger,
       storage,
       anonCredsService,
+      crypto,
     );
   }
 
