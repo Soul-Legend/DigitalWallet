@@ -128,7 +128,6 @@ Estrutura de testes:
 
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — Arquitetura e fluxos de dados
 - [docs/API_DOCUMENTATION.md](docs/API_DOCUMENTATION.md) — APIs dos serviços
-- [docs/DESIGN_DECISIONS.md](docs/DESIGN_DECISIONS.md) — Decisões técnicas e trade-offs
 - [docs/USER_GUIDE.md](docs/USER_GUIDE.md) — Guia de uso
 - [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) — Resolução de problemas
 
